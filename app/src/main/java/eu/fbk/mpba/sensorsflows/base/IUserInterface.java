@@ -32,24 +32,28 @@ public interface IUserInterface<TimeT, ValueT> {
 
     public void connect(IDevice device);
 
-    public void enable (ISensor sensor);
+    public void switchOn(ISensor sensor);
 
     public void setStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link, boolean streaming);
 
     public boolean getStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link);
 
-    public void disable (ISensor sensor);
+    public void switchOff(ISensor sensor);
 
     public void close(IDevice device);
 
 
     // ENGINE OPERATION control part
 
-    public void renderAndStart();
+    public void start();
 
     public void setStreaming(boolean streaming);
 
     public boolean getStreaming();
 
-    public void stopAndClose();
+    public void close();
+
+    public void setOnStateChanged(EngineStatusCallback<IUserInterface<TimeT, ValueT>> callback);
+
+    public EngineStatus getStatus();
 }

@@ -7,9 +7,9 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface ISensor {
 
-    public void startStreamingAsync();
+    public void switchOnAsync();
 
-    public void stopStreamingAsync();
+    public void switchOffAsync();
 
     public SensorStatus getState();
 

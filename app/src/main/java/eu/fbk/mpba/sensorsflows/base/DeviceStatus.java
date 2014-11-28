@@ -1,5 +1,5 @@
 package eu.fbk.mpba.sensorsflows.base;
 
 public enum DeviceStatus {
-    DISCONNECTED, CONNECTING, CONNECTED
+    NOT_CONNECTED, CONNECTING, CONNECTED
 }

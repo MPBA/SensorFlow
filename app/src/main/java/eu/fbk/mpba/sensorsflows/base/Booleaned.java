@@ -17,7 +17,7 @@ public class Booleaned<T> {
         _trueness = _trueness;
     }
 
-    public T getObject() {
+    public T getTheOther() {
         return _object;
     }
 

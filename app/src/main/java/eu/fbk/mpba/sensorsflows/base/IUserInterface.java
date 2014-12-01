@@ -23,14 +23,18 @@ public interface IUserInterface<TimeT, ValueT> {
 
     public Enumeration<IOutput<TimeT, ValueT>> getOutputs();
 
-    public void addLink(ILink<ISensor, IOutput<TimeT, ValueT>> link);
-
-    public Enumeration<ILink<ISensor, IOutput<TimeT, ValueT>>> getLinks();
+    public void addLink(ISensor fromSensor, IOutput<TimeT, ValueT> toOutput, boolean initialState);
 
 
     // ITEMS OPERATION control part
 
     public void initialize(IDevice device);
+
+    public void finalize(IDevice device);
+
+    public void initialize(IOutput<TimeT, ValueT> output);
+
+    public void finalize(IOutput<TimeT, ValueT> output);
 
     public void switchOn(ISensor sensor);
 
@@ -39,8 +43,6 @@ public interface IUserInterface<TimeT, ValueT> {
     public boolean isSensorListened(ISensor sensor);
 
     public void setSensorListened(ISensor sensor, boolean streaming);
-
-    public void finalize(IDevice device);
 
 
     // ENGINE OPERATION control part
@@ -53,7 +55,11 @@ public interface IUserInterface<TimeT, ValueT> {
 
     public void close();
 
-    public void setOnStateChanged(EngineStatusCallback<IUserInterface<TimeT, ValueT>> callback);
+    public void setOnStateChanged(EventCallback<IUserInterface<TimeT, ValueT>, EngineStatus> callback);
+
+    public void setOnDeviceStateChanged(EventCallback<IDevice, DeviceStatus> callback);
+
+    public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback);
 
     public EngineStatus getStatus();
 }

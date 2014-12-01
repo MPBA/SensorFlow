@@ -5,11 +5,11 @@ package eu.fbk.mpba.sensorsflows.base;
  * TimeT and ValueT must be the same for the whole library.
  */
 public interface IOutput<TimeT, ValueT> extends ISensorCallback<ISensor, TimeT, ValueT> {
-    public void initialize();
+    public void finalizeOutput();
 
     public void setLinkedSensors();
 
-    public void getStatus();
+    public OutputStatus getState();
 
     public void close();
 }

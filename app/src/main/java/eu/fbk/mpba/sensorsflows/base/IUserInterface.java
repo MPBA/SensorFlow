@@ -30,26 +30,26 @@ public interface IUserInterface<TimeT, ValueT> {
 
     // ITEMS OPERATION control part
 
-    public void connect(IDevice device);
+    public void initialize(IDevice device);
 
     public void switchOn(ISensor sensor);
 
-    public void setStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link, boolean streaming);
-
-    public boolean getStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link);
-
     public void switchOff(ISensor sensor);
 
-    public void close(IDevice device);
+    public boolean isSensorListened(ISensor sensor);
+
+    public void setSensorListened(ISensor sensor, boolean streaming);
+
+    public void finalize(IDevice device);
 
 
     // ENGINE OPERATION control part
 
     public void start();
 
-    public void setStreaming(boolean streaming);
+    public void setPaused(boolean streaming);
 
-    public boolean getStreaming();
+    public boolean isPaused();
 
     public void close();
 

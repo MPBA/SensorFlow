@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.base.Booleaned;
@@ -29,14 +30,19 @@ import eu.fbk.mpba.sensorsflows.util.IterToEnum;
  */
 public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, IDeviceCallback<IDevice>, ISensorCallback<ISensor, TimeT, ValueT> {
 
-    // Callbacks
+    // Extra Interfaces
 
     @Override public void deviceStateChanged(IDevice device, DeviceStatus state) {
-        if (state == DeviceStatus.CONNECTED) {
-            synchronized (_devicesToConnect) {
+        if (state == DeviceStatus.INITIALIZED) {
+            boolean ended = false;
+            synchronized (_devicesToConnectLock) {
                 _devicesToConnect.remove(device);
                 if (_status == EngineStatus.PREPARING && _devicesToConnect.isEmpty())
-                    setState(EngineStatus.READY);
+                    ended = true;
+            }
+            if (ended) {
+                _devicesToConnect = null;
+                changeState(EngineStatus.STREAMING);
             }
         }
     }
@@ -58,25 +64,31 @@ public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, I
     }
 
 
-    // Engine
+    // Fields
 
     final String LOG_TAG = "ALE SFW";
+    final String _devicesToConnectLock = "Lock";
 
-    protected  EngineStatus _status = EngineStatus.STANDBY;
-    protected  boolean _globalStreaming = false;
-
-    protected Hashtable<ISensor, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<ISensor, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
-    protected Hashtable<ISensor, Boolean> _sensorValves = new Hashtable<ISensor, Boolean>();
+    protected EngineStatus _status = EngineStatus.STANDBY;
+    protected boolean _globalStreaming = false;
 
     protected Set<IDevice> _devices = new HashSet<IDevice>();
     protected Set<IOutput<TimeT, ValueT>> _outputs = new HashSet<IOutput<TimeT, ValueT>>();
 
     protected Set<ILink<ISensor, IOutput<TimeT, ValueT>>> _userLinks = new HashSet<ILink<ISensor, IOutput<TimeT, ValueT>>>();
 
-    protected final Set<IDevice> _devicesToConnect = new HashSet<IDevice>();
+    protected Set<IDevice> _devicesToConnect = new HashSet<IDevice>();
+
+    protected Hashtable<ISensor, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<ISensor, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
+    protected Hashtable<ISensor, Boolean> _sensorsListenage = new Hashtable<ISensor, Boolean>();
+
+    EngineStatusCallback<IUserInterface<TimeT, ValueT>> _onStateChanged = null;
+
+
+    // Engine implementation
 
     public FlowsMan() {
-        setState(EngineStatus.STANDBY);
+        changeState(EngineStatus.STANDBY);
     }
 
     @Override public void addDevice(IDevice device) {
@@ -91,6 +103,28 @@ public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, I
             _userLinks.add(link);
         else
             throw new UnsupportedOperationException("The map is already rendered. No inputs, outputs or links can be added now.");
+    }
+
+    public void addLink(final ISensor fromSensor, final IOutput<TimeT, ValueT> toOutput) {
+        addLink(new ILink<ISensor, IOutput<TimeT, ValueT>>() {
+            private boolean e = false;
+
+            @Override public ISensor getInput() {
+                return fromSensor;
+            }
+
+            @Override public IOutput<TimeT, ValueT> getOutput() {
+                return toOutput;
+            }
+
+            @Override public boolean getEnabled() {
+                return e;
+            }
+
+            @Override public void setEnabled(boolean enable) {
+                e = enable;
+            }
+        });
     }
 
     @Override public void addOutput(IOutput<TimeT, ValueT> output) {
@@ -112,90 +146,95 @@ public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, I
         return new IterToEnum<ILink<ISensor, IOutput<TimeT, ValueT>>>(_userLinks.iterator());
     }
 
-    @Override public void connect(IDevice device) {
-        // The connection state is checked before the start.
-        if (_devices.contains(device) &&  device.getState() == DeviceStatus.NOT_CONNECTED) {
-            Log.v(LOG_TAG, "Connecting " + device.toString());
+    /**
+     * In this phase the device can be connected from the plug-in code or can also have already been
+     * connected in its constructor.
+     * @param device {@code IDevice} to initialize
+     */
+    @Override public void initialize(IDevice device) {
+        // The connection state is checked before the start end callback.
+        if (_devices.contains(device) &&  device.getState() == DeviceStatus.NOT_INITIALIZED) {
             device.connect();
-            // TODO 3 Add async end-user end!
+            // TODO 6 Add async end-user end
         }
         else {
-            Log.v(LOG_TAG, "Refused to connect " + device.toString());
+            throw new NoSuchElementException("IDevice not present in the collection.");
         }
     }
 
-    @Override public void close(IDevice device) {
+    @Override public void finalize(IDevice device) {
         // The connection state is not checked
-        if (_devices.contains(device) &&  device.getState() == DeviceStatus.CONNECTED) {
-            Log.v(LOG_TAG, "Closing " + device.toString());
+        if (_devices.contains(device) &&  device.getState() == DeviceStatus.INITIALIZED) {
             device.close();
-            // TODO 3 Add async end-user end!
+            // TODO 6 Add async end-user end
         }
         else {
-            Log.v(LOG_TAG, "Refused to close " + device.toString());
+            throw new NoSuchElementException("IDevice not present in the collection.");
         }
     }
 
     @Override public void switchOn(ISensor sensor) {
         // Note the difference with the set streaming
         if (_devices.contains(sensor.getParentDevice())) {
-            Log.v(LOG_TAG, "Starting async " + sensor.toString());
+            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
             sensor.switchOnAsync();
-            // TODO 3 Add async end-user end!
+            // TODO 6 Add async end-user end
         }
         else {
-            Log.v(LOG_TAG, "Refused start async " + sensor.toString());
+            throw new NoSuchElementException("ISensor not present in the collection.");
         }
     }
 
     @Override public void switchOff(ISensor sensor) {
         // Note the difference with the set streaming
         if (_devices.contains(sensor.getParentDevice())) {
-            Log.v(LOG_TAG, "Stopping async " + sensor.toString());
+            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
             sensor.switchOffAsync();
-            // TODO 3 Add async end-user end!
+            // TODO 6 Add async end-user end
         }
         else {
-            Log.v(LOG_TAG, "Refused start async " + sensor.toString());
+            throw new NoSuchElementException("ISensor not present in the collection.");
         }
     }
 
-    @Override public void setStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link, boolean streaming) {
-        // TODO 2 Do this also on the ISensors (change the hash table type to Booleaned<ISensor>)
-        if (_userLinks.contains(link)) {
+    @Override public void setSensorListened(ISensor sensor, boolean streaming) {
+        /*if (_userLinks.contains(link)) {
             Log.v(LOG_TAG, "Setting streaming " + (streaming ? "ON " : "OFF ") + link.toString());
             link.setEnabled(streaming);
         }
         else {
-            // TODO 3 Maybe an exception
-            Log.v(LOG_TAG, "Refused to connect " + link.toString());
-        }
+            // T ODO 6 Maybe an exception
+            Log.v(LOG_TAG, "Refused to initialize " + link.toString());
+        }*/
+        if (_sensorsListenage.containsKey(sensor))
+            _sensorsListenage.put(sensor, streaming);
+        else
+            throw new NoSuchElementException("ISensor not present in the collection.");
     }
 
-    @Override public boolean getStreaming(ILink<ISensor, IOutput<TimeT, ValueT>> link) {
-        // TODO 2 Do this also on the ISensors (change the hash table type to Booleaned<ISensor>)
-        if (_userLinks.contains(link)) {
+    @Override public boolean isSensorListened(ISensor sensor) {
+        /*if (_userLinks.contains(link)) {
             return link.getEnabled();
         }
         else {
             Log.v(LOG_TAG, "Link not contained " + link.toString());
-            // TODO 3 Maybe an exception
+            // T ODO 6 Maybe an exception
             return false;
-        }
+        }*/
+        // Can throw NullPointer in get in hashCode
+        Boolean x = _sensorsListenage.get(sensor);
+        if (x != null)
+            return x;
+        else
+            throw new NoSuchElementException("ISensor not present in the collection.");
     }
 
     @Override public void start() {
-        for (IDevice d : _devices) {
-            if (d.getState() == DeviceStatus.CONNECTING) {
-                throw new UnsupportedOperationException(
-                        "One or more devices are still CONNECTING. Please wait that every device is connected or disconnected before calling this method.");
-            }
-        }
-        setState(EngineStatus.PREPARING);
+        changeState(EngineStatus.PREPARING);
         renderTheMap();
         for (IDevice d : _devices) {
-            // if NOT_CONNECTED: checked in the connect method
-            connect(d);
+            // only if NOT_INITIALIZED: checked in the initialize method
+            initialize(d);
         }
     }
 
@@ -206,35 +245,32 @@ public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, I
         for (IDevice d : _devices) {
             for (ISensor s : d.getSensors()){
                 _linksMap.put(s, new ArrayList<Booleaned<IOutput<TimeT, ValueT>>>());
-                _sensorValves.put(s, false);
+                _sensorsListenage.put(s, false);
             }
         }
         // Set outputs
-        //     put an output in the corresponding input's entry for each link specified
+        //     put an output in the corresponding input's entry list for each link specified
         for (ILink<ISensor, IOutput<TimeT, ValueT>> l : _userLinks) {
             _linksMap.get(l.getInput()).add(new Booleaned<IOutput<TimeT, ValueT>>(l.getOutput(), l.getEnabled()));
         }
     }
 
-    @Override public void setStreaming(boolean status) {
-        _globalStreaming = status;
-    }
-
-    @Override public boolean getStreaming() {
+    @Override public boolean isPaused() {
         return _globalStreaming;
     }
 
-    // TODO 4 Check if it is problematic to put this constraint between the connection with the devices and the instance's lifetime.
+    @Override public void setPaused(boolean status) {
+        _globalStreaming = status;
+    }
+
     @Override public void close() {
         for (IDevice d : _devices) {
-            // if CONNECTED: checked in the method
-            close(d);
+            // only if INITIALIZED: checked in the method
+            finalize(d);
         }
     }
 
-    EngineStatusCallback<IUserInterface<TimeT, ValueT>> _onStateChanged = null;
-
-    public void setState(EngineStatus status) {
+    protected void changeState(EngineStatus status) {
         _status = status;
         if (_onStateChanged != null)
             _onStateChanged.handle(this, _status);
@@ -245,6 +281,6 @@ public class FlowsMan<TimeT, ValueT> implements IUserInterface<TimeT, ValueT>, I
     }
 
     @Override public EngineStatus getStatus() {
-        return _status;
+        return !_globalStreaming && _status == EngineStatus.STREAMING ? EngineStatus.PAUSED : _status;
     }
 }

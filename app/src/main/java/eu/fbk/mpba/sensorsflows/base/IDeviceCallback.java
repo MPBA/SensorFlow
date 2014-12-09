@@ -5,7 +5,7 @@ package eu.fbk.mpba.sensorsflows.base;
  *
  * @param <DeviceT> the desired type of device: it should be at least an IDevice.
  */
-public interface IDeviceCallback<DeviceT> {
+public interface IDeviceCallback<DeviceT extends IDevice> {
 
     void deviceEvent(DeviceT device, int type, String message);
 

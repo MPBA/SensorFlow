@@ -5,7 +5,7 @@ package eu.fbk.mpba.sensorsflows.base;
  *
  * The user should access to these methods only to have a higher control of the operation.
  */
-public interface ISensor {
+public interface ISensor<DeviceT extends IDevice> {
 
     public void switchOnAsync();
 
@@ -13,5 +13,5 @@ public interface ISensor {
 
     public SensorStatus getState();
 
-    public IDevice getParentDevice();
+    public DeviceT getParentDevice();
 }

@@ -10,39 +10,39 @@ import java.util.Enumeration;
  * The user can control the enumeration of the devices and the outputs and the links between
  * these, their operation and the operation of the engine.
  */
-public interface IUserInterface<TimeT, ValueT> {
+public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor, TimeT, ValueT> {
 
 
     // ITEMS ENUMERATION control part
 
-    public void addDevice(IDevice device);
+    public void addDevice(DeviceT device);
 
-    public Enumeration<IDevice> getDevices();
+    public Enumeration<DeviceT> getDevices();
 
     public void addOutput(IOutput<TimeT, ValueT> output);
 
     public Enumeration<IOutput<TimeT, ValueT>> getOutputs();
 
-    public void addLink(ISensor fromSensor, IOutput<TimeT, ValueT> toOutput, boolean initialState);
+    public void addLink(SensorT fromSensor, IOutput<TimeT, ValueT> toOutput, boolean initialState);
 
 
     // ITEMS OPERATION control part
 
-    public void initialize(IDevice device);
+    public void initialize(DeviceT device);
 
-    public void finalize(IDevice device);
+    public void finalize(DeviceT device);
 
     public void initialize(IOutput<TimeT, ValueT> output);
 
     public void finalize(IOutput<TimeT, ValueT> output);
 
-    public void switchOn(ISensor sensor);
+    public void switchOn(SensorT sensor);
 
-    public void switchOff(ISensor sensor);
+    public void switchOff(SensorT sensor);
 
-    public boolean isSensorListened(ISensor sensor);
+    public boolean isSensorListened(SensorT sensor);
 
-    public void setSensorListened(ISensor sensor, boolean streaming);
+    public void setSensorListened(SensorT sensor, boolean streaming);
 
 
     // ENGINE OPERATION control part
@@ -55,9 +55,9 @@ public interface IUserInterface<TimeT, ValueT> {
 
     public void close();
 
-    public void setOnStateChanged(EventCallback<IUserInterface<TimeT, ValueT>, EngineStatus> callback);
+    public void setOnStateChanged(EventCallback<IUserInterface<DeviceT, SensorT, TimeT, ValueT>, EngineStatus> callback);
 
-    public void setOnDeviceStateChanged(EventCallback<IDevice, DeviceStatus> callback);
+    public void setOnDeviceStateChanged(EventCallback<DeviceT, DeviceStatus> callback);
 
     public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback);
 

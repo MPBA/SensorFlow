@@ -5,7 +5,7 @@ package eu.fbk.mpba.sensorsflows.base;
  * Multiple sensors call this so the sender parameter is the sender sensor.
  * The receiver should implement this.
  */
-public interface ISensorCallback<SensorT, TimeT, ValueT> {
+public interface ISensorCallback<SensorT extends ISensor, TimeT, ValueT> {
 
     void pushData(SensorT sensor, TimeT time, ValueT value);
 

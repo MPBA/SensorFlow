@@ -13,7 +13,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.base.Booleaned;
-import eu.fbk.mpba.sensorsflows.base.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
@@ -23,7 +22,6 @@ import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
-import eu.fbk.mpba.sensorsflows.base.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 import eu.fbk.mpba.sensorsflows.util.IterToEnum;
 
@@ -87,7 +85,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param sender sender
      * @param state arg
      */
-    @Override public void sensorStateChanged(SensorImpl sender, SensorStatus state) {
+    @Override public void sensorStateChanged(SensorImpl sender, TimeT time, SensorStatus state) {
 
     }
 
@@ -97,7 +95,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param time timestamp
      * @param value value
      */
-    @Override public void pushData(SensorImpl sender, TimeT time, ValueT value) {
+    @Override public void offerData(SensorImpl sender, TimeT time, ValueT value) {
 
     }
 
@@ -117,7 +115,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param type event code
      * @param message message text
      */
-    @Override public void sensorEvent(SensorImpl sender, int type, String message) {
+    @Override public void sensorEvent(SensorImpl sender, TimeT time, int type, String message) {
 
     }
 
@@ -140,9 +138,9 @@ public class FlowsMan<TimeT, ValueT> implements
     protected Set<DeviceImpl> _devicesToInit = new HashSet<DeviceImpl>();   // null
     protected Set<IOutput> _outputsToInit = new HashSet<IOutput>();     // null
 
-    // TODO 0 integrate Links
+    // WAS integrate Links
     // protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
-    // TODO 0 integrate Listenage
+    // WAS integrate Listenage
     // protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
     // TODO 2 implement the queues with the synchronization.
     protected Map<IOutput, Queue<Pair<TimeT, ValueT>>> _outputQueues = new Hashtable<IOutput, Queue<Pair<TimeT, ValueT>>>();
@@ -208,13 +206,12 @@ public class FlowsMan<TimeT, ValueT> implements
         return new IterToEnum<IOutput<TimeT, ValueT>>(_userOutputs.iterator());
     }
 
-    // TODO 6 Add async end-user end on the public callbacks before the start
     /**
      * This method allows to initialize the device before the {@code start} call.
      * Should not be so useful or safe to use.
      * @param device {@code IDevice} to initialize
      */
-    @Override public void initialize(DeviceImpl device) {
+    void initialize(DeviceImpl device) {
         // The connection state is checked before the start end callback.
         if (_userDevices.contains(device) &&  device.getState() == DeviceStatus.NOT_INITIALIZED) {
             device.initialize();
@@ -229,7 +226,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * Should not be so useful or safe to use.
      * @param device {@code IDevice} to finalize.
      */
-    @Override public void finalize(DeviceImpl device) {
+    void finalize(DeviceImpl device) {
         // The connection state is not checked
         if (_userDevices.contains(device) &&  device.getState() == DeviceStatus.INITIALIZED) {
             device.finalizeDevice();
@@ -244,7 +241,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * Should not be so useful or safe to use.
      * @param output {@code IOutput} to finalize.
      */
-    @Override public void initialize(IOutput<TimeT, ValueT> output) {
+    void initialize(IOutput<TimeT, ValueT> output) {
         if (_userOutputs.contains(output) &&  output.getState() == OutputStatus.NOT_INITIALIZED) {
             output.initialize();
         }
@@ -258,7 +255,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * Should not be so useful or safe to use.
      * @param output {@code IOutput} to finalize.
      */
-    @Override public void finalize(IOutput<TimeT, ValueT> output) {
+    void finalize(IOutput<TimeT, ValueT> output) {
         if (_userOutputs.contains(output) &&  output.getState() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
         }
@@ -335,7 +332,8 @@ public class FlowsMan<TimeT, ValueT> implements
 
     /**
      * Renders the IO-map and in two times initializes the devices and the outputs.
-     * If a device/output was initialized asyncronously before this call and it is not already
+     *
+     * If a device/output was initialized before this call and it is not already
      * INITIALIZED the engine will wait for it for an indefinite time. In this period the engine
      * status will stay {@code EngineStatus.PREPARING}.
      */
@@ -358,14 +356,15 @@ public class FlowsMan<TimeT, ValueT> implements
         //     put an entry for each sensor (for each device)
         for (DeviceImpl d : _userDevices) {
             for (SensorImpl s : d.getSensors()){
-                _linksMap.put(s, new ArrayList<Booleaned<IOutput<TimeT, ValueT>>>());
-                _sensorsListenage.put(s, false);
+                // FIXME _linksMap.put(s, new ArrayList<Booleaned<IOutput<TimeT, ValueT>>>());
+                // WAS this is already set in the sensor's instance
+                // _sensorsListenage.put(s, false);
             }
         }
         // Set outputs
         //     put an output in the corresponding input's entry list for each link specified
         for (Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>> l : _userLinks) {
-            _linksMap.get(l.first).add(new Booleaned<IOutput<TimeT, ValueT>>(l.second.getTheOther(), l.second.isTrue()));
+            // FIXME _linksMap.get(l.first).add(new Booleaned<IOutput<TimeT, ValueT>>(l.second.getTheOther(), l.second.isTrue()));
         }
     }
 

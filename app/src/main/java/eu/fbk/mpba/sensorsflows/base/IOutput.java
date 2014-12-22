@@ -1,5 +1,9 @@
 package eu.fbk.mpba.sensorsflows.base;
 
+import java.util.Enumeration;
+
+import eu.fbk.mpba.sensorsflows.SensorImpl;
+
 /**
  * Main interface for the data management.
  * TimeT and ValueT must be the same for the whole library.
@@ -7,7 +11,7 @@ package eu.fbk.mpba.sensorsflows.base;
 public interface IOutput<TimeT, ValueT> extends ISensorCallback<ISensor, TimeT, ValueT> {
     public void initialize();
 
-    public void setLinkedSensors();
+    public void setLinkedSensors(Enumeration<SensorImpl> linkedSensors);
 
     public OutputStatus getState();
 

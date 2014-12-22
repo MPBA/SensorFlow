@@ -13,5 +13,7 @@ public interface ISensor<DeviceT extends IDevice> {
 
     public SensorStatus getState();
 
+    public int getAverageInterval();
+
     public DeviceT getParentDevice();
 }

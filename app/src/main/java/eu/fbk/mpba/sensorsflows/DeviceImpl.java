@@ -1,4 +1,7 @@
-package eu.fbk.mpba.sensorsflows.base;
+package eu.fbk.mpba.sensorsflows;
+
+import eu.fbk.mpba.sensorsflows.SensorImpl;
+import eu.fbk.mpba.sensorsflows.base.IDevice;
 
 /**
  * This class adds internal support for the library data-paths.

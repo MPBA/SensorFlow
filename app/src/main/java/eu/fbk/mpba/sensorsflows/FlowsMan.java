@@ -1,25 +1,19 @@
 package eu.fbk.mpba.sensorsflows;
 
 import android.util.Log;
-import android.util.Pair;
 
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
 
-import eu.fbk.mpba.sensorsflows.base.Booleaned;
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
-import eu.fbk.mpba.sensorsflows.base.ISensorCallback;
+import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
@@ -34,9 +28,9 @@ import eu.fbk.mpba.sensorsflows.util.IterToEnum;
  */
 public class FlowsMan<TimeT, ValueT> implements
         IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, IDeviceCallback<DeviceImpl>,
-        ISensorCallback<SensorImpl, TimeT, ValueT>, IOutputCallback<TimeT, ValueT> {
+        ISensorDataCallback<SensorImpl, TimeT, ValueT>, IOutputCallback<TimeT, ValueT> {
 
-    // Extra Interfaces
+    // Status Interface
 
     /**
      * Not for the end-user.
@@ -53,12 +47,14 @@ public class FlowsMan<TimeT, ValueT> implements
                     if (_status == EngineStatus.PREPARING && _devicesToInit.isEmpty()) {
                         // POI Change point
                         _devicesToInit = null;
-                        if (_outputsToInit == null)
-                            changeState(EngineStatus.STREAMING);
                     }
                 }
             }
+            if (_outputsToInit == null)
+                // FIXME WARN User-code time dependency in the output thread or son
+                changeState(EngineStatus.STREAMING);
         }
+        // TODO 5 Manage the other states
     }
 
     /**
@@ -76,12 +72,14 @@ public class FlowsMan<TimeT, ValueT> implements
                     if (_status == EngineStatus.PREPARING && _outputsToInit.isEmpty()) {
                         // POI Change point
                         _outputsToInit = null;
-                        if (_devicesToInit == null)
-                            changeState(EngineStatus.STREAMING);
                     }
                 }
             }
+            if (_devicesToInit == null)
+                // FIXME WARN User-code time dependency in the output thread or son
+                changeState(EngineStatus.STREAMING);
         }
+        // TODO 5 Manage the other states
     }
 
     /**
@@ -92,8 +90,10 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorStateChanged(SensorImpl sender, TimeT time, SensorStatus state) {
-
+        // TODO 4 Check what should happen here (sensor switch-on switch-off) this isn't offered to the output
     }
+
+    // Data and Events Interface
 
     /**
      * Not for the end-user.
@@ -103,20 +103,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param value  value
      */
     @Override
-    public void offerData(SensorImpl sender, TimeT time, ValueT value) {
-
-    }
-
-    /**
-     * Not for the end-user.
-     *
-     * @param sender  sender
-     * @param type    event code
-     * @param message message text
-     */
-    @Override
-    public void deviceEvent(DeviceImpl sender, int type, String message) {
-
+    public void sensorValue(SensorImpl sender, TimeT time, ValueT value) {
+        // TODO 3 Offer to the output
     }
 
     /**
@@ -128,35 +116,46 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorEvent(SensorImpl sender, TimeT time, int type, String message) {
-
+        // TODO 3 Offer to the output
     }
 
+    /**
+     * Not for the end-user.
+     *
+     * @param sender  sender
+     * @param type    event code
+     * @param message message text
+     */
+    @Override
+    public void deviceEvent(DeviceImpl sender, int type, String message) {
+        // TODO 3 Offer to the output
+    }
+
+    //      no outputEvent for now
 
     // Fields
 
-    final String _emAlreadyRendered = "The map is already rendered. No inputs, outputs or links can be added now.";
     final String LOG_TAG = "ALE SFW";
+    final String _emAlreadyRendered = "The map is rendered. No inputs, outputs or links can be added at this time for now.";
     final String _itemsToInitLock = "_itemsToInitLock";
 
     protected EngineStatus _status = EngineStatus.STANDBY;
-
-    protected EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, EngineStatus> _onStateChanged = null;    // null
-    protected EventCallback<DeviceImpl, DeviceStatus> _onDeviceStateChanged = null;                                         // null
-    protected EventCallback<IOutput<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;                             // null
 
     protected Set<DeviceImpl> _userDevices = new HashSet<DeviceImpl>();
     protected Set<IOutput<TimeT, ValueT>> _userOutputs = new HashSet<IOutput<TimeT, ValueT>>();
     // WAS protected ArrayList<Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>> _userLinks;    // null
 
-    protected Set<DeviceImpl> _devicesToInit = new HashSet<DeviceImpl>();   // null
-    protected Set<IOutput> _outputsToInit = new HashSet<IOutput>();     // null
+    protected Set<DeviceImpl> _devicesToInit = new HashSet<DeviceImpl>();                                    // null
+    protected Set<IOutput> _outputsToInit = new HashSet<IOutput>();                                       // null
 
-    // WAS integrate Links (Sensor, List(Output, Boolean)), DONE
-    // protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
-    // WAS integrate Listenage, DONE
-    // protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
-    // TODO 2 implement the queues with the synchronization.
-    protected Map<IOutput, Queue<Pair<TimeT, ValueT>>> _outputQueues = new Hashtable<IOutput, Queue<Pair<TimeT, ValueT>>>();
+    protected EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>
+            , EngineStatus> _onStateChanged = null;                   // null
+    protected EventCallback<DeviceImpl, DeviceStatus> _onDeviceStateChanged = null;                 // null
+    protected EventCallback<IOutput<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
+
+    // WAS protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
+    // WAS protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
+    // WAS protected Map<IOutput, Queue<Pair<TimeT, ValueT>>> _outputQueues = new Hashtable<IOutput, Queue<Pair<TimeT, ValueT>>>();
 
 
     // Engine implementation
@@ -432,6 +431,22 @@ public class FlowsMan<TimeT, ValueT> implements
             _status = paused ? EngineStatus.PAUSED : EngineStatus.STREAMING;
     }
 
+    protected void changeState(EngineStatus status) {
+        _status = status;
+        if (_onStateChanged != null)
+            _onStateChanged.handle(this, _status);
+    }
+
+    /**
+     * Gets the status of the engine.
+     *
+     * @return The actual status of the engine.
+     */
+    @Override
+    public EngineStatus getStatus() {
+        return _status;
+    }
+
     /**
      * This method finalizes every device and every output and prepares the instance to be trashed.
      */
@@ -447,10 +462,16 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
-    protected void changeState(EngineStatus status) {
-        _status = status;
-        if (_onStateChanged != null)
-            _onStateChanged.handle(this, _status);
+    /**
+     * Finalizes the object calling also the {@code close} method.
+     *
+     * @throws Throwable
+     */
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        // After, Object.finalize()
+        super.finalize();
     }
 
     /**
@@ -481,27 +502,5 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
-    }
-
-    /**
-     * Gets the status of the engine.
-     *
-     * @return The actual status of the engine.
-     */
-    @Override
-    public EngineStatus getStatus() {
-        return _status;
-    }
-
-    /**
-     * Finalizes the object calling also the {@code close} method.
-     *
-     * @throws Throwable
-     */
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        // After, Object.finalize()
-        super.finalize();
     }
 }

@@ -8,7 +8,7 @@ import eu.fbk.mpba.sensorsflows.SensorImpl;
  * Main interface for the data management.
  * TimeT and ValueT must be the same for the whole library.
  */
-public interface IOutput<TimeT, ValueT> extends ISensorCallback<ISensor, TimeT, ValueT> {
+public interface IOutput<TimeT, ValueT> extends ISensorDataCallback<ISensor, TimeT, ValueT> {
     public void initialize();
 
     public void setLinkedSensors(Enumeration<SensorImpl> linkedSensors);

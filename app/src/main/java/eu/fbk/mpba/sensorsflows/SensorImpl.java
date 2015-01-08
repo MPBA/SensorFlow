@@ -10,24 +10,29 @@ import eu.fbk.mpba.sensorsflows.util.IterToEnum;
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class SensorImpl<TypeT, ValueT> implements ISensor<DeviceImpl> {
-    private boolean _listened = false;
-    private ArrayList<IOutput> _outputs;
+public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl> {
     private int _avgStreamingInterval = 0;
+
+
+    private boolean _listened = false;
 
     public boolean isListened() {
         return _listened;
     }
+
     public void setListened(boolean listened) {
         this._listened = listened;
     }
 
-    Enumeration<IOutput> getOutputs() {
-        return new IterToEnum<IOutput>(_outputs.iterator());
+
+    private ArrayList<IOutput<TimeT, ValueT>> _outputs = new ArrayList<IOutput<TimeT, ValueT>>();
+
+    void addOutput(IOutput<TimeT, ValueT> _output) {
+        this._outputs.add(_output);
     }
 
-    void setOutputs(ArrayList<IOutput> _outputs) {
-        this._outputs = _outputs;
+    Enumeration<IOutput<TimeT, ValueT>> getOutputs() {
+        return new IterToEnum<IOutput<TimeT, ValueT>>(_outputs.iterator());
     }
 
 }

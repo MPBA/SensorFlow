@@ -10,7 +10,7 @@ import java.util.Enumeration;
  * The user can control the enumeration of the devices and the outputs and the links between
  * these, their operation and the operation of the engine.
  */
-public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor, TimeT, ValueT> {
+public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor<DeviceT>, TimeT, ValueT> {
 
 
     // ITEMS ENUMERATION control part
@@ -23,7 +23,7 @@ public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor
 
     public Enumeration<IOutput<TimeT, ValueT>> getOutputs();
 
-    public void addLink(SensorT fromSensor, IOutput<TimeT, ValueT> toOutput, boolean initialState);
+    public void addLink(SensorT fromSensor, IOutput<TimeT, ValueT> toOutput);
 
 
     // ITEMS OPERATION control part

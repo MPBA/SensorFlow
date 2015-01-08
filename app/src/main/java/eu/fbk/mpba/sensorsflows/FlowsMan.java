@@ -33,17 +33,19 @@ import eu.fbk.mpba.sensorsflows.util.IterToEnum;
  * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
 public class FlowsMan<TimeT, ValueT> implements
-        IUserInterface<DeviceImpl, SensorImpl, TimeT, ValueT>, IDeviceCallback<DeviceImpl>,
+        IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, IDeviceCallback<DeviceImpl>,
         ISensorCallback<SensorImpl, TimeT, ValueT>, IOutputCallback<TimeT, ValueT> {
 
     // Extra Interfaces
 
     /**
      * Not for the end-user.
+     *
      * @param sender sender
-     * @param state arg
+     * @param state  arg
      */
-    @Override public void deviceStateChanged(DeviceImpl sender, DeviceStatus state) {
+    @Override
+    public void deviceStateChanged(DeviceImpl sender, DeviceStatus state) {
         if (state == DeviceStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_devicesToInit.contains(sender)) {
@@ -61,10 +63,12 @@ public class FlowsMan<TimeT, ValueT> implements
 
     /**
      * Not for the end-user.
+     *
      * @param sender sender
-     * @param state arg
+     * @param state  arg
      */
-    @Override public void outputStateChanged(IOutput<TimeT, ValueT> sender, OutputStatus state) {
+    @Override
+    public void outputStateChanged(IOutput<TimeT, ValueT> sender, OutputStatus state) {
         if (state == OutputStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_outputsToInit.contains(sender)) {
@@ -82,65 +86,74 @@ public class FlowsMan<TimeT, ValueT> implements
 
     /**
      * Not for the end-user.
+     *
      * @param sender sender
-     * @param state arg
+     * @param state  arg
      */
-    @Override public void sensorStateChanged(SensorImpl sender, TimeT time, SensorStatus state) {
+    @Override
+    public void sensorStateChanged(SensorImpl sender, TimeT time, SensorStatus state) {
 
     }
 
     /**
      * Not for the end-user.
+     *
      * @param sender sender
-     * @param time timestamp
-     * @param value value
+     * @param time   timestamp
+     * @param value  value
      */
-    @Override public void offerData(SensorImpl sender, TimeT time, ValueT value) {
+    @Override
+    public void offerData(SensorImpl sender, TimeT time, ValueT value) {
 
     }
 
     /**
      * Not for the end-user.
-     * @param sender sender
-     * @param type event code
+     *
+     * @param sender  sender
+     * @param type    event code
      * @param message message text
      */
-    @Override public void deviceEvent(DeviceImpl sender, int type, String message) {
+    @Override
+    public void deviceEvent(DeviceImpl sender, int type, String message) {
 
     }
 
     /**
      * Not for the end-user.
-     * @param sender sender
-     * @param type event code
+     *
+     * @param sender  sender
+     * @param type    event code
      * @param message message text
      */
-    @Override public void sensorEvent(SensorImpl sender, TimeT time, int type, String message) {
+    @Override
+    public void sensorEvent(SensorImpl sender, TimeT time, int type, String message) {
 
     }
 
 
     // Fields
 
+    final String _emAlreadyRendered = "The map is already rendered. No inputs, outputs or links can be added now.";
     final String LOG_TAG = "ALE SFW";
     final String _itemsToInitLock = "_itemsToInitLock";
 
     protected EngineStatus _status = EngineStatus.STANDBY;
 
-    protected EventCallback<IUserInterface<DeviceImpl, SensorImpl, TimeT, ValueT>, EngineStatus> _onStateChanged = null;    // null
+    protected EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, EngineStatus> _onStateChanged = null;    // null
     protected EventCallback<DeviceImpl, DeviceStatus> _onDeviceStateChanged = null;                                         // null
     protected EventCallback<IOutput<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;                             // null
 
     protected Set<DeviceImpl> _userDevices = new HashSet<DeviceImpl>();
     protected Set<IOutput<TimeT, ValueT>> _userOutputs = new HashSet<IOutput<TimeT, ValueT>>();
-    protected ArrayList<Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>> _userLinks;    // null
+    // WAS protected ArrayList<Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>> _userLinks;    // null
 
     protected Set<DeviceImpl> _devicesToInit = new HashSet<DeviceImpl>();   // null
     protected Set<IOutput> _outputsToInit = new HashSet<IOutput>();     // null
 
-    // WAS integrate Links
+    // WAS integrate Links (Sensor, List(Output, Boolean)), DONE
     // protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
-    // WAS integrate Listenage
+    // WAS integrate Listenage, DONE
     // protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
     // TODO 2 implement the queues with the synchronization.
     protected Map<IOutput, Queue<Pair<TimeT, ValueT>>> _outputQueues = new Hashtable<IOutput, Queue<Pair<TimeT, ValueT>>>();
@@ -155,130 +168,151 @@ public class FlowsMan<TimeT, ValueT> implements
         changeState(EngineStatus.STANDBY);
     }
 
+    //      STANDBY inputs (proper)
+
     /**
      * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-map rendering.
+     *
      * @param device Device to add.
      */
-    @Override public void addDevice(DeviceImpl device) {
+    @Override
+    public void addDevice(DeviceImpl device) {
         if (_status == EngineStatus.STANDBY)
             _userDevices.add(device);
         else
-            throw new UnsupportedOperationException("The map is already rendered. No inputs, outputs or links can be added now.");
+            throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     /**
-     * Adds a link to the links that will be mapped in the IO-map when {@code start} will be called.
+     * Adds a link between a sensor and an output (N to M relation) before the {@code start} call.
+     *
      * @param fromSensor Input sensor retreived from a device.
-     * @param toOutput Output channel.
-     * @param initialEnabledState Initial enabling state of the link.
+     * @param toOutput   Output channel.
      */
-    @Override public void addLink(SensorImpl fromSensor, IOutput<TimeT, ValueT> toOutput, boolean initialEnabledState) {
-        if (_status == EngineStatus.STANDBY)
-            _userLinks.add(new Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>(fromSensor, new Booleaned<IOutput<TimeT, ValueT>>(toOutput, initialEnabledState)));
-        else
-            throw new UnsupportedOperationException("The map is already rendered. No inputs, outputs or links can be added now.");
+    @Override
+    public void addLink(SensorImpl<TimeT, ValueT> fromSensor, IOutput<TimeT, ValueT> toOutput) {
+        if (_status == EngineStatus.STANDBY) {
+            // WAS _userLinks.add(new Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>(fromSensor, new Booleaned<IOutput<TimeT, ValueT>>(toOutput, initialEnabledState)));
+            // TODO N1 Consider enabling/disabling each link
+            fromSensor.addOutput(toOutput);
+        } else
+            throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     /**
      * Adds an output to the enumeration, this is to be used before the {@code start} call, before the internal in-out map rendering.
+     *
      * @param output Output to add.
      */
-    @Override public void addOutput(IOutput<TimeT, ValueT> output) {
+    @Override
+    public void addOutput(IOutput<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY)
             _userOutputs.add(output);
         else
-            throw new UnsupportedOperationException("The map is already rendered. No inputs, outputs or links can be added now.");
+            throw new UnsupportedOperationException(_emAlreadyRendered);
     }
+
+    //      STANDBY aux gets (proper)
 
     /**
      * Enumerates every Device managed.
+     *
      * @return Enumerator usable trough a for (IDevice d : enumerator)
      */
-    @Override public Enumeration<DeviceImpl> getDevices() {
+    @Override
+    public Enumeration<DeviceImpl> getDevices() {
         return new IterToEnum<DeviceImpl>(_userDevices.iterator());
     }
 
     /**
      * Enumerates every Output managed.
+     *
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
-    @Override public Enumeration<IOutput<TimeT, ValueT>> getOutputs() {
+    @Override
+    public Enumeration<IOutput<TimeT, ValueT>> getOutputs() {
         return new IterToEnum<IOutput<TimeT, ValueT>>(_userOutputs.iterator());
     }
 
+    //      Internal init and final management
+
     /**
      * This method allows to initialize the device before the {@code start} call.
-     * Should not be so useful or safe to use.
+     * Made private
+     *
      * @param device {@code IDevice} to initialize
      */
     void initialize(DeviceImpl device) {
         // The connection state is checked before the start end callback.
-        if (_userDevices.contains(device) &&  device.getState() == DeviceStatus.NOT_INITIALIZED) {
+        if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
             device.initialize();
-        }
-        else {
-            throw new NoSuchElementException("IDevice not present in the collection.");
-        }
-    }
-
-    /**
-     * This method allows to finalize the device before the {@code close} call.
-     * Should not be so useful or safe to use.
-     * @param device {@code IDevice} to finalize.
-     */
-    void finalize(DeviceImpl device) {
-        // The connection state is not checked
-        if (_userDevices.contains(device) &&  device.getState() == DeviceStatus.INITIALIZED) {
-            device.finalizeDevice();
-        }
-        else {
-            throw new NoSuchElementException("IDevice not present in the collection.");
+        } else {
+            Log.w(LOG_TAG, "IDevice not NOT_INITIALIZED: " + device.toString());
         }
     }
 
     /**
      * This method allows to initialize the device before the {@code start} call.
-     * Should not be so useful or safe to use.
+     * Made private
+     *
      * @param output {@code IOutput} to finalize.
      */
     void initialize(IOutput<TimeT, ValueT> output) {
-        if (_userOutputs.contains(output) &&  output.getState() == OutputStatus.NOT_INITIALIZED) {
+        if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
             output.initialize();
-        }
-        else {
-            throw new NoSuchElementException("IOutput not present in the collection.");
+        } else {
+            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
         }
     }
 
     /**
      * This method allows to finalize the device before the {@code close} call.
-     * Should not be so useful or safe to use.
+     * Made private
+     *
+     * @param device {@code IDevice} to finalize.
+     */
+    void finalize(DeviceImpl device) {
+        // The connection state is not checked
+        if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.INITIALIZED) {
+            device.finalizeDevice();
+        } else {
+            Log.w(LOG_TAG, "IDevice not INITIALIZED: " + device.toString());
+        }
+    }
+
+    /**
+     * This method allows to finalize the device before the {@code close} call.
+     * Made private
+     *
      * @param output {@code IOutput} to finalize.
      */
     void finalize(IOutput<TimeT, ValueT> output) {
-        if (_userOutputs.contains(output) &&  output.getState() == OutputStatus.INITIALIZED) {
+        if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
-        }
-        else {
-            throw new NoSuchElementException("IOutput not present in the collection.");
+        } else {
+            Log.w(LOG_TAG, "IOutput not INITIALIZED: " + output.toString());
         }
     }
+
+    //      ACTIVE operation commands (improper, replicate in the implementations)
+    //      TODO 4 improper, replicate in the implementations
 
     /**
      * This method asks to the device to switch on a sensor.
      * Works if the engine is in {@code EngineStatus.STREAMING} or in
      * {@code EngineStatus.PAUSED} state.
+     *
      * @param sensor {@code ISensor} to switch on.
      */
-    @Override public void switchOn(SensorImpl sensor) {
+    @Override
+    public void switchOn(SensorImpl<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
         if ((_status == EngineStatus.STREAMING ||
-             _status == EngineStatus.PAUSED) &&
+                _status == EngineStatus.PAUSED) &&
                 _userDevices.contains(sensor.getParentDevice())) {
             Log.v(LOG_TAG, "Switching on async " + sensor.toString());
             sensor.switchOnAsync();
-        }
-        else {
+        } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }
     }
@@ -287,17 +321,18 @@ public class FlowsMan<TimeT, ValueT> implements
      * This method asks to the device to switch off a sensor.
      * Works if the engine is in {@code EngineStatus.STREAMING} or in
      * {@code EngineStatus.PAUSED} state.
+     *
      * @param sensor {@code ISensor} to switch off.
      */
-    @Override public void switchOff(SensorImpl sensor) {
+    @Override
+    public void switchOff(SensorImpl<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
         if ((_status == EngineStatus.STREAMING ||
-             _status == EngineStatus.PAUSED) &&
+                _status == EngineStatus.PAUSED) &&
                 _userDevices.contains(sensor.getParentDevice())) {
             Log.v(LOG_TAG, "Switching off async " + sensor.toString());
             sensor.switchOffAsync();
-        }
-        else {
+        } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }
     }
@@ -306,10 +341,12 @@ public class FlowsMan<TimeT, ValueT> implements
      * Sets weather the engine should receive the data from the sensor or not.
      * This feature is useful if it is needed to start an acquisition from a sensor with a low start
      * lag as before the start the sensor is active but simply the data is not notified.
-     * @param sensor The sensor.
+     *
+     * @param sensor    The sensor.
      * @param streaming If to listen to the data events of the sensor.
      */
-    @Override public void setSensorListened(SensorImpl sensor, boolean streaming) {
+    @Override
+    public void setSensorListened(SensorImpl<TimeT, ValueT> sensor, boolean streaming) {
         if (_userDevices.contains(sensor.getParentDevice()))
             sensor.setListened(streaming);
         else
@@ -320,26 +357,32 @@ public class FlowsMan<TimeT, ValueT> implements
      * Gets weather the engine should receive the data from the sensor or not.
      * This feature is useful if it is needed to start an acquisition from a sensor with a low start
      * lag as before the start the sensor is active but simply the data is not notified.
+     *
      * @param sensor The sensor.
      * @return If the sensor is listened.
      */
-    @Override public boolean isSensorListened(SensorImpl sensor) {
+    @Override
+    public boolean isSensorListened(SensorImpl<TimeT, ValueT> sensor) {
         if (_userDevices.contains(sensor.getParentDevice()))
             return sensor.isListened();
         else
             throw new NoSuchElementException("ISensor not present in the collection.");
     }
 
+    //      Engine operation
+
     /**
-     * Renders the IO-map and in two times initializes the devices and the outputs.
-     *
-     * If a device/output was initialized before this call and it is not already
-     * INITIALIZED the engine will wait for it for an indefinite time. In this period the engine
-     * status will stay {@code EngineStatus.PREPARING}.
+     * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
+     * <p/>
+     * If a device/output was initialized before this call and it is not already INITIALIZED the
+     * engine will wait for it for an indefinite time. In this period the engine status will stay
+     * {@code EngineStatus.PREPARING}.
      */
-    @Override public void start() {
+    @Override
+    public void start() {
         changeState(EngineStatus.PREPARING);
-        renderTheMap();
+        // WAS renderTheMap();
+        // Launches the initializations
         for (DeviceImpl d : _userDevices) {
             // only if NOT_INITIALIZED: checked in the initialize method
             initialize(d);
@@ -350,37 +393,40 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
-    protected void renderTheMap() {
-        // Render the links map
-        // Build inputs
-        //     put an entry for each sensor (for each device)
-        for (DeviceImpl d : _userDevices) {
-            for (SensorImpl s : d.getSensors()){
-                // FIXME _linksMap.put(s, new ArrayList<Booleaned<IOutput<TimeT, ValueT>>>());
-                // WAS this is already set in the sensor's instance
-                // _sensorsListenage.put(s, false);
-            }
-        }
-        // Set outputs
-        //     put an output in the corresponding input's entry list for each link specified
-        for (Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>> l : _userLinks) {
-            // FIXME _linksMap.get(l.first).add(new Booleaned<IOutput<TimeT, ValueT>>(l.second.getTheOther(), l.second.isTrue()));
-        }
-    }
+    // WAS
+    //protected void renderTheMap() {
+    //    // Render the links map
+    //    // Build inputs
+    //    //     put an entry for each sensor (for each device)
+    //    for (DeviceImpl d : _userDevices) {
+    //        for (SensorImpl s : d.getSensors()){
+    //            ArrayList<IOutput<TimeT, ValueT>> l = new ArrayList<IOutput<TimeT, ValueT>>();
+    //            for (Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>> l : _userLinks) {
+    //                // TO DO 8 Is the pointer comparison logically correct? (For now it is the same instance else implement the equals)
+    //                if (l.first == s)
+    //
+    //            }
+    //        }
+    //    }
+    //}
 
     /**
      * Returns weather the global streaming is paused.
+     *
      * @return Boolean value.
      */
-    @Override public boolean isPaused() {
+    @Override
+    public boolean isPaused() {
         return _status == EngineStatus.PAUSED;
     }
 
     /**
      * Allows to pause or to resume the streaming in the faster way.
+     *
      * @param paused Boolean value.
      */
-    @Override public void setPaused(boolean paused) {
+    @Override
+    public void setPaused(boolean paused) {
         if (_status == EngineStatus.STREAMING || _status == EngineStatus.PAUSED)
             _status = paused ? EngineStatus.PAUSED : EngineStatus.STREAMING;
     }
@@ -388,7 +434,8 @@ public class FlowsMan<TimeT, ValueT> implements
     /**
      * This method finalizes every device and every output and prepares the instance to be trashed.
      */
-    @Override public void close() {
+    @Override
+    public void close() {
         for (DeviceImpl d : _userDevices) {
             // only if INITIALIZED: checked in the method
             finalize(d);
@@ -407,42 +454,53 @@ public class FlowsMan<TimeT, ValueT> implements
 
     /**
      * Sets a listener to receive the engine state changes.
+     *
      * @param callback Callback to call when the engine state changes.
      */
-    @Override public void setOnStateChanged(EventCallback<IUserInterface<DeviceImpl, SensorImpl, TimeT, ValueT>, EngineStatus> callback) {
+    @Override
+    public void setOnStateChanged(EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, EngineStatus> callback) {
         _onStateChanged = callback;
     }
 
     /**
      * Sets a listener to receive every device's state change.
+     *
      * @param callback Callback to call when any device's state changes.
      */
-    @Override public void setOnDeviceStateChanged(EventCallback<DeviceImpl, DeviceStatus> callback) {
+    @Override
+    public void setOnDeviceStateChanged(EventCallback<DeviceImpl, DeviceStatus> callback) {
         _onDeviceStateChanged = callback;
     }
 
     /**
      * Sets a listener to receive every output's state change.
+     *
      * @param callback Callback to call when any device's state changes.
      */
-    @Override public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback) {
+    @Override
+    public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
     }
 
     /**
      * Gets the status of the engine.
+     *
      * @return The actual status of the engine.
      */
-    @Override public EngineStatus getStatus() {
+    @Override
+    public EngineStatus getStatus() {
         return _status;
     }
 
     /**
      * Finalizes the object calling also the {@code close} method.
+     *
      * @throws Throwable
      */
-    @Override protected void finalize() throws Throwable {
+    @Override
+    protected void finalize() throws Throwable {
         close();
+        // After, Object.finalize()
         super.finalize();
     }
 }

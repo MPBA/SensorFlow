@@ -294,8 +294,7 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
-    //      ACTIVE operation commands (improper, replicate in the implementations)
-    //      TODO 4 improper, replicate in the implementations
+    //      ACTIVE operation commands (proper, but public in the implementations)
 
     /**
      * This method asks to the device to switch on a sensor.
@@ -336,6 +335,8 @@ public class FlowsMan<TimeT, ValueT> implements
             throw new NoSuchElementException("ISensor not present in the collection.");
         }
     }
+
+    //      ACTIVE operation commands (improper, public in the implementations)
 
     /**
      * Sets weather the engine should receive the data from the sensor or not.

@@ -129,6 +129,7 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
+    //      no deviceEvent
     //      no outputEvent for now
 
     // Fields

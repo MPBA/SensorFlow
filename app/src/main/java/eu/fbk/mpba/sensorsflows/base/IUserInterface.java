@@ -1,7 +1,5 @@
 package eu.fbk.mpba.sensorsflows.base;
 
-import java.util.Enumeration;
-
 /**
  * Main interface for the flows control.
  *
@@ -17,11 +15,11 @@ public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor
 
     public void addDevice(DeviceT device);
 
-    public Enumeration<DeviceT> getDevices();
+    public Iterable<DeviceT> getDevices();
 
     public void addOutput(IOutput<TimeT, ValueT> output);
 
-    public Enumeration<IOutput<TimeT, ValueT>> getOutputs();
+    public Iterable<IOutput<TimeT, ValueT>> getOutputs();
 
     public void addLink(SensorT fromSensor, IOutput<TimeT, ValueT> toOutput);
 

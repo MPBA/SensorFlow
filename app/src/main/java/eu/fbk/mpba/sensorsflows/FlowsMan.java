@@ -7,8 +7,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
-import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
+import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;

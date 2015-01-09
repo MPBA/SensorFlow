@@ -2,7 +2,6 @@ package eu.fbk.mpba.sensorsflows;
 
 import android.util.Log;
 
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -17,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
-import eu.fbk.mpba.sensorsflows.util.IterToEnum;
+import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 /**
  * FlowsMan is the class that represents the engine of the library.
@@ -54,7 +53,7 @@ public class FlowsMan<TimeT, ValueT> implements
                 // FIXME WARN User-code time dependency in the output thread or son
                 changeState(EngineStatus.STREAMING);
         }
-        // TODO 5 Manage the other states
+        // TODO 7 Manage the other states
     }
 
     /**
@@ -79,7 +78,7 @@ public class FlowsMan<TimeT, ValueT> implements
                 // FIXME WARN User-code time dependency in the output thread or son
                 changeState(EngineStatus.STREAMING);
         }
-        // TODO 5 Manage the other states
+        // TODO 7 Manage the other states
     }
 
     /**
@@ -90,13 +89,14 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorStateChanged(SensorImpl sender, TimeT time, SensorStatus state) {
-        // TODO 4 Check what should happen here (sensor switch-on switch-off) this isn't offered to the output
+        // TO DO The sensor has to send also an event on a status change.
     }
 
     // Data and Events Interface
 
     /**
      * Not for the end-user.
+     * The sensor calls this when it has a new value.
      *
      * @param sender sender
      * @param time   timestamp
@@ -104,7 +104,12 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorValue(SensorImpl sender, TimeT time, ValueT value) {
-        // TODO 3 Offer to the output
+        if (sender.isListened()) {
+            for (Object o : sender.getOutputs()) {
+                //noinspection unchecked
+                ((OutputImpl<TimeT, ValueT>)o).sensorValue(sender, time, value);
+            }
+        }
     }
 
     /**
@@ -116,19 +121,12 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorEvent(SensorImpl sender, TimeT time, int type, String message) {
-        // TODO 3 Offer to the output
-    }
-
-    /**
-     * Not for the end-user.
-     *
-     * @param sender  sender
-     * @param type    event code
-     * @param message message text
-     */
-    @Override
-    public void deviceEvent(DeviceImpl sender, int type, String message) {
-        // TODO 3 Offer to the output
+        if (sender.isListened()) {
+            for (Object o : sender.getOutputs()) {
+                //noinspection unchecked
+                ((OutputImpl<TimeT, ValueT>)o).sensorEvent(sender, time, type, message);
+            }
+        }
     }
 
     //      no outputEvent for now
@@ -192,8 +190,9 @@ public class FlowsMan<TimeT, ValueT> implements
     public void addLink(SensorImpl<TimeT, ValueT> fromSensor, IOutput<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
             // WAS _userLinks.add(new Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>(fromSensor, new Booleaned<IOutput<TimeT, ValueT>>(toOutput, initialEnabledState)));
-            // TODO N1 Consider enabling/disabling each link
-            fromSensor.addOutput(toOutput);
+            // TODO N1 Remember enabling/disabling each link
+            // FIXME WARN Unchecked cast
+            fromSensor.addOutput((OutputImpl<TimeT, ValueT>)toOutput);
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -219,8 +218,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IDevice d : enumerator)
      */
     @Override
-    public Enumeration<DeviceImpl> getDevices() {
-        return new IterToEnum<DeviceImpl>(_userDevices.iterator());
+    public Iterable<DeviceImpl> getDevices() {
+        return new ReadOnlyIterable<DeviceImpl>(_userDevices.iterator());
     }
 
     /**
@@ -229,8 +228,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
     @Override
-    public Enumeration<IOutput<TimeT, ValueT>> getOutputs() {
-        return new IterToEnum<IOutput<TimeT, ValueT>>(_userOutputs.iterator());
+    public Iterable<IOutput<TimeT, ValueT>> getOutputs() {
+        return new ReadOnlyIterable<IOutput<TimeT, ValueT>>(_userOutputs.iterator());
     }
 
     //      Internal init and final management

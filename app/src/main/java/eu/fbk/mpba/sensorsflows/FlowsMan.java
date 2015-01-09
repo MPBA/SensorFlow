@@ -2,9 +2,10 @@ package eu.fbk.mpba.sensorsflows;
 
 import android.util.Log;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
@@ -26,7 +27,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
 public class FlowsMan<TimeT, ValueT> implements
-        IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, IDeviceCallback<DeviceImpl>,
+        IUserInterface<DeviceImpl<TimeT, ValueT>, SensorImpl<TimeT, ValueT>, OutputImpl<TimeT, ValueT>>, IDeviceCallback<DeviceImpl>,
         ISensorDataCallback<SensorImpl, TimeT, ValueT>, IOutputCallback<TimeT, ValueT> {
 
     // Status Interface
@@ -140,17 +141,18 @@ public class FlowsMan<TimeT, ValueT> implements
 
     protected EngineStatus _status = EngineStatus.STANDBY;
 
-    protected Set<DeviceImpl> _userDevices = new HashSet<DeviceImpl>();
-    protected Set<IOutput<TimeT, ValueT>> _userOutputs = new HashSet<IOutput<TimeT, ValueT>>();
+    protected List<DeviceImpl<TimeT, ValueT>> _userDevices = new ArrayList<DeviceImpl<TimeT, ValueT>>();
+    protected List<OutputImpl<TimeT, ValueT>> _userOutputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
+    private Hashtable<IOutput, List<SensorImpl>> _outputsSensors = new Hashtable<IOutput, List<SensorImpl>>();
     // WAS protected ArrayList<Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>> _userLinks;    // null
 
-    protected Set<DeviceImpl> _devicesToInit = new HashSet<DeviceImpl>();                                    // null
-    protected Set<IOutput> _outputsToInit = new HashSet<IOutput>();                                       // null
+    protected List<DeviceImpl> _devicesToInit = new ArrayList<DeviceImpl>();                                    // null
+    protected List<IOutput> _outputsToInit = new ArrayList<IOutput>();                                       // null
 
-    protected EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>
+    protected EventCallback<IUserInterface<DeviceImpl<TimeT, ValueT>, SensorImpl<TimeT, ValueT>, OutputImpl<TimeT, ValueT>>
             , EngineStatus> _onStateChanged = null;                   // null
-    protected EventCallback<DeviceImpl, DeviceStatus> _onDeviceStateChanged = null;                 // null
-    protected EventCallback<IOutput<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
+    protected EventCallback<DeviceImpl<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
+    protected EventCallback<OutputImpl<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
 
     // WAS protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
     // WAS protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
@@ -174,9 +176,11 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param device Device to add.
      */
     @Override
-    public void addDevice(DeviceImpl device) {
-        if (_status == EngineStatus.STANDBY)
+    public void addDevice(DeviceImpl<TimeT, ValueT> device) {
+        if (_status == EngineStatus.STANDBY) {
+            device.setOutputCallbackManager(this);
             _userDevices.add(device);
+        }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -188,12 +192,13 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param toOutput   Output channel.
      */
     @Override
-    public void addLink(SensorImpl<TimeT, ValueT> fromSensor, IOutput<TimeT, ValueT> toOutput) {
+    public void addLink(SensorImpl<TimeT, ValueT> fromSensor, OutputImpl<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
             // WAS _userLinks.add(new Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>(fromSensor, new Booleaned<IOutput<TimeT, ValueT>>(toOutput, initialEnabledState)));
             // TODO N1 Remember enabling/disabling each link
             // FIXME WARN Unchecked cast
-            fromSensor.addOutput((OutputImpl<TimeT, ValueT>)toOutput);
+            fromSensor.addOutput(toOutput);
+            _outputsSensors.get(toOutput).add(fromSensor);
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -204,9 +209,12 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param output Output to add.
      */
     @Override
-    public void addOutput(IOutput<TimeT, ValueT> output) {
-        if (_status == EngineStatus.STANDBY)
+    public void addOutput(OutputImpl<TimeT, ValueT> output) {
+        if (_status == EngineStatus.STANDBY) {
+            output.setOutputCallbackManager(this);
             _userOutputs.add(output);
+            _outputsSensors.put(output, new ArrayList<SensorImpl>());
+        }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -219,8 +227,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IDevice d : enumerator)
      */
     @Override
-    public Iterable<DeviceImpl> getDevices() {
-        return new ReadOnlyIterable<DeviceImpl>(_userDevices.iterator());
+    public Iterable<DeviceImpl<TimeT, ValueT>> getDevices() {
+        return new ReadOnlyIterable<DeviceImpl<TimeT, ValueT>>(_userDevices.iterator());
     }
 
     /**
@@ -229,8 +237,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
     @Override
-    public Iterable<IOutput<TimeT, ValueT>> getOutputs() {
-        return new ReadOnlyIterable<IOutput<TimeT, ValueT>>(_userOutputs.iterator());
+    public Iterable<OutputImpl<TimeT, ValueT>> getOutputs() {
+        return new ReadOnlyIterable<OutputImpl<TimeT, ValueT>>(_userOutputs.iterator());
     }
 
     //      Internal init and final management
@@ -389,6 +397,8 @@ public class FlowsMan<TimeT, ValueT> implements
         }
         for (IOutput<TimeT, ValueT> o : _userOutputs) {
             // only if NOT_INITIALIZED: checked in the initialize method
+            o.setLinkedSensors(_outputsSensors.get(o));
+            _outputsSensors.remove(o);
             initialize(o);
         }
     }
@@ -480,7 +490,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStateChanged(EventCallback<IUserInterface<DeviceImpl, SensorImpl<TimeT, ValueT>, TimeT, ValueT>, EngineStatus> callback) {
+    public void setOnStateChanged(EventCallback<IUserInterface<DeviceImpl<TimeT, ValueT>, SensorImpl<TimeT, ValueT>, OutputImpl<TimeT, ValueT>>, EngineStatus> callback) {
         _onStateChanged = callback;
     }
 
@@ -490,7 +500,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStateChanged(EventCallback<DeviceImpl, DeviceStatus> callback) {
+    public void setOnDeviceStateChanged(EventCallback<DeviceImpl<TimeT, ValueT>, DeviceStatus> callback) {
         _onDeviceStateChanged = callback;
     }
 
@@ -500,7 +510,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback) {
+    public void setOnOutputStateChanged(EventCallback<OutputImpl<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
     }
 }

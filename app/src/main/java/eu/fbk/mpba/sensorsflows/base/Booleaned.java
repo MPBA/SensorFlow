@@ -14,14 +14,14 @@ public class Booleaned<T> {
     }
 
     public void setTrue(boolean trueness) {
-        _trueness = _trueness;
+        _trueness = trueness;
     }
 
     public T getTheOther() {
         return _object;
     }
 
-    public void setObject(T _object) {
-        _object = _object;
+    public void setObject(T object) {
+        _object = object;
     }
 }

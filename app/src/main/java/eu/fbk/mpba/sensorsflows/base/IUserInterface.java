@@ -8,7 +8,7 @@ package eu.fbk.mpba.sensorsflows.base;
  * The user can control the enumeration of the devices and the outputs and the links between
  * these, their operation and the operation of the engine.
  */
-public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor<DeviceT>, TimeT, ValueT> {
+public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor<DeviceT>, OutputT extends IOutput> {
 
 
     // ITEMS ENUMERATION control part
@@ -17,11 +17,11 @@ public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor
 
     public Iterable<DeviceT> getDevices();
 
-    public void addOutput(IOutput<TimeT, ValueT> output);
+    public void addOutput(OutputT output);
 
-    public Iterable<IOutput<TimeT, ValueT>> getOutputs();
+    public Iterable<OutputT> getOutputs();
 
-    public void addLink(SensorT fromSensor, IOutput<TimeT, ValueT> toOutput);
+    public void addLink(SensorT fromSensor, OutputT toOutput);
 
 
     // ITEMS OPERATION control part
@@ -54,11 +54,11 @@ public interface IUserInterface<DeviceT extends IDevice, SensorT extends ISensor
 
     public void close();
 
-    public void setOnStateChanged(EventCallback<IUserInterface<DeviceT, SensorT, TimeT, ValueT>, EngineStatus> callback);
+    public void setOnStateChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
 
     public void setOnDeviceStateChanged(EventCallback<DeviceT, DeviceStatus> callback);
 
-    public void setOnOutputStateChanged(EventCallback<IOutput<TimeT, ValueT>, OutputStatus> callback);
+    public void setOnOutputStateChanged(EventCallback<OutputT, OutputStatus> callback);
 
     public EngineStatus getStatus();
 }

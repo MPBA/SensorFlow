@@ -8,7 +8,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl> {
+public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl<TimeT, ValueT>> {
     private boolean _listened = false;
 
     public boolean isListened() {
@@ -18,7 +18,6 @@ public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl> {
     public void setListened(boolean listened) {
         this._listened = listened;
     }
-
 
     private ArrayList<OutputImpl<TimeT, ValueT>> _outputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
 
@@ -30,4 +29,26 @@ public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl> {
         return new ReadOnlyIterable<OutputImpl<TimeT, ValueT>>(_outputs.iterator());
     }
 
+    DeviceImpl<TimeT, ValueT> _parent = null;
+
+    @Override
+    public DeviceImpl<TimeT, ValueT> getParentDevice() {
+        return _parent;
+    }
+
+    protected void setParentDevice(DeviceImpl<TimeT, ValueT> parent) {
+        _parent = parent;
+    }
+
+    protected FlowsMan<TimeT, ValueT> getManager() {
+        return getParentDevice()._manager;
+    }
+
+    public void sensorValue(TimeT time, ValueT value) {
+        getManager().sensorValue(this, time, value);
+    }
+
+    public void sensorEvent(TimeT time, int type, String message) {
+        getManager().sensorEvent(this, time, type, message);
+    }
 }

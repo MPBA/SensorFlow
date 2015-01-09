@@ -2,7 +2,7 @@ package eu.fbk.mpba.sensorsflows;
 
 import android.util.Log;
 
-import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import eu.fbk.mpba.sensorsflows.base.IOutput;
@@ -19,7 +19,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  */
 public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     final String LOG_TAG = "ALE SFW";
-    private final IOutputCallback<TimeT, ValueT> _manager;
+    private IOutputCallback<TimeT, ValueT> _manager = null;
 
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
@@ -27,10 +27,9 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     private ArrayBlockingQueue<SensorEventEntry> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
-    protected OutputImpl(IOutputCallback<TimeT, ValueT> manager) {
+    protected OutputImpl() {
         int dataQueueCapacity = 40;
         int eventQueueCapacity = 10;
-        _manager = manager;
         // FIXME Adjust the capacity
         _eventsQueue = new ArrayBlockingQueue<SensorEventEntry>(dataQueueCapacity);
         // FIXME Adjust the capacity
@@ -68,6 +67,17 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
         }
     }
 
+    private void changeState(OutputStatus s) {
+        if (_manager != null)
+            _manager.outputStateChanged(this, _status = s);
+    }
+
+    void setOutputCallbackManager(IOutputCallback<TimeT, ValueT> manager) {
+        _manager = manager;
+    }
+
+    // Implemented Callbacks
+
     @Override
     public void initialize() {
         changeState(OutputStatus.INITIALIZING);
@@ -79,12 +89,6 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
         changeState(OutputStatus.FINALIZING);
         _stopPending = true;
     }
-
-    private void changeState(OutputStatus s) {
-        _manager.outputStateChanged(this, _status = s);
-    }
-
-    // Implemented Callbacks
 
     @Override
     public void sensorStateChanged(ISensor sensor, TimeT time, SensorStatus state) {
@@ -128,5 +132,5 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     protected abstract void newSensorData(SensorDataEntry<TimeT, ValueT> data);
 
     @Override
-    public abstract void setLinkedSensors(Enumeration<SensorImpl> linkedSensors);
+    public abstract void setLinkedSensors(List<SensorImpl> linkedSensors);
 }

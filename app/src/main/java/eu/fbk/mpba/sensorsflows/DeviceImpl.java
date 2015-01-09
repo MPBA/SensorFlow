@@ -1,6 +1,5 @@
 package eu.fbk.mpba.sensorsflows;
 
-import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.IDevice;
 
 /**

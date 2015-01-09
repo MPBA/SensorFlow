@@ -1,7 +1,6 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;

@@ -8,8 +8,6 @@ import eu.fbk.mpba.sensorsflows.stubs.DeviceStub;
 
 public class FlowsManTest extends TestCase {
 
-
-
     public void setUp() throws Exception {
         super.setUp();
         FlowsMan<Integer, Double> instance;

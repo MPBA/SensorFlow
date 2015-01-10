@@ -15,7 +15,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * all'inizio una volta per tutti i sensori (es. E3 è il Device che racchiude i sensori BVP Temp
  * ecc. oppure Smartphone può essere il Device che comprende acc. gyro. & co.)
  */
-public class DeviceStub extends DeviceImpl {
+public class DeviceStub extends DeviceImpl<Integer, Double> {
 
     private String name;
     private List<SensorImpl> sensors;

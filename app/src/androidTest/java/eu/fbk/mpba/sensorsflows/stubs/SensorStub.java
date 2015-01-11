@@ -18,16 +18,19 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  *      public void sensorEvent(TimeT time, int type, String message)
  * protetti quindi visibili nella sottoclasse.
  */
-public class SensorStub extends SensorImpl<Integer, Double[]> {
+public class SensorStub extends SensorImpl<Integer, Double> {
 
     /**
      * Costruttore pienamente personalizzato
      * Io ho aggiunto un nome per debug che viene messo in toString.
      *
+     * VA impostato il parent device
+     *
      * Il prima possibile va impostato il parent device del sensore con setParentDevice(...)
      */
-    public SensorStub(String name) {
+    public SensorStub(String name, DeviceStub parent) {
         this.name = name;
+        this.setParentDevice(parent);
     }
 
     String name;

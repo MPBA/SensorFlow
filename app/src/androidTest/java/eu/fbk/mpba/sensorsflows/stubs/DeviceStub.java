@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 public class DeviceStub extends DeviceImpl<Integer, Double> {
 
     private String name;
-    private List<SensorImpl> sensors;
+    private List<SensorImpl<Integer, Double>> sensors;
 
     /**
      * Costruttore pienamente personalizzato
@@ -28,9 +28,9 @@ public class DeviceStub extends DeviceImpl<Integer, Double> {
     public DeviceStub(String name, int sensors) {
 
         this.name = name;
-        this.sensors = new ArrayList<SensorImpl>(sensors);
+        this.sensors = new ArrayList<SensorImpl<Integer, Double>>(sensors);
         for (int i = 0; i < sensors; i++) {
-            this.sensors.add(new SensorStub(name + "-" + i));
+            this.sensors.add(new SensorStub(name + "-" + i, this));
         }
     }
 
@@ -40,8 +40,8 @@ public class DeviceStub extends DeviceImpl<Integer, Double> {
      * @return iterable
      */
     @Override
-    public Iterable<SensorImpl> getSensors() {
-        return new ReadOnlyIterable<SensorImpl>(sensors.iterator());
+    public Iterable<SensorImpl<Integer, Double>> getSensors() {
+        return new ReadOnlyIterable<SensorImpl<Integer, Double>>(sensors.iterator());
     }
 
     /**

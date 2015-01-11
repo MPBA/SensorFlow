@@ -73,7 +73,12 @@ public class OutputStub extends OutputImpl<Integer, Double> {
      */
     @Override
     public void setLinkedSensors(List<SensorImpl> linkedSensors) {
+        _linkedSensors = linkedSensors.size();
+    }
 
+    int _linkedSensors = 0;
+    public int getLinkedSensorsCount() {
+        return _linkedSensors;
     }
 
     @Override

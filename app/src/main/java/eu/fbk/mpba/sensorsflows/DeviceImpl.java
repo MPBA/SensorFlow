@@ -6,7 +6,7 @@ import eu.fbk.mpba.sensorsflows.base.IDevice;
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class DeviceImpl<TimeT, ValueT> implements IDevice<SensorImpl> {
+public abstract class DeviceImpl<TimeT, ValueT> implements IDevice<SensorImpl<TimeT, ValueT>> {
     FlowsMan<TimeT, ValueT> _manager = null;
     private DeviceStatus _status = DeviceStatus.NOT_INITIALIZED;
 

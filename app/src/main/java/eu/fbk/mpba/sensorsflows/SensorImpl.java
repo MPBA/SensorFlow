@@ -29,6 +29,10 @@ public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl<Ti
         return new ReadOnlyIterable<OutputImpl<TimeT, ValueT>>(_outputs.iterator());
     }
 
+    int getOutputsCount() {
+        return _outputs.size();
+    }
+
     DeviceImpl<TimeT, ValueT> _parent = null;
 
     @Override

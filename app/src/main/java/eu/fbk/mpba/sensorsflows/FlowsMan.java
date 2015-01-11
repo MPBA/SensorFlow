@@ -140,11 +140,11 @@ public class FlowsMan<TimeT, ValueT> implements
     final String _itemsToInitLock = "_itemsToInitLock";
 
     protected EngineStatus _status = EngineStatus.STANDBY;
+    protected boolean _paused = false;
 
     protected List<DeviceImpl<TimeT, ValueT>> _userDevices = new ArrayList<DeviceImpl<TimeT, ValueT>>();
     protected List<OutputImpl<TimeT, ValueT>> _userOutputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
     private Hashtable<IOutput, List<SensorImpl>> _outputsSensors = new Hashtable<IOutput, List<SensorImpl>>();
-    // WAS protected ArrayList<Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>> _userLinks;    // null
 
     protected List<DeviceImpl> _devicesToInit = new ArrayList<DeviceImpl>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<IOutput>();                                       // null
@@ -153,11 +153,6 @@ public class FlowsMan<TimeT, ValueT> implements
             , EngineStatus> _onStateChanged = null;                   // null
     protected EventCallback<DeviceImpl<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
     protected EventCallback<OutputImpl<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
-
-    // WAS protected Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>> _linksMap = new Hashtable<SensorImpl, ArrayList<Booleaned<IOutput<TimeT, ValueT>>>>();
-    // WAS protected Hashtable<SensorImpl, Boolean> _sensorsListenage = new Hashtable<SensorImpl, Boolean>();
-    // WAS protected Map<IOutput, Queue<Pair<TimeT, ValueT>>> _outputQueues = new Hashtable<IOutput, Queue<Pair<TimeT, ValueT>>>();
-
 
     // Engine implementation
 
@@ -194,7 +189,6 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addLink(SensorImpl<TimeT, ValueT> fromSensor, OutputImpl<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
-            // WAS _userLinks.add(new Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>>(fromSensor, new Booleaned<IOutput<TimeT, ValueT>>(toOutput, initialEnabledState)));
             // TODO N1 Remember enabling/disabling each link
             // FIXME WARN Unchecked cast
             fromSensor.addOutput(toOutput);
@@ -313,9 +307,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOn(SensorImpl<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        if ((_status == EngineStatus.STREAMING ||
-                _status == EngineStatus.PAUSED) &&
-                _userDevices.contains(sensor.getParentDevice())) {
+        if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
             Log.v(LOG_TAG, "Switching on async " + sensor.toString());
             sensor.switchOnAsync();
         } else {
@@ -333,9 +325,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOff(SensorImpl<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        if ((_status == EngineStatus.STREAMING ||
-                _status == EngineStatus.PAUSED) &&
-                _userDevices.contains(sensor.getParentDevice())) {
+        if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
             Log.v(LOG_TAG, "Switching off async " + sensor.toString());
             sensor.switchOffAsync();
         } else {
@@ -389,7 +379,6 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void start() {
         changeState(EngineStatus.PREPARING);
-        // WAS renderTheMap();
         // Launches the initializations
         for (DeviceImpl d : _userDevices) {
             // only if NOT_INITIALIZED: checked in the initialize method
@@ -403,23 +392,6 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
-    // WAS
-    //protected void renderTheMap() {
-    //    // Render the links map
-    //    // Build inputs
-    //    //     put an entry for each sensor (for each device)
-    //    for (DeviceImpl d : _userDevices) {
-    //        for (SensorImpl s : d.getSensors()){
-    //            ArrayList<IOutput<TimeT, ValueT>> l = new ArrayList<IOutput<TimeT, ValueT>>();
-    //            for (Pair<SensorImpl, Booleaned<IOutput<TimeT, ValueT>>> l : _userLinks) {
-    //                // TO DO 8 Is the pointer comparison logically correct? (For now it is the same instance else implement the equals)
-    //                if (l.first == s)
-    //
-    //            }
-    //        }
-    //    }
-    //}
-
     /**
      * Returns weather the global streaming is paused.
      *
@@ -427,7 +399,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public boolean isPaused() {
-        return _status == EngineStatus.PAUSED;
+        return _paused;
     }
 
     /**
@@ -437,8 +409,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void setPaused(boolean paused) {
-        if (_status == EngineStatus.STREAMING || _status == EngineStatus.PAUSED)
-            _status = paused ? EngineStatus.PAUSED : EngineStatus.STREAMING;
+        _paused = paused;
     }
 
     protected void changeState(EngineStatus status) {

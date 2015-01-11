@@ -28,7 +28,7 @@ public class OutputStub extends OutputImpl<Integer, Double> {
      * Costruttore pienamente personalizzato
      * Io ho aggiunto un nome per debug che viene messo in toString.
      */
-    protected OutputStub(String name) {
+    public OutputStub(String name) {
         this.name = name;
     }
 

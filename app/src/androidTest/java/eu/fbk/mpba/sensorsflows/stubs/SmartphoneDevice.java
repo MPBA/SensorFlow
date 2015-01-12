@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.stubs;
 
+import android.content.Context;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,24 +17,23 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * all'inizio una volta per tutti i sensori (es. E3 è il Device che racchiude i sensori BVP Temp
  * ecc. oppure Smartphone può essere il Device che comprende acc. gyro. & co.)
  */
-public class DeviceStub extends DeviceImpl<Long, float[]> {
+public class SmartphoneDevice extends DeviceImpl<Long, float[]>  {
 
     private String _name;
     private List<SensorImpl<Long, float[]>> _sensors;
 
     /**
      * Costruttore pienamente personalizzato
-     * Io ho aggiunto un nome per debug che viene messo in toString e un numero di sensori fittizi
-     * da generare.
+     *
+     * Ho messo un nome per il toString e la lista dei sensori
      * I sensori vanno creati qua
      */
-    public DeviceStub(String name, int sensors) {
+    public SmartphoneDevice(Context c) {
+        _name = "Smartphone";
+        _sensors = new ArrayList<SensorImpl<Long, float[]>>(_sensors);
 
-        _name = name;
-        _sensors = new ArrayList<SensorImpl<Long, float[]>>(sensors);
-        for (int i = 0; i < sensors; i++) {
-            this._sensors.add(new SensorStub(name + "-" + i));
-        }
+        AccelerometerSensor a = new AccelerometerSensor(this, c);
+        _sensors.add(a);
     }
 
     /**
@@ -51,7 +52,9 @@ public class DeviceStub extends DeviceImpl<Long, float[]> {
      */
     @Override
     protected void pluginInitialize() {
-
+        for (SensorImpl<Long, float[]> s : _sensors) {
+            s.switchOnAsync();
+        }
     }
 
     /**
@@ -64,6 +67,7 @@ public class DeviceStub extends DeviceImpl<Long, float[]> {
 
     @Override
     public String toString() {
-        return "DeviceStub:" + _name;
+        return "Device:" + _name;
     }
+
 }

@@ -22,7 +22,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  *      public void sensorEvent(TimeT time, int type, String message)
  * protetti quindi visibili nella sottoclasse.
  */
-public class OutputStub extends OutputImpl<Integer, Double> {
+public class OutputStub extends OutputImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
@@ -63,7 +63,7 @@ public class OutputStub extends OutputImpl<Integer, Double> {
      * La libreria rende disponibile un dato da uno specifico sensore.
      */
     @Override
-    protected void newSensorData(SensorDataEntry<Integer, Double> data) {
+    protected void newSensorData(SensorDataEntry<Long, float[]> data) {
 
     }
 

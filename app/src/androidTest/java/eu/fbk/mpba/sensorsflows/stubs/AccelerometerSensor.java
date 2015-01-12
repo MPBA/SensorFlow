@@ -6,75 +6,45 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
+import java.util.Arrays;
+import java.util.List;
+
 import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
-/**
- * Classe di esempio.
- * Estende la classe SensorImpl che è astratta ed è parte della libreria.
- *
- * Un Sensore rappresenta una sorgente di dati simultanei ovvero di coppie tempo-insieme di valori
- * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; sono due
- * sensori diversi.
- *
- * Si presuppone che in questa classe vengano implementati dei metodi callback richiamati dal thread
- * del sensore reale che poi notifichino tramite i metodi
- *      public void sensorValue(TimeT time, ValueT value)
- * e
- *      public void sensorEvent(TimeT time, int type, String message)
- * protetti quindi visibili nella sottoclasse.
- */
 public class AccelerometerSensor extends SensorImpl<Long, float[]> implements SensorEventListener {
 
-    private SensorManager mSensorManager;
-    private Sensor mAcc;
+    private SensorManager _sensorMan;
+    private Sensor _sAcc;
+    private String _name;
 
-    /**
-     * Costruttore pienamente personalizzato
-     * Io ho aggiunto un nome per debug che viene messo in toString.
-     *
-     * Il prima possibile va impostato il parent device del sensore con setParentDevice(...)
-     */
     public AccelerometerSensor(DeviceImpl<Long, float[]> d, Context context) {
         _name = "AccelerometerSensor";
         setParentDevice(d);
-        mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        mAcc = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        if (mAcc == null)
+
+        _sensorMan = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        _sAcc = _sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if (_sAcc == null)
             changeStatus(SensorStatus.ERROR);
         else
             changeStatus(SensorStatus.OFF);
     }
 
-    String _name;
-
-    /**
-     * Power saving
-     * Nel caso il device permetta di abilitare o disabilitare alcuni sensori questi metodi verranno
-     * chiamati. Sono asincroni quindi dopo l'esecuzione di questo metodo è sufficiente iniziare a
-     * trasmettere dati.
-     */
     @Override
     public void switchOnAsync() {
         if (getState() == SensorStatus.OFF) {
-            mSensorManager.registerListener(this, mAcc, SensorManager.SENSOR_DELAY_NORMAL);
+            _sensorMan.registerListener(this, _sAcc, SensorManager.SENSOR_DELAY_NORMAL);
             changeStatus(SensorStatus.ON);
             sensorEvent(System.currentTimeMillis(), 0, _name + " switched on");
         }
     }
 
-
-    /**
-     * Power saving
-     * Nel caso il device permetta di abilitare o disabilitare alcuni sensori questi metodi verranno
-     * chiamati. Sono asincroni quindi dopo l'esecuzione di questo metodo è sufficiente smettere di
-     * trasmettere dati.
-     */
     @Override
     public void switchOffAsync() {
         if (getState() == SensorStatus.ON) {
-            mSensorManager.unregisterListener(this);
+            _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
             sensorEvent(System.currentTimeMillis(), 0, _name + " switched off");
         }
@@ -117,5 +87,10 @@ public class AccelerometerSensor extends SensorImpl<Long, float[]> implements Se
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         sensorEvent(System.currentTimeMillis(), accuracy, "Accuracy changed");
+    }
+
+    @Override
+    public List<String> getValuesDescriptors() {
+        return Arrays.asList("AccX", "AccY", "AccZ");
     }
 }

@@ -141,6 +141,7 @@ public class FlowsMan<TimeT, ValueT> implements
 
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
+    private AutoLinkMode _linkMode = AutoLinkMode.ALL_IN_ALL;
 
     protected List<DeviceImpl<TimeT, ValueT>> _userDevices = new ArrayList<DeviceImpl<TimeT, ValueT>>();
     protected List<OutputImpl<TimeT, ValueT>> _userOutputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
@@ -369,6 +370,10 @@ public class FlowsMan<TimeT, ValueT> implements
 
     //      Engine operation
 
+    public void setAutoLinkMode(AutoLinkMode mode) {
+        _linkMode = mode;
+    }
+
     /**
      * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
      * <p/>
@@ -389,6 +394,14 @@ public class FlowsMan<TimeT, ValueT> implements
             o.setLinkedSensors(_outputsSensors.get(o));
             _outputsSensors.remove(o);
             initialize(o);
+        }
+        switch (_linkMode) { // TODO H
+            case ALL_IN_ALL:
+                break;
+            case MANUAL:
+                break;
+            case ONE_IN_ONE:
+                break;
         }
     }
 

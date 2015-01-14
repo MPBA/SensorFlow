@@ -136,12 +136,12 @@ public class FlowsMan<TimeT, ValueT> implements
     // Fields
 
     final String LOG_TAG = "ALE SFW";
-    final String _emAlreadyRendered = "The map is rendered. No inputs, outputs or links can be added at this time for now.";
+    final String _emAlreadyRendered = "The engine is started. No inputs, outputs or links can be added at this time for now.";
     final String _itemsToInitLock = "_itemsToInitLock";
 
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
-    private AutoLinkMode _linkMode = AutoLinkMode.ALL_IN_ALL;
+    private AutoLinkMode _linkMode = AutoLinkMode.PRODUCT;
 
     protected List<DeviceImpl<TimeT, ValueT>> _userDevices = new ArrayList<DeviceImpl<TimeT, ValueT>>();
     protected List<OutputImpl<TimeT, ValueT>> _userOutputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
@@ -191,7 +191,6 @@ public class FlowsMan<TimeT, ValueT> implements
     public void addLink(SensorImpl<TimeT, ValueT> fromSensor, OutputImpl<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
             // TODO N1 Remember enabling/disabling each link
-            // FIXME WARN Unchecked cast
             fromSensor.addOutput(toOutput);
             _outputsSensors.get(toOutput).add(fromSensor);
         } else
@@ -371,7 +370,10 @@ public class FlowsMan<TimeT, ValueT> implements
     //      Engine operation
 
     public void setAutoLinkMode(AutoLinkMode mode) {
-        _linkMode = mode;
+        if (_status == EngineStatus.STANDBY)
+            _linkMode = mode;
+        else
+            throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     /**
@@ -384,24 +386,33 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void start() {
         changeState(EngineStatus.PREPARING);
+        // Prepares the links
+        switch (_linkMode) {
+            case PRODUCT:
+                // SENSORS x OUTPUTS
+                for (DeviceImpl<TimeT, ValueT> d : _userDevices)
+                    for (SensorImpl<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
+                        for (OutputImpl<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
+                            addLink(s, o);
+                break;
+            case NTH_TO_NTH:
+                // max SENSORS, OUTPUTS
+                int maxi = Math.max(_userDevices.size(), _userOutputs.size());
+                for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
+                    for (SensorImpl<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+                        addLink(s, _userOutputs.get(i % _userOutputs.size()));
+                break;
+        }
         // Launches the initializations
         for (DeviceImpl d : _userDevices) {
             // only if NOT_INITIALIZED: checked in the initialize method
             initialize(d);
         }
-        for (IOutput<TimeT, ValueT> o : _userOutputs) {
+        for (OutputImpl<TimeT, ValueT> o : _userOutputs) {
             // only if NOT_INITIALIZED: checked in the initialize method
             o.setLinkedSensors(_outputsSensors.get(o));
             _outputsSensors.remove(o);
             initialize(o);
-        }
-        switch (_linkMode) { // TODO H
-            case ALL_IN_ALL:
-                break;
-            case MANUAL:
-                break;
-            case ONE_IN_ONE:
-                break;
         }
     }
 

@@ -5,9 +5,6 @@ import android.test.InstrumentationTestCase;
 import eu.fbk.mpba.sensorsflows.stubs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.stubs.SmartphoneDevice;
 
-/**
- * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
- */
 public class ApplicationTest extends InstrumentationTestCase {
     FlowsMan<Long, float[]> m;
 

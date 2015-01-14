@@ -9,14 +9,14 @@ import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice extends DeviceImpl<Long, float[]>  {
+public class SmartphoneDevice extends DeviceImpl<Long, float[]> {
 
     private String _name;
     private List<SensorImpl<Long, float[]>> _sensors;
 
     public SmartphoneDevice(Context c) {
         _name = "Smartphone";
-        _sensors = new ArrayList<SensorImpl<Long, float[]>>(_sensors);
+        _sensors = new ArrayList<SensorImpl<Long, float[]>>();
 
         AccelerometerSensor a = new AccelerometerSensor(this, c);
         _sensors.add(a);

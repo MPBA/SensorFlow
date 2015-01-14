@@ -6,10 +6,10 @@ import java.util.Iterator;
  * Allows to convert an iterator to an enumeration
  */
 public class ReadOnlyIterable<E> implements Iterable<E>{
-    private Iterator<E> _;
+    private Iterator<E> i;
 
     public ReadOnlyIterable(Iterator<E> i) {
-        _ = i;
+        this.i = i;
     }
 
     /**
@@ -23,12 +23,12 @@ public class ReadOnlyIterable<E> implements Iterable<E>{
 
             @Override
             public boolean hasNext() {
-                return _.hasNext();
+                return i.hasNext();
             }
 
             @Override
             public E next() {
-                return _.next();
+                return i.next();
             }
 
             /**

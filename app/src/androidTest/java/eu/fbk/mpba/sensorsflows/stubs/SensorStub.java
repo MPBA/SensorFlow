@@ -1,5 +1,8 @@
 package eu.fbk.mpba.sensorsflows.stubs;
 
+import java.util.Arrays;
+import java.util.List;
+
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -67,5 +70,10 @@ public class SensorStub extends SensorImpl<Long, float[]> {
     @Override
     public String toString() {
         return "SensorStub:" + name;
+    }
+
+    @Override
+    public List<String> getValuesDescriptors() {
+        return Arrays.asList("Random");
     }
 }

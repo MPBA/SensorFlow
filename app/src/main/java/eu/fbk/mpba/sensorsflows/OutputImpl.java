@@ -24,14 +24,14 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
 
-    private ArrayBlockingQueue<SensorEventEntry> _eventsQueue;
+    private ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
     protected OutputImpl() {
         int dataQueueCapacity = 40;
         int eventQueueCapacity = 10;
         // FIXME Adjust the capacity
-        _eventsQueue = new ArrayBlockingQueue<SensorEventEntry>(dataQueueCapacity);
+        _eventsQueue = new ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>>(dataQueueCapacity);
         // FIXME Adjust the capacity
         _dataQueue = new ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>>(eventQueueCapacity);
     }
@@ -98,7 +98,7 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     public void sensorEvent(ISensor sensor, TimeT time, int type, String message) {
         try {
             // FIXME WARN Locks the sensor's thread, dunno if data is lost
-            _eventsQueue.put(new SensorEventEntry(sensor, type, message));
+            _eventsQueue.put(new SensorEventEntry<TimeT, Integer>(sensor, time, type, message));
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorEvent() find-me:924nj89f8j2");
         }

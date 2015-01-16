@@ -15,22 +15,23 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * all'inizio una volta per tutti i sensori (es. E3 è il Device che racchiude i sensori BVP Temp
  * ecc. oppure Smartphone può essere il Device che comprende acc. gyro. & co.)
  */
-public class DeviceStub extends DeviceImpl<Integer, Double> {
+public class DeviceStub extends DeviceImpl<Long, float[]> {
 
-    private String name;
-    private List<SensorImpl<Integer, Double>> sensors;
+    private String _name;
+    private List<SensorImpl<Long, float[]>> _sensors;
 
     /**
      * Costruttore pienamente personalizzato
      * Io ho aggiunto un nome per debug che viene messo in toString e un numero di sensori fittizi
      * da generare.
+     * I sensori vanno creati qua
      */
     public DeviceStub(String name, int sensors) {
 
-        this.name = name;
-        this.sensors = new ArrayList<SensorImpl<Integer, Double>>(sensors);
+        _name = name;
+        _sensors = new ArrayList<SensorImpl<Long, float[]>>(sensors);
         for (int i = 0; i < sensors; i++) {
-            this.sensors.add(new SensorStub(name + "-" + i, this));
+            this._sensors.add(new SensorStub(name + "-" + i, this));
         }
     }
 
@@ -40,8 +41,8 @@ public class DeviceStub extends DeviceImpl<Integer, Double> {
      * @return iterable
      */
     @Override
-    public Iterable<SensorImpl<Integer, Double>> getSensors() {
-        return new ReadOnlyIterable<SensorImpl<Integer, Double>>(sensors.iterator());
+    public Iterable<SensorImpl<Long, float[]>> getSensors() {
+        return new ReadOnlyIterable<SensorImpl<Long, float[]>>(_sensors.iterator());
     }
 
     /**
@@ -54,7 +55,7 @@ public class DeviceStub extends DeviceImpl<Integer, Double> {
     }
 
     /**
-     * Qualziasi cosa da eseguire quando la libreria viene chiusa.
+     * Qualsiasi cosa da eseguire quando la libreria viene chiusa.
      */
     @Override
     protected void pluginFinalize() {
@@ -63,6 +64,6 @@ public class DeviceStub extends DeviceImpl<Integer, Double> {
 
     @Override
     public String toString() {
-        return "DeviceStub:" + name;
+        return "DeviceStub:" + _name;
     }
 }

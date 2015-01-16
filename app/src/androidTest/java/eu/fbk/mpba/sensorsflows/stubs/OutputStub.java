@@ -9,20 +9,16 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
 /**
  * Classe di esempio.
- * Estende la classe SensorImpl che è astratta ed è parte della libreria.
+ * Estende la classe OutputImpl che è astratta ed è parte della libreria.
  *
- * Un Sensore rappresenta una sorgente di dati simultanei ovvero di coppie tempo-insieme di valori
- * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; sono due
- * sensori diversi.
+ * Un Output rappresenta una modalità di elaborazione di coppie tempo-insieme di valori
+ * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; che sono due
+ * sensori diversi possono essere inviati allo stesso output).
  *
  * Si presuppone che in questa classe vengano implementati dei metodi callback richiamati dal thread
- * del sensore reale che poi notifichino tramite i metodi
- *      public void sensorValue(TimeT time, ValueT value)
- * e
- *      public void sensorEvent(TimeT time, int type, String message)
- * protetti quindi visibili nella sottoclasse.
+ * della libreria che elaborino i dati e gli eventi protetti quindi visibili nella sottoclasse.
  */
-public class OutputStub extends OutputImpl<Integer, Double> {
+public class OutputStub extends OutputImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
@@ -63,7 +59,7 @@ public class OutputStub extends OutputImpl<Integer, Double> {
      * La libreria rende disponibile un dato da uno specifico sensore.
      */
     @Override
-    protected void newSensorData(SensorDataEntry<Integer, Double> data) {
+    protected void newSensorData(SensorDataEntry<Long, float[]> data) {
 
     }
 

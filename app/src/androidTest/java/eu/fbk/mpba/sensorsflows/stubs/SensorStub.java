@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  *      public void sensorEvent(TimeT time, int type, String message)
  * protetti quindi visibili nella sottoclasse.
  */
-public class SensorStub extends SensorImpl<Integer, Double> {
+public class SensorStub extends SensorImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
@@ -70,5 +70,10 @@ public class SensorStub extends SensorImpl<Integer, Double> {
     @Override
     public String toString() {
         return "SensorStub:" + name;
+    }
+
+    @Override
+    public List<String> getValuesDescriptors() {
+        return Arrays.asList("Random");
     }
 }

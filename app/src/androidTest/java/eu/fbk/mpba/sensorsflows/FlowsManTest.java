@@ -26,8 +26,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testAddDevice() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         DeviceStub d = new DeviceStub("Saxophone", 10);
         Assert.assertEquals("There are no devices", instance._userDevices.size(), 0);
@@ -53,8 +53,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testAddLink() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         DeviceStub d = new DeviceStub("Saxophone", 10);
         DeviceStub e = new DeviceStub("Microphone", 3);
@@ -97,8 +97,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testAddOutput() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         Assert.assertEquals("There are no outputs", 0, instance._userOutputs.size());
         OutputStub d = new OutputStub("Saxophone");
@@ -124,8 +124,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testGetDevices() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         DeviceStub d = new DeviceStub("Saxophone", 10);
         DeviceStub e = new DeviceStub("Microphone", 3);
@@ -135,7 +135,7 @@ public class FlowsManTest extends TestCase {
         instance.addDevice(f);
 
         int numba = 0;
-        for (DeviceImpl<Integer, Double> ignored : instance.getDevices()) {
+        for (DeviceImpl<Long, float[]> ignored : instance.getDevices()) {
             numba++;
         }
 
@@ -144,7 +144,7 @@ public class FlowsManTest extends TestCase {
         instance.start();
 
         numba = 0;
-        for (DeviceImpl<Integer, Double> ignored : instance.getDevices()) {
+        for (DeviceImpl<Long, float[]> ignored : instance.getDevices()) {
             numba++;
         }
 
@@ -152,8 +152,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testGetOutputs() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         OutputStub d = new OutputStub("Saxophone");
         OutputStub e = new OutputStub("Microphone");

@@ -7,7 +7,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class DataSaver {
@@ -44,16 +46,16 @@ public class DataSaver {
         return storagePath.getAbsolutePath() + "/";
     }
 
-    public boolean initFS(String[][] headers) {
+    public boolean initFS(List<List<Object>> headers) {
         for (int i = 0; i < _paths.length; i++)
             try {
                 File f = new File(_paths[i]);
                 Log.d("ALE DATA", "Creating " + _paths[i] + " mkdirs:" + f.getParentFile().mkdirs());
                 boolean header = !f.exists();
                 _writs[i] = new FileWriter(f, true);
-                _csvCard[i] = headers[i].length;
+                _csvCard[i] = headers.get(i).size();
                 if (header)
-                    writeCSV(i, headers[i]);
+                    writeCSV(i, headers.get(i));
             } catch (IOException e) {
                 e.printStackTrace();
                 for (int j = 0; j < i; j++)
@@ -77,16 +79,16 @@ public class DataSaver {
             }
     }
 
-    public void writeCSV(int file, Object[] data) throws IllegalArgumentException {
-        int length = data.length;
-        while (length > _csvCard[file] && data[length - 1] == null)
+    public void writeCSV(int file, List<Object> data) throws IllegalArgumentException {
+        int length = data.size();
+        while (length > _csvCard[file] && data.get(length - 1) == null)
             length--;
         if (length == _csvCard[file])
             try {
-                _writs[file].write(data[0].toString());
+                _writs[file].write(data.get(0).toString());
                 for (int i = 1; i < length; i++) {
                     _writs[file].write(_sep);
-                    _writs[file].write(data[i].toString());
+                    _writs[file].write(data.get(i).toString());
                 }
                 _writs[file].write(_nl);
                 _writs[file].flush();

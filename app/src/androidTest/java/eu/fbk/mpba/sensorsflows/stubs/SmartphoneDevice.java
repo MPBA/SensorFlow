@@ -1,7 +1,5 @@
 package eu.fbk.mpba.sensorsflows.stubs;
 
-import android.content.Context;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,12 +12,11 @@ public class SmartphoneDevice extends DeviceImpl<Long, float[]> {
     private String _name;
     private List<SensorImpl<Long, float[]>> _sensors;
 
-    public SmartphoneDevice(Context c) {
+    public SmartphoneDevice() {
         _name = "Smartphone";
         _sensors = new ArrayList<SensorImpl<Long, float[]>>();
-
-        AccelerometerSensor a = new AccelerometerSensor(this, c);
-        _sensors.add(a);
+        _sensors.add(new RandomSensorStub(this));
+        _sensors.add(new SequencialSensorStub(this));
     }
 
     @Override

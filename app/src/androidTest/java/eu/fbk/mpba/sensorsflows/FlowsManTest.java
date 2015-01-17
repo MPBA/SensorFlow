@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.stubs.DeviceStub;
 import eu.fbk.mpba.sensorsflows.stubs.OutputStub;
-import eu.fbk.mpba.sensorsflows.stubs.SensorStub;
 
 public class FlowsManTest extends TestCase {
 
@@ -69,23 +68,23 @@ public class FlowsManTest extends TestCase {
         instance.addOutput(p);
         instance.addOutput(q);
 
-        for (SensorImpl<Integer, Double> s : d.getSensors()) {
+        for (SensorImpl<Long, float[]> s : d.getSensors()) {
             instance.addLink(s, o);
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.addLink(s, p);
         }
-        for (SensorImpl<Integer, Double> s : f.getSensors()) {
+        for (SensorImpl<Long, float[]> s : f.getSensors()) {
             instance.addLink(s, p);
         }
 
-        for (SensorImpl<Integer, Double> s : d.getSensors()) {
+        for (SensorImpl<Long, float[]> s : d.getSensors()) {
             Assert.assertEquals("Number of linked outputs", 1, s.getOutputsCount());
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             Assert.assertEquals("Number of linked outputs", 1, s.getOutputsCount());
         }
-        for (SensorImpl<Integer, Double> s : f.getSensors()) {
+        for (SensorImpl<Long, float[]> s : f.getSensors()) {
             Assert.assertEquals("Number of linked outputs", 1, s.getOutputsCount());
         }
 
@@ -214,8 +213,8 @@ public class FlowsManTest extends TestCase {
     }
 
     public void testSetSensorListened() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         DeviceStub d = new DeviceStub("Saxophone", 10);
         DeviceStub e = new DeviceStub("Microphone", 3);
@@ -225,34 +224,34 @@ public class FlowsManTest extends TestCase {
         OutputStub o = new OutputStub("Saxophone");
         instance.addOutput(o);
 
-        for (SensorImpl<Integer, Double> s : d.getSensors()) {
+        for (SensorImpl<Long, float[]> s : d.getSensors()) {
             instance.addLink(s, o);
             instance.setSensorListened(s, true);
             Assert.assertTrue("The sensor is listened", instance.isSensorListened(s));
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.addLink(s, o);
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.setSensorListened(s, true);
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             Assert.assertTrue("The sensor is now listened", instance.isSensorListened(s));
         }
 
         instance.start();
 
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.setSensorListened(s, false);
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             Assert.assertFalse("The sensor is now not listened", instance.isSensorListened(s));
         }
     }
 
     public void testIsSensorListened() throws Exception {
-        FlowsMan<Integer, Double> instance;
-        instance = new FlowsMan<Integer, Double>();
+        FlowsMan<Long, float[]> instance;
+        instance = new FlowsMan<Long, float[]>();
 
         OutputStub o = new OutputStub("Saxophone");
         instance.addOutput(o);
@@ -260,7 +259,7 @@ public class FlowsManTest extends TestCase {
         DeviceStub d = new DeviceStub("Saxophone", 10);
         DeviceStub e = new DeviceStub("Microphone", 3);
 
-        for (SensorImpl<Integer, Double> s : d.getSensors()) {
+        for (SensorImpl<Long, float[]> s : d.getSensors()) {
             boolean error = false;
             try {
                 instance.setSensorListened(s, true);
@@ -273,23 +272,23 @@ public class FlowsManTest extends TestCase {
         instance.addDevice(d);
         instance.addDevice(e);
 
-        for (SensorImpl<Integer, Double> s : d.getSensors()) {
+        for (SensorImpl<Long, float[]> s : d.getSensors()) {
             instance.addLink(s, o);
             Assert.assertFalse("The sensor is not listened at start", instance.isSensorListened(s));
             instance.setSensorListened(s, true);
             Assert.assertTrue("The sensor is listened", instance.isSensorListened(s));
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.addLink(s, o);
             Assert.assertFalse("The sensor is not listened at the begin", instance.isSensorListened(s));
         }
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             instance.setSensorListened(s, true);
         }
 
         instance.start();
 
-        for (SensorImpl<Integer, Double> s : e.getSensors()) {
+        for (SensorImpl<Long, float[]> s : e.getSensors()) {
             Assert.assertTrue("The sensor is now listened", instance.isSensorListened(s));
         }
     }

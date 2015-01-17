@@ -31,9 +31,9 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
         int dataQueueCapacity = 40;
         int eventQueueCapacity = 10;
         // FIXME Adjust the capacity
-        _eventsQueue = new ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>>(dataQueueCapacity);
+        _eventsQueue = new ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>>(eventQueueCapacity);
         // FIXME Adjust the capacity
-        _dataQueue = new ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>>(eventQueueCapacity);
+        _dataQueue = new ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>>(dataQueueCapacity);
     }
 
     private Thread _thread = new Thread(new Runnable() {
@@ -52,14 +52,14 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
         SensorEventEntry event;
         while (!_stopPending) {
             data = _dataQueue.poll();
-            event = _eventsQueue.poll();
+            //event = _eventsQueue.poll();
             if (data != null)
                 newSensorData(data);
-            else if (event != null)
-                newSensorEvent(event);
-            else
+            //if (event != null)
+            //    newSensorEvent(event);
+            else// if (data == null)
                 try {
-                    long sleepInterval = 100; // POI polling time here
+                    long sleepInterval = 20; // POI polling time here
                     Thread.sleep(sleepInterval);
                 } catch (InterruptedException e) {
                     Log.w(LOG_TAG, "InterruptedException in OutputImpl.run() find-me:fnh294he97");
@@ -97,7 +97,7 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     @Override
     public void sensorEvent(ISensor sensor, TimeT time, int type, String message) {
         try {
-            // FIXME WARN Locks the sensor's thread, dunno if data is lost
+            // FIXME WARN Locks the sensor's thread
             _eventsQueue.put(new SensorEventEntry<TimeT, Integer>(sensor, time, type, message));
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorEvent() find-me:924nj89f8j2");
@@ -107,8 +107,9 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     @Override
     public void sensorValue(ISensor sensor, TimeT time, ValueT value) {
         try {
-            // FIXME WARN Locks the sensor's thread, dunno if events are lost
-            _dataQueue.put(new SensorDataEntry<TimeT, ValueT>(sensor, time, value));
+            // FIXME WARN Locks the sensor's thread
+            SensorDataEntry<TimeT, ValueT> a = new SensorDataEntry<TimeT, ValueT>(sensor, time, value);
+            _dataQueue.put(a);
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorValue() find-me:24bhi5ti89");
         }

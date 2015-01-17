@@ -385,7 +385,6 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void start() {
-        changeState(EngineStatus.PREPARING);
         // Prepares the links
         switch (_linkMode) {
             case PRODUCT:
@@ -403,11 +402,14 @@ public class FlowsMan<TimeT, ValueT> implements
                         addLink(s, _userOutputs.get(i % _userOutputs.size()));
                 break;
         }
+        changeState(EngineStatus.PREPARING);
+        _devicesToInit.addAll(_userDevices);
         // Launches the initializations
         for (DeviceImpl d : _userDevices) {
             // only if NOT_INITIALIZED: checked in the initialize method
             initialize(d);
         }
+        _outputsToInit.addAll(_userOutputs);
         for (OutputImpl<TimeT, ValueT> o : _userOutputs) {
             // only if NOT_INITIALIZED: checked in the initialize method
             o.setLinkedSensors(_outputsSensors.get(o));

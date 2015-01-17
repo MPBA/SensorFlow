@@ -45,4 +45,5 @@ public abstract class DeviceImpl<TimeT, ValueT> implements IDevice<SensorImpl<Ti
     protected abstract void pluginInitialize();
 
     protected abstract void pluginFinalize();
+
 }

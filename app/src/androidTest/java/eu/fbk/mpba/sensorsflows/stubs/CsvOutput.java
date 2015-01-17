@@ -1,6 +1,10 @@
 package eu.fbk.mpba.sensorsflows.stubs;
 
+import android.os.Environment;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputImpl;
@@ -13,7 +17,8 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
 
     String _name;
     DataSaver _sav;
-    List<String[]> headers = new ArrayList<String[]>();
+    List<List<Object>> headers = new ArrayList<List<Object>>();
+    List<SensorImpl<Long, float[]>> _linkedSensors = new ArrayList<SensorImpl<Long, float[]>>();
 
     public CsvOutput() {
         _name = "CsvOutput";
@@ -21,17 +26,22 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
 
     @Override
     public void setLinkedSensors(List<SensorImpl> linkedSensors) {
-        _sav = new DataSaver("/storage/sdcard0/eu.fbk.mpba.sensorsflows.stubs/" +
+        _sav = new DataSaver(Environment.getExternalStorageDirectory().getPath() +
+                        "/eu.fbk.mpba.sensorsflows.stubs/" +
                         DataSaver.getHumanDateTimeName() + "/",
                         linkedSensors.toArray(), ".csv", ";", "\n");
+        _linkedSensors.addAll((Collection)linkedSensors);
         for (SensorImpl l : linkedSensors) {
-            headers.add((String[]) (l.getValuesDescriptors().toArray()));
+            List<Object> h = new ArrayList<Object>();
+            h.add("timestamp");
+            h.addAll(l.getValuesDescriptors());
+            headers.add(h);
         }
     }
 
     @Override
     protected void pluginInitialize() {
-        _sav.initFS((String[][])(headers.toArray()));
+        _sav.initFS(headers);
     }
 
     @Override
@@ -41,15 +51,21 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
 
     @Override
     protected void newSensorEvent(SensorEventEntry event) {
+
     }
 
     @Override
     protected void newSensorData(SensorDataEntry<Long, float[]> data) {
-
+        List<Object> cheppizza = new ArrayList<Object>();
+        cheppizza.add(data.time.toString());
+        for (int i = 0; i < data.value.length; i++)
+            cheppizza.add(data.value[i]);
+        //noinspection SuspiciousMethodCalls
+        _sav.writeCSV(_linkedSensors.indexOf(data.sensor), cheppizza);
     }
 
     @Override
     public String toString() {
-        return "Output:" + _name;
+        return "Output-" + _name;
     }
 }

@@ -90,7 +90,7 @@ public class AccelerometerSensor extends SensorImpl<Long, float[]> implements Se
     }
 
     @Override
-    public List<String> getValuesDescriptors() {
-        return Arrays.asList("AccX", "AccY", "AccZ");
+    public List<Object> getValuesDescriptors() {
+        return Arrays.asList((Object)"AccX", "AccY", "AccZ");
     }
 }

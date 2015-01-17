@@ -13,8 +13,8 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl<TimeT, ValueT>> {
     private boolean _listened = true;
     private ArrayList<OutputImpl<TimeT, ValueT>> _outputs = new ArrayList<OutputImpl<TimeT, ValueT>>();
-    DeviceImpl<TimeT, ValueT> _parent = null;
-    SensorStatus _status = SensorStatus.OFF;
+    private SensorStatus _status = SensorStatus.OFF;
+    private DeviceImpl<TimeT, ValueT> _parent = null;
 
     void addOutput(OutputImpl<TimeT, ValueT> _output) {
         this._outputs.add(_output);
@@ -28,7 +28,6 @@ public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl<Ti
         return _outputs.size();
     }
 
-    DeviceImpl<TimeT, ValueT> _parent = null;
     // Managed protected getters setters
 
     protected FlowsMan<TimeT, ValueT> getManager() {
@@ -77,5 +76,5 @@ public abstract class SensorImpl<TimeT, ValueT> implements ISensor<DeviceImpl<Ti
 
     // To implement
 
-    public abstract List<String> getValuesDescriptors();
+    public abstract List<Object> getValuesDescriptors();
 }

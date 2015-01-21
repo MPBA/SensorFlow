@@ -35,7 +35,7 @@ public class SequencialSensorStub extends SensorImpl<Long, float[]> {
                     }
                 }
             }
-        }).start();
+        }, "PushThread" + toString()).start();
     }
 
     private void eventValue(float[] v) {
@@ -62,7 +62,7 @@ public class SequencialSensorStub extends SensorImpl<Long, float[]> {
 
     @Override
     public String toString() {
-        return "Sensor-" + _name;
+        return getParentDevice().toString() + "/" + _name;
     }
 
     @Override

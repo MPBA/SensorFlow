@@ -28,8 +28,8 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
     protected OutputImpl() {
-        int dataQueueCapacity = 40;
-        int eventQueueCapacity = 10;
+        int dataQueueCapacity = 80;
+        int eventQueueCapacity = 30;
         // FIXME Adjust the capacity
         _eventsQueue = new ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>>(eventQueueCapacity);
         // FIXME Adjust the capacity
@@ -52,12 +52,12 @@ public abstract class OutputImpl<TimeT, ValueT> implements IOutput<TimeT, ValueT
         SensorEventEntry event;
         while (!_stopPending) {
             data = _dataQueue.poll();
-            //event = _eventsQueue.poll();
+            event = _eventsQueue.poll();
             if (data != null)
                 newSensorData(data);
-            //if (event != null)
-            //    newSensorEvent(event);
-            else// if (data == null)
+            if (event != null)
+                newSensorEvent(event);
+            else if (data == null)
                 try {
                     long sleepInterval = 20; // POI polling time here
                     Thread.sleep(sleepInterval);

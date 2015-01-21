@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -15,6 +14,7 @@ import java.util.Locale;
 public class DataSaver {
     String[] _paths;
     FileWriter[] _writs;
+    File[] _files;
     int[] _csvCard;
     String _sep;
     String _nl;
@@ -25,6 +25,7 @@ public class DataSaver {
             _paths[i] = prefix + names[i] + suffix;
         }
         _writs = new FileWriter[names.length];
+        _files = new File[names.length];
         _csvCard = new int[names.length];
         _sep = sep;
         _nl = nl;
@@ -49,10 +50,10 @@ public class DataSaver {
     public boolean initFS(List<List<Object>> headers) {
         for (int i = 0; i < _paths.length; i++)
             try {
-                File f = new File(_paths[i]);
-                Log.d("ALE DATA", "Creating " + _paths[i] + " mkdirs:" + f.getParentFile().mkdirs());
-                boolean header = !f.exists();
-                _writs[i] = new FileWriter(f, true);
+                _files[i] = new File(_paths[i]);
+                Log.d("ALE DATA", "Creating " + _paths[i] + " mkdirs:" + _files[i].getParentFile().mkdirs());
+                boolean header = !_files[i].exists();
+                _writs[i] = new FileWriter(_files[i], true);
                 _csvCard[i] = headers.get(i).size();
                 if (header)
                     writeCSV(i, headers.get(i));

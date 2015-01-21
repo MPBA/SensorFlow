@@ -23,6 +23,14 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
         _name = name;
     }
 
+    public List<String> getFiles() {
+        List<String> a = new ArrayList<String>(_sav._files.length);
+        for (int i = 0; i < _sav._files.length; i++) {
+            a.add(_sav._files[i].getAbsolutePath());
+        }
+        return a;
+    }
+
     @Override
     public void setLinkedSensors(List<SensorImpl> linkedSensors) {
         _sav = new DataSaver(Environment.getExternalStorageDirectory().getPath() +

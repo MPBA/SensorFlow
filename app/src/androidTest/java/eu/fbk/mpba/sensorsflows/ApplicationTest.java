@@ -4,6 +4,8 @@ import android.test.InstrumentationTestCase;
 
 import junit.framework.Assert;
 
+import java.util.List;
+
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.stubs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.stubs.TestDevice;
@@ -15,10 +17,11 @@ public class ApplicationTest extends InstrumentationTestCase {
 
     FlowsMan<Long, float[]> m;
 
-    public void testBaseCase() throws Exception {
+    public void testStrongMonotonicity() throws Exception {
         m = new FlowsMan<Long, float[]>();
         m.addDevice(new TestDevice("I"));
-        m.addOutput(new CsvOutput("O"));
+        CsvOutput o;
+        m.addOutput(o = new CsvOutput("O"));
         m.setAutoLinkMode(AutoLinkMode.NTH_TO_NTH);
         Assert.assertEquals("After creation it should be in standby.",
                 EngineStatus.STANDBY, m.getStatus());
@@ -30,6 +33,10 @@ public class ApplicationTest extends InstrumentationTestCase {
                 EngineStatus.STREAMING, m.getStatus());
         Thread.sleep(30000);
         m.close();
+        List<String> a = o.getFiles();
+        for (String n : a) {
+            Assert.assertTrue(CsvCheck.checkStrongMonotonicityOfTheFirstColumnLong(n));
+        }
     }
 
     public void testParallelStress() throws Exception {

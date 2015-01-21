@@ -33,7 +33,7 @@ public class RandomSensorStub extends SensorImpl<Long, float[]> {
                                         (float)(Math.random() * 3.14 - 1.57) });
                 }
             }
-        }).start();
+        }, "PushThread:" + toString()).start();
     }
 
     private void eventValue(float[] v) {
@@ -60,7 +60,7 @@ public class RandomSensorStub extends SensorImpl<Long, float[]> {
 
     @Override
     public String toString() {
-        return "Sensor-" + _name;
+        return getParentDevice().toString() + "/" + _name;
     }
 
     @Override

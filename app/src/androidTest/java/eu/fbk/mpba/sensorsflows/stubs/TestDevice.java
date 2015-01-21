@@ -7,13 +7,13 @@ import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice extends DeviceImpl<Long, float[]> {
+public class TestDevice extends DeviceImpl<Long, float[]> {
 
     private String _name;
     private List<SensorImpl<Long, float[]>> _sensors;
 
-    public SmartphoneDevice() {
-        _name = "Smartphone";
+    public TestDevice(String name) {
+        _name = name;
         _sensors = new ArrayList<SensorImpl<Long, float[]>>();
         _sensors.add(new RandomSensorStub(this));
         _sensors.add(new SequencialSensorStub(this));

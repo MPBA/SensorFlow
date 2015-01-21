@@ -3,7 +3,6 @@ package eu.fbk.mpba.sensorsflows.stubs;
 import android.os.Environment;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,8 +19,8 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
     List<List<Object>> headers = new ArrayList<List<Object>>();
     List<SensorImpl<Long, float[]>> _linkedSensors = new ArrayList<SensorImpl<Long, float[]>>();
 
-    public CsvOutput() {
-        _name = "CsvOutput";
+    public CsvOutput(String name) {
+        _name = name;
     }
 
     @Override
@@ -56,12 +55,12 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
 
     @Override
     protected void newSensorData(SensorDataEntry<Long, float[]> data) {
-        List<Object> cheppizza = new ArrayList<Object>();
-        cheppizza.add(data.time.toString());
+        List<Object> line = new ArrayList<Object>();
+        line.add(data.time.toString());
         for (int i = 0; i < data.value.length; i++)
-            cheppizza.add(data.value[i]);
+            line.add(data.value[i]);
         //noinspection SuspiciousMethodCalls
-        _sav.writeCSV(_linkedSensors.indexOf(data.sensor), cheppizza);
+        _sav.writeCSV(_linkedSensors.indexOf(data.sensor), line);
     }
 
     @Override

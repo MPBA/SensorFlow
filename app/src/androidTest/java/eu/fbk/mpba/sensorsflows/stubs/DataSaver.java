@@ -11,6 +11,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Simple utility class to write multiple csv files.
+ */
 public class DataSaver {
     String[] _paths;
     FileWriter[] _writs;

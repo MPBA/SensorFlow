@@ -7,19 +7,24 @@ import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
-public class SequencialSensorStub extends SensorImpl<Long, float[]> {
+/**
+ * Sequential values generator.
+ *
+ * Emulates a sensor that gives sequential values
+ */
+public class SequentialSensorStub extends SensorImpl<Long, float[]> {
 
     private String _name;
     private volatile boolean _streaming = false;
 
-    public SequencialSensorStub(DeviceImpl<Long, float[]> d) {
+    public SequentialSensorStub(DeviceImpl<Long, float[]> d) {
         _name = "SequentialSensor";
         setParentDevice(d);
-        final SequencialSensorStub t = this;
+        final SequentialSensorStub t = this;
         new Thread(new Runnable() {
             @Override
             public void run() {
-                float[] seq = new float[] { 0, 0, 0 };
+                float seq = 0;
                 boolean loop = true;
                 while (loop) {
                     try {
@@ -28,10 +33,8 @@ public class SequencialSensorStub extends SensorImpl<Long, float[]> {
                         loop = false;
                     }
                     if (_streaming) {
-                        t.eventValue(new float[] { seq[0], seq[1], seq[2] } );
-                        seq[0] += 1;
-                        seq[1] += -.3;
-                        seq[2] += .001;
+                        t.eventValue(new float[] { seq, seq + 1, seq + 2 } );
+                        seq += 1;
                     }
                 }
             }

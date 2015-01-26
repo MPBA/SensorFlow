@@ -11,9 +11,9 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  * Classe di esempio.
  * Estende la classe OutputImpl che è astratta ed è parte della libreria.
  *
- * Un Output rappresenta una modalità di elaborazione di coppie tempo-insieme di valori
- * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; che sono due
- * sensori diversi possono essere inviati allo stesso output).
+ * Un Output rappresenta una modalità di elaborazione di serie di coppie tempo-insieme di valori
+ * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; che sono
+ * due sensori diversi possono essere inviati allo stesso output).
  *
  * Si presuppone che in questa classe vengano implementati dei metodi callback richiamati dal thread
  * della libreria che elaborino i dati e gli eventi protetti quindi visibili nella sottoclasse.
@@ -22,7 +22,7 @@ public class OutputStub extends OutputImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
-     * Io ho aggiunto un nome per debug che viene messo in toString.
+     * Io ho aggiunto un nome che viene messo in toString.
      */
     public OutputStub(String name) {
         this.name = name;

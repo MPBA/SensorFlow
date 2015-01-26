@@ -3,7 +3,6 @@ package eu.fbk.mpba.sensorsflows.stubs;
 import android.os.Environment;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputImpl;
@@ -11,7 +10,12 @@ import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
-
+/**
+ * Comma Separated Values Output Plug-In
+ *
+ * This plug-in saves the data in a CSV file. The table is composed by the timestamp column and a
+ * column for each float value in the array (the ValueT type is specified).
+ */
 public class CsvOutput extends OutputImpl<Long, float[]> {
 
     String _name;
@@ -37,7 +41,7 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
                         "/eu.fbk.mpba.sensorsflows.stubs/" +
                         DataSaver.getHumanDateTimeName() + "/",
                         linkedSensors.toArray(), ".csv", ";", "\n");
-        _linkedSensors.addAll((Collection)linkedSensors);
+        _linkedSensors.addAll(linkedSensors);
         for (SensorImpl l : linkedSensors) {
             List<Object> h = new ArrayList<Object>();
             h.add("timestamp");
@@ -73,6 +77,6 @@ public class CsvOutput extends OutputImpl<Long, float[]> {
 
     @Override
     public String toString() {
-        return "Output-" + _name;
+        return "CsvOutput-" + _name;
     }
 }

@@ -4,13 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.SensorImpl;
-import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
 /**
  * Classe di esempio.
  * Estende la classe SensorImpl che è astratta ed è parte della libreria.
  *
- * Un Sensore rappresenta una sorgente di dati simultanei ovvero di coppie tempo-insieme di valori
+ * Un Sensore rappresenta una sorgente di dati simultanei ovvero di coppie tempo - insieme di valori
  * (ad esempio accelerometro &lt;time, (ax,ay,az)&gt; e giroscopio &lt;time, (gx,gy,gz)&gt; sono due
  * sensori diversi.
  *
@@ -25,7 +24,7 @@ public class SensorStub extends SensorImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
-     * Io ho aggiunto un nome per debug che viene messo in toString.
+     * Io ho aggiunto un nome che viene messo in toString.
      *
      * VA impostato il parent device
      *
@@ -62,21 +61,20 @@ public class SensorStub extends SensorImpl<Long, float[]> {
     }
 
     /**
-     * Va gestita una variabile d'istanza di tipo {@code SensorStatus}, questo è il getter.
-     * @return stato
+     * Questo metodo è importante perché può ad esempio essere usato per dare nome ai file CSV o
+     * a tabelle. Per non creare ambiguità va aggiunto il {@code getParentDevice().toString()}.
      */
     @Override
-    public SensorStatus getState() {
-        return null;
-    }
-
-    @Override
     public String toString() {
-        return "SensorStub-" + name;
+        return getParentDevice().toString() + "/" + name;
     }
 
+    /**
+     * Questo metodo è importante perché da la descrizione dei valori del sensore e viene usato per
+     * dare nome alle colonne dei CSV o della tabella relativa al sensore.
+     */
     @Override
     public List<Object> getValuesDescriptors() {
-        return Arrays.asList((Object)"Random");
+        return Arrays.asList((Object)"Random", "Random", "Random");
     }
 }

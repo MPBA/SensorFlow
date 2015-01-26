@@ -7,6 +7,9 @@ import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
+/**
+ * Test device with two basic sensors.
+ */
 public class TestDevice extends DeviceImpl<Long, float[]> {
 
     private String _name;
@@ -16,7 +19,7 @@ public class TestDevice extends DeviceImpl<Long, float[]> {
         _name = name;
         _sensors = new ArrayList<SensorImpl<Long, float[]>>();
         _sensors.add(new RandomSensorStub(this));
-        _sensors.add(new SequencialSensorStub(this));
+        _sensors.add(new SequentialSensorStub(this));
     }
 
     @Override

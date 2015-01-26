@@ -9,6 +9,9 @@ import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.stubs.DeviceStub;
 import eu.fbk.mpba.sensorsflows.stubs.OutputStub;
 
+/**
+ * This class provides base test methods for the calss FlowsMan
+ */
 public class FlowsManTest extends TestCase {
 
     public void setUp() throws Exception {

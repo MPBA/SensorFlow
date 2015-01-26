@@ -1,7 +1,5 @@
 package eu.fbk.mpba.sensorsflows;
 
-import android.util.Log;
-
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -14,7 +12,6 @@ public class CsvCheck {
         while ((l = readLine(r)) != null) {
             String[] s = l.split(";(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
             Long b = Long.parseLong(s[0]);
-            Log.v("SOPRE", s[0]);
             if (last >= b)
                 return false;
             last = b;

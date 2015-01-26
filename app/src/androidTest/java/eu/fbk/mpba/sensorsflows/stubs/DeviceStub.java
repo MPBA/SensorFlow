@@ -13,7 +13,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  *
  * Un Device rappresenta un insieme di sensori accomunati da un dispositivo che si connette
  * all'inizio una volta per tutti i sensori (es. E3 è il Device che racchiude i sensori BVP Temp
- * ecc. oppure Smartphone può essere il Device che comprende acc. gyro. & co.)
+ * ecc. oppure AndroidSmartphone(Context) può essere il Device che comprende acc. gyro. & co.)
  */
 public class DeviceStub extends DeviceImpl<Long, float[]> {
 
@@ -22,9 +22,8 @@ public class DeviceStub extends DeviceImpl<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato
-     * Io ho aggiunto un nome per debug che viene messo in toString e un numero di sensori fittizi
-     * da generare.
-     * I sensori vanno creati qua
+     * Io ho aggiunto un nome che viene messo in toString e un numero di sensori fittizi.
+     * I sensori andrebbero costruiti qua
      */
     public DeviceStub(String name, int sensors) {
 

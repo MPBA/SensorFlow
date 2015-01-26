@@ -1,8 +1,7 @@
 package eu.fbk.mpba.sensorsflows;
 
-import android.test.InstrumentationTestCase;
-
 import junit.framework.Assert;
+import junit.framework.TestCase;
 
 import java.util.List;
 
@@ -10,9 +9,12 @@ import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.stubs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.stubs.TestDevice;
 
-public class ApplicationTest extends InstrumentationTestCase {
+/**
+ * This class provides stress test methods. The operation lasts 30s.
+ */
+public class StressTests extends TestCase {
 
-    public ApplicationTest() {
+    public StressTests() {
     }
 
     FlowsMan<Long, float[]> m;

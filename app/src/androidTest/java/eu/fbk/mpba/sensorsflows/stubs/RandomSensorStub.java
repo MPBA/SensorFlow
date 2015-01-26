@@ -7,6 +7,11 @@ import eu.fbk.mpba.sensorsflows.DeviceImpl;
 import eu.fbk.mpba.sensorsflows.SensorImpl;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
+/**
+ * Random values generator.
+ *
+ * Emulates a sensor that gives random values with avg = 0 and sd = pi/2
+ */
 public class RandomSensorStub extends SensorImpl<Long, float[]> {
 
     private String _name;
@@ -65,6 +70,6 @@ public class RandomSensorStub extends SensorImpl<Long, float[]> {
 
     @Override
     public List<Object> getValuesDescriptors() {
-        return Arrays.asList((Object)"AccX", "AccY", "AccZ");
+        return Arrays.asList((Object)"RandX", "RandY", "RandZ");
     }
 }

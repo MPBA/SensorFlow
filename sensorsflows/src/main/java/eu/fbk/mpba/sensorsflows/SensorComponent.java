@@ -77,4 +77,7 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePl
     // To implement
 
     public abstract List<Object> getValuesDescriptors();
+
+    @Override
+    public abstract String toString();
 }

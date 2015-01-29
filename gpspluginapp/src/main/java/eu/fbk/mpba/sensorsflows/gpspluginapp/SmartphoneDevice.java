@@ -7,22 +7,24 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugIn;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
+import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice extends DevicePlugIn {
+public class SmartphoneDevice extends DevicePlugIn<Long, double[]> implements IMonotonicTimestampReference {
 
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
 
     public SmartphoneDevice(Context context, String name) {
         this.name = name;
-        _sensors = new ArrayList<SensorComponent<Long, double[]>>();
-        _sensors.add(new GpsSensor(context, "0", 0, 0));
+        resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
+        _sensors = new ArrayList<>();
+        _sensors.add(new GpsSensor(this, context, "0", 0, 0));
     }
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return new ReadOnlyIterable<SensorComponent<Long, double[]>>(_sensors.iterator());
+        return new ReadOnlyIterable<>(_sensors.iterator());
     }
 
     @Override
@@ -43,4 +45,17 @@ public class SmartphoneDevice extends DevicePlugIn {
     public String toString() {
         return name;
     }
+
+    private long bootUTCNanos;
+
+    @Override
+    public void resetMonoTimestamp(long timestamp, long realTimeNanos) {
+        bootUTCNanos = timestamp * 1000000 - realTimeNanos;
+    }
+
+    @Override
+    public long getMonoTimestampNanos(long realTimeNanos) {
+        return realTimeNanos + bootUTCNanos;
+    }
 }
+

@@ -1,7 +1,5 @@
 package eu.fbk.mpba.sensorsflows.gpspluginapp;
 
-import android.os.Environment;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -20,12 +18,14 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 public class CsvOutput extends OutputPlugIn<Long, double[]> {
 
     String _name;
+    String _path;
     DataSaver _sav;
     List<List<Object>> headers = new ArrayList<List<Object>>();
     List<SensorComponent<Long, double[]>> _linkedSensors = new ArrayList<SensorComponent<Long, double[]>>();
 
-    public CsvOutput(String name) {
+    public CsvOutput(String name, String path) {
         _name = name;
+        _path = path;
     }
 
     public List<String> getFiles() {
@@ -38,8 +38,7 @@ public class CsvOutput extends OutputPlugIn<Long, double[]> {
 
     @Override
     public void setLinkedSensors(List<SensorComponent> linkedSensors) {
-        _sav = new DataSaver(Environment.getExternalStorageDirectory().getPath() +
-                        "/eu.fbk.mpba.sensorsflows.stubs/" +
+        _sav = new DataSaver(_path +
                         DataSaver.getHumanDateTimeName() + "/",
                         linkedSensors.toArray(), ".csv", ";", "\n");
         _linkedSensors.addAll((Collection)linkedSensors);

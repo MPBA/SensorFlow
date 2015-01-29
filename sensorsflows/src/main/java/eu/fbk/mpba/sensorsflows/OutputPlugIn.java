@@ -16,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * Polls but has a fixed sleep time in the case that each queue is empty.
  */
 public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
-    final String LOG_TAG = "ALE SFW";
+//    final String LOG_TAG = "ALE SFW";
     private IOutputCallback<TimeT, ValueT> _manager = null;
 
     private boolean _stopPending = false;
@@ -29,9 +29,9 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
         int dataQueueCapacity = 80;
         int eventQueueCapacity = 30;
         // FIXME Adjust the capacity
-        _eventsQueue = new ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>>(eventQueueCapacity);
+        _eventsQueue = new ArrayBlockingQueue<>(eventQueueCapacity);
         // FIXME Adjust the capacity
-        _dataQueue = new ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>>(dataQueueCapacity);
+        _dataQueue = new ArrayBlockingQueue<>(dataQueueCapacity);
     }
 
     private Thread _thread = new Thread(new Runnable() {
@@ -57,7 +57,7 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
                 newSensorEvent(event);
             else if (data == null)
                 try {
-                    long sleepInterval = 20; // POI polling time here
+                    long sleepInterval = 25; // POI polling time here
                     Thread.sleep(sleepInterval);
                 } catch (InterruptedException e) {
 //                    Log.w(LOG_TAG, "InterruptedException in OutputImpl.run() find-me:fnh294he97");

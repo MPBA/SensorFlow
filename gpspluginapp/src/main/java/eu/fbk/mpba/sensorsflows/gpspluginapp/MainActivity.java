@@ -2,8 +2,10 @@ package eu.fbk.mpba.sensorsflows.gpspluginapp;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
@@ -11,28 +13,25 @@ import eu.fbk.mpba.sensorsflows.FlowsMan;
 
 public class MainActivity extends Activity {
 
-    FlowsMan<Long, double[]> m = new FlowsMan<Long, double[]>();
+    FlowsMan<Long, double[]> m = new FlowsMan<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        FlowsMan<Long, double[]> m = new FlowsMan<Long, double[]>();
-
         m.addDevice(new SmartphoneDevice(this, "Smartphone"));
-        m.addOutput(new CsvOutput("O"));
+        m.addOutput(new CsvOutput("O",
+                Environment.getExternalStorageDirectory().getPath()
+                + "/eu.fbk.mpba.sensorsflows/"));
 
         m.setAutoLinkMode(AutoLinkMode.NTH_TO_NTH);
 
         m.start();
     }
 
-
-    @Override
-    protected void onDestroy() {
+    public void onMClose(View v) {
         m.close();
-        super.onDestroy();
     }
 
     @Override

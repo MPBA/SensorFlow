@@ -141,9 +141,9 @@ public class FlowsMan<TimeT, ValueT> implements
     protected boolean _paused = false;
     private AutoLinkMode _linkMode = AutoLinkMode.PRODUCT;
 
-    protected List<DevicePlugIn<TimeT, ValueT>> _userDevices = new ArrayList<DevicePlugIn<TimeT, ValueT>>();
-    protected List<OutputPlugIn<TimeT, ValueT>> _userOutputs = new ArrayList<OutputPlugIn<TimeT, ValueT>>();
-    private Hashtable<IOutput, List<SensorComponent>> _outputsSensors = new Hashtable<IOutput, List<SensorComponent>>();
+    protected List<DevicePlugIn<TimeT, ValueT>> _userDevices = new ArrayList<>();
+    protected List<OutputPlugIn<TimeT, ValueT>> _userOutputs = new ArrayList<>();
+    private Hashtable<IOutput, List<SensorComponent>> _outputsSensors = new Hashtable<>();
 
     protected List<DevicePlugIn> _devicesToInit = new ArrayList<DevicePlugIn>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<IOutput>();                                       // null
@@ -220,7 +220,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public Iterable<DevicePlugIn<TimeT, ValueT>> getDevices() {
-        return new ReadOnlyIterable<DevicePlugIn<TimeT, ValueT>>(_userDevices.iterator());
+        return new ReadOnlyIterable<>(_userDevices.iterator());
     }
 
     /**
@@ -230,7 +230,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public Iterable<OutputPlugIn<TimeT, ValueT>> getOutputs() {
-        return new ReadOnlyIterable<OutputPlugIn<TimeT, ValueT>>(_userOutputs.iterator());
+        return new ReadOnlyIterable<>(_userOutputs.iterator());
     }
 
     //      Internal init and final management

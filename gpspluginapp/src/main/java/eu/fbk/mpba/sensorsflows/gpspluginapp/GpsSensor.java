@@ -10,6 +10,7 @@ import android.widget.Toast;
 import java.util.Arrays;
 import java.util.List;
 
+import eu.fbk.mpba.sensorsflows.DevicePlugIn;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 
 public class GpsSensor extends SensorComponent<Long, double[]> implements LocationListener {
@@ -28,7 +29,8 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
      *                          to conserve power, and actual time between location.
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
-    public GpsSensor(Context context, String name, long minTime, float minDistance) {
+    public GpsSensor(DevicePlugIn<Long, double[]> parent, Context context, String name, long minTime, float minDistance) {
+        super(parent);
         this.minTime = minTime;
         this.minDistance = minDistance;
         this.context = context;
@@ -38,16 +40,15 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void onLocationChanged(Location location) {
-        String str = "Lat: "+location.getLatitude()+"\nLon: "+location.getLongitude();
+        String str = "Lat: " + location.getLatitude() + "\nLon: " + location.getLongitude();
         Toast.makeText(context, str, Toast.LENGTH_LONG).show();
-        sensorValue(location.getElapsedRealtimeNanos(),
+        sensorValue(((SmartphoneDevice)getParentDevice()).getMonoTimestampNanos(location.getElapsedRealtimeNanos()),
                 new double[] {
                         location.getLatitude(),
                         location.getLongitude(),
                         location.getAltitude(),
                         location.getBearing(),
-                        location.getAccuracy(),
-                        location.getTime()
+                        location.getAccuracy()
                 });
     }
 
@@ -76,8 +77,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
                 "android.location.Location#getLongitude",
                 "android.location.Location#getAltitude",
                 "android.location.Location#getBearing",
-                "android.location.Location#getAccuracy",
-                "android.location.Location#getTime");
+                "android.location.Location#getAccuracy");
     }
 
     @Override

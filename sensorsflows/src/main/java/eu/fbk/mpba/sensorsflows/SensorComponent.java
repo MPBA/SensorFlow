@@ -16,12 +16,16 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePl
     private SensorStatus _status = SensorStatus.OFF;
     private DevicePlugIn<TimeT, ValueT> _parent = null;
 
+    protected SensorComponent(DevicePlugIn<TimeT, ValueT> parent) {
+        _parent = parent;
+    }
+
     void addOutput(OutputPlugIn<TimeT, ValueT> _output) {
         this._outputs.add(_output);
     }
 
     Iterable<OutputPlugIn<TimeT, ValueT>> getOutputs() {
-        return new ReadOnlyIterable<OutputPlugIn<TimeT, ValueT>>(_outputs.iterator());
+        return new ReadOnlyIterable<>(_outputs.iterator());
     }
 
     int getOutputsCount() {
@@ -38,9 +42,9 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePl
         _parent._manager.sensorStateChanged(this, null, _status = state);
     }
 
-    protected void setParentDevice(DevicePlugIn<TimeT, ValueT> parent) {
+    /*protected void setParentDevice(DevicePlugIn<TimeT, ValueT> parent) {
         _parent = parent;
-    }
+    }*/
 
     // Managed Overrides
 

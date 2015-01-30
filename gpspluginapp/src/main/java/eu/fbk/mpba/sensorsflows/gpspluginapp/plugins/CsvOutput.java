@@ -42,7 +42,7 @@ public class CsvOutput extends OutputPlugIn<Long, double[]> {
     @Override
     public void setLinkedSensors(List<SensorComponent> linkedSensors) {
         _sav = new DataSaver(_path +
-                        DataSaver.getHumanDateTimeName() + "/",
+                        DataSaver.getHumanDateTimeString() + "/",
                         linkedSensors.toArray(), ".csv", ";", "\n");
         _linkedSensors.addAll((Collection)linkedSensors);
         for (SensorComponent l : linkedSensors) {

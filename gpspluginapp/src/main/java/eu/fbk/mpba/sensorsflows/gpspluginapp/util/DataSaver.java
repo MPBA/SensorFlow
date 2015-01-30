@@ -35,7 +35,7 @@ public class DataSaver {
         _nl = nl;
     }
 
-    public static String getHumanDateTimeName() {
+    public static String getHumanDateTimeString() {
         return new SimpleDateFormat("yyyyMMddHHmmss", Locale.ITALY).format(new Date());
     }
 

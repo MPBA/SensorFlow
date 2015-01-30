@@ -9,6 +9,8 @@ import android.view.View;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
+import eu.fbk.mpba.sensorsflows.gpspluginapp.plugins.CsvOutput;
+import eu.fbk.mpba.sensorsflows.gpspluginapp.plugins.SmartphoneDevice;
 
 
 public class MainActivity extends Activity {

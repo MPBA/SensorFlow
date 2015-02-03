@@ -21,6 +21,8 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
 
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
+    private Object sessionTag = "unspecified";
+    List<ISensor> linkedSensors;
 
     private ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
@@ -37,7 +39,7 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
     private Thread _thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            pluginInitialize();
+            pluginInitialize(sessionTag, linkedSensors);
             changeState(OutputStatus.INITIALIZED);
             dispatchLoopWhileNotStopPending();
             pluginFinalize();
@@ -77,7 +79,9 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
     // Implemented Callbacks
 
     @Override
-    public void initialize() {
+    public void initialize(Object sessionTag, List<ISensor> streamingSensors) {
+        this.sessionTag = sessionTag;
+        this.linkedSensors = streamingSensors;
         changeState(OutputStatus.INITIALIZING);
         _thread.start();
     }
@@ -122,14 +126,11 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
 
     // Abstracts to be implemented by the plug-in
 
-    protected abstract void pluginInitialize();
+    protected abstract void pluginInitialize(Object sessionTag, List<ISensor> streamingSensors);
 
     protected abstract void pluginFinalize();
 
     protected abstract void newSensorEvent(SensorEventEntry event);
 
     protected abstract void newSensorData(SensorDataEntry<TimeT, ValueT> data);
-
-    @Override
-    public abstract void setLinkedSensors(List<SensorComponent> linkedSensors);
 }

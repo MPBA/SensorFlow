@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.base;
 
+import java.util.List;
+
 /**
  * Main control interface for a sensor.
  *
@@ -14,4 +16,6 @@ public interface ISensor<DeviceT extends IDevice> {
     public SensorStatus getState();
 
     public DeviceT getParentDevice();
+
+    public abstract List<Object> getValuesDescriptors();
 }

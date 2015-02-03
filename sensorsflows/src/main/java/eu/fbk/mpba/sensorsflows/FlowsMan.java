@@ -11,6 +11,7 @@ import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
+import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
@@ -133,7 +134,6 @@ public class FlowsMan<TimeT, ValueT> implements
 
     // Fields
 
-    final String LOG_TAG = "ALE SFW";
     final String _emAlreadyRendered = "The engine is started. No inputs, outputs or links can be added at this time for now.";
     final String _itemsToInitLock = "_itemsToInitLock";
 
@@ -143,10 +143,10 @@ public class FlowsMan<TimeT, ValueT> implements
 
     protected List<DevicePlugIn<TimeT, ValueT>> _userDevices = new ArrayList<>();
     protected List<OutputPlugIn<TimeT, ValueT>> _userOutputs = new ArrayList<>();
-    private Hashtable<IOutput, List<SensorComponent>> _outputsSensors = new Hashtable<>();
+    private Hashtable<OutputPlugIn<TimeT, ValueT>, List<ISensor>> _outputsSensors = new Hashtable<>();
 
-    protected List<DevicePlugIn> _devicesToInit = new ArrayList<DevicePlugIn>();                                    // null
-    protected List<IOutput> _outputsToInit = new ArrayList<IOutput>();                                       // null
+    protected List<DevicePlugIn> _devicesToInit = new ArrayList<>();                                    // null
+    protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null
 
     protected EventCallback<IUserInterface<DevicePlugIn<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugIn<TimeT, ValueT>>
             , EngineStatus> _onStateChanged = null;                   // null
@@ -205,7 +205,7 @@ public class FlowsMan<TimeT, ValueT> implements
         if (_status == EngineStatus.STANDBY) {
             output.setOutputCallbackManager(this);
             _userOutputs.add(output);
-            _outputsSensors.put(output, new ArrayList<SensorComponent>());
+            _outputsSensors.put(output, new ArrayList<ISensor>());
         }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -256,9 +256,9 @@ public class FlowsMan<TimeT, ValueT> implements
      *
      * @param output {@code IOutput} to finalize.
      */
-    void initialize(IOutput<TimeT, ValueT> output) {
+    void initialize(OutputPlugIn<TimeT, ValueT> output, String sessionName, List<ISensor> notifiedSensors) {
         if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
-            output.initialize();
+            output.initialize(sessionName, notifiedSensors);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
         }
@@ -380,9 +380,25 @@ public class FlowsMan<TimeT, ValueT> implements
      * If a device/output was initialized before this call and it is not already INITIALIZED the
      * engine will wait for it for an indefinite time. In this period the engine status will stay
      * {@code EngineStatus.PREPARING}.
+     *
+     * The session name is the date-time string {@code Long.toString(System.currentTimeMillis())}
      */
+    @SuppressWarnings("JavaDoc")
     @Override
     public void start() {
+        start(Long.toString(System.currentTimeMillis()));
+    }
+
+    /**
+     * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
+     * <p/>
+     * If a device/output was initialized before this call and it is not already INITIALIZED the
+     * engine will wait for it for an indefinite time. In this period the engine status will stay
+     * {@code EngineStatus.PREPARING}.
+     *
+     * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
+     */
+    public void start(String sessionName) {
         // Prepares the links
         switch (_linkMode) {
             case PRODUCT:
@@ -408,12 +424,12 @@ public class FlowsMan<TimeT, ValueT> implements
             initialize(d);
         }
         _outputsToInit.addAll(_userOutputs);
-        for (OutputPlugIn<TimeT, ValueT> o : _userOutputs) {
+        for (OutputPlugIn<TimeT, ValueT> o : _outputsSensors.keySet()) {
             // only if NOT_INITIALIZED: checked in the initialize method
-            o.setLinkedSensors(_outputsSensors.get(o));
-            _outputsSensors.remove(o);
-            initialize(o);
+            initialize(o, sessionName, _outputsSensors.get(o));
         }
+        _outputsSensors.clear();
+        _outputsSensors = null;
     }
 
     /**

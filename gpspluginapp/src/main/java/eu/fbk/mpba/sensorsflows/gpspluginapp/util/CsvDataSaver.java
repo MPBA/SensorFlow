@@ -15,7 +15,7 @@ import java.util.Locale;
 /**
  * Simple utility class to write multiple csv files.
  */
-public class DataSaver {
+public class CsvDataSaver {
     String[] _paths;
     FileWriter[] _writs;
     File[] _files;
@@ -23,7 +23,7 @@ public class DataSaver {
     String _sep;
     String _nl;
 
-    public DataSaver(String prefix, Object[] names, String suffix, String sep, String nl) {
+    public CsvDataSaver(String prefix, Object[] names, String suffix, String sep, String nl) {
         _paths = new String[names.length];
         for (int i = 0; i < names.length; i++) {
             _paths[i] = prefix + names[i] + suffix;
@@ -51,7 +51,7 @@ public class DataSaver {
         return storagePath.getAbsolutePath() + "/";
     }
 
-    public boolean initFS(List<List<Object>> headers) {
+    public boolean init(List<List<Object>> headers) {
         for (int i = 0; i < _paths.length; i++)
             try {
                 _files[i] = new File(_paths[i]);
@@ -60,7 +60,7 @@ public class DataSaver {
                 _writs[i] = new FileWriter(_files[i], true);
                 _csvCard[i] = headers.get(i).size();
                 if (header)
-                    writeCSV(i, headers.get(i));
+                    save(i, headers.get(i));
             } catch (IOException e) {
                 e.printStackTrace();
                 for (int j = 0; j < i; j++)
@@ -84,7 +84,7 @@ public class DataSaver {
             }
     }
 
-    public void writeCSV(int file, List<Object> data) throws IllegalArgumentException {
+    public void save(int file, List<Object> data) throws IllegalArgumentException {
         int length = data.size();
         while (length > _csvCard[file] && data.get(length - 1) == null)
             length--;
@@ -105,7 +105,7 @@ public class DataSaver {
                     "Wrong number of columns given for file n." + file + "!");
     }
 
-    public List<File> getFiles() {
+    public List<File> getSupports() {
         return Arrays.asList(_files);
     }
 }

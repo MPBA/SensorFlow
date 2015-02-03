@@ -247,7 +247,7 @@ public class BluetoothService {
         IsConnected = false;
         setState(STATE_DISCONNECTED);
         // Start the service over to restart listening mode
-        BluetoothService.this.start();
+//FIXME        BluetoothService.this.start();
     }
 
     /**
@@ -263,7 +263,7 @@ public class BluetoothService {
 
         IsConnected = false;
         // Start the service over to restart listening mode
-        BluetoothService.this.start(); // TODO HEAD Simplify the class
+//        BluetoothService.this.start(); // TODO HEAD Simplify the class
     }
 
     /**

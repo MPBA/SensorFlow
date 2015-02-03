@@ -26,7 +26,7 @@ public class CupidManager {
     }
 
     public void connect(BluetoothDevice device) {
-        devices.put(device, new BluetoothService(new IntHandler<>(device)));
+        // devices.put(device, new BluetoothService(new IntHandler<>(device)));
         // TODO HEAD store devices
     }
 

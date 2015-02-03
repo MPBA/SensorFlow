@@ -28,7 +28,7 @@ public class StressTests extends TestCase {
                 EngineStatus.STREAMING, m.getStatus());
         Thread.sleep(30000);
         m.close();
-        List<String> a = o.getFiles();
+        List<String> a = o.getSupports();
         for (String n : a) {
             Assert.assertTrue(CsvCheck.checkStrongMonotonicityOfTheFirstColumnLong(n));
         }

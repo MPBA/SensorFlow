@@ -4,6 +4,7 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugIn;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
+import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
@@ -35,7 +36,7 @@ public class OutputStub extends OutputPlugIn<Long, float[]> {
      * prima dell'avvio della libreria. Meglio se le connessioni sono gestite prima dello start.
      */
     @Override
-    protected void pluginInitialize() {
+    protected void pluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
 
     }
 
@@ -61,15 +62,6 @@ public class OutputStub extends OutputPlugIn<Long, float[]> {
     @Override
     protected void newSensorData(SensorDataEntry<Long, float[]> data) {
 
-    }
-
-    /**
-     * Vengono notificati i sensori associati (ad esempio per inizializzare files o tabelle).
-     * @param linkedSensors lista di sensori
-     */
-    @Override
-    public void setLinkedSensors(List<SensorComponent> linkedSensors) {
-        _linkedSensors = linkedSensors.size();
     }
 
     int _linkedSensors = 0;

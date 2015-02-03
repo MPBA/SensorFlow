@@ -40,7 +40,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
             sensorEvent(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(System.nanoTime()),
-                    0, _name + " switched on");
+                    0, "switched on");
         }
     }
 
@@ -50,7 +50,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
             sensorEvent(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(System.nanoTime()),
-                    0, _name + " switched off");
+                    0, "switched off");
         }
     }
 

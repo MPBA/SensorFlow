@@ -84,7 +84,7 @@ public class CupidLogApp extends Activity {
             // Only if the state is STATE_NONE, do we know that we haven't started already
             if (mChatService[0].getState() == BluetoothService.STATE_NONE) {
                 // Start the Bluetooth chat services
-                mChatService[0].start();
+//FIXME                mChatService[0].start();
             }
         }
     }
@@ -189,7 +189,7 @@ public class CupidLogApp extends Activity {
         if (mChatService[service_id].getState() == BluetoothService.STATE_CONNECTED) {
 
             try {
-                File newFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/CUPID_data/" + DataSaver.getHumanDateTimeString() + "/log_" + DataSaver.getHumanDateTimeString() + "-" + node_id + "-" + service_id + ".txt");
+                File newFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/CUPID_data/" + CsvDataSaver.getHumanDateTimeString() + "/log_" + CsvDataSaver.getHumanDateTimeString() + "-" + node_id + "-" + service_id + ".txt");
                 //noinspection ResultOfMethodCallIgnored
                 newFile.mkdirs();
 

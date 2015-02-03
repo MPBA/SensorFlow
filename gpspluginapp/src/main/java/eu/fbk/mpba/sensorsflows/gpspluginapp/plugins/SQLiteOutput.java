@@ -1,0 +1,100 @@
+package eu.fbk.mpba.sensorsflows.gpspluginapp.plugins;
+
+import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import eu.fbk.mpba.sensorsflows.OutputPlugIn;
+import eu.fbk.mpba.sensorsflows.base.ISensor;
+import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
+import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
+
+/**
+ * SQLite database Output Plug-In
+ *
+ * This plug-in saves the data in an SQLite database. The table is composed by the timestamp column
+ * and a column for each float value in the array (the ValueT type is specified).
+ */
+public class SQLiteOutput extends OutputPlugIn<Long, double[]> {
+
+    String _name;
+    String _path;
+    SQLiteDatabase _sav;
+
+    public SQLiteOutput(String name, String path) {
+        _name = name;
+        _path = path;
+    }
+
+    public List<String> getFiles() {
+        return Arrays.asList(_sav.getPath());
+    }
+
+    @Override
+    protected void pluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
+        _sav = SQLiteDatabase.openOrCreateDatabase(_path + "/" + sessionTag.toString() /*+ "/" + toString()*/ + ".sqlitedb", null);
+        for (ISensor l : linkedSensors) {
+            _sav.execSQL(
+                    "CREATE TABLE IF NOT EXISTS " + getEventsTblName(l) +
+                    " (timestamp INTEGER PRIMARY KEY ASC, code INTEGER, message TEXT)");
+
+            StringBuilder sb = new StringBuilder(100);
+            sb.append("CREATE TABLE IF NOT EXISTS ");
+            sb.append(getDataTblName(l));
+            sb.append(" (timestamp INTEGER PRIMARY KEY ASC");
+            for (Object i : l.getValuesDescriptors()) {
+                sb.append(",[");
+                sb.append(i.toString().replace("[", "").replace("]", ""));
+                sb.append("] REAL");
+            }
+            sb.append(")");
+            _sav.execSQL(sb.toString());
+        }
+    }
+
+    @Override
+    protected void pluginFinalize() {
+        _sav.close();
+    }
+
+    @Override
+    protected void newSensorEvent(SensorEventEntry event) {
+        _sav.execSQL("INSERT INTO " + getEventsTblName(event.sensor) + " VALUES(?,?,?)", Arrays.asList(
+                event.timestamp,
+                event.code,
+                event.message
+        ).toArray());
+    }
+
+    @Override
+    protected void newSensorData(SensorDataEntry<Long, double[]> data) {
+        ArrayList<Object> h = new ArrayList<>();
+
+        h.add(data.time);
+        for (double i : data.value)
+            h.add(i);
+
+        StringBuilder sb = new StringBuilder("INSERT INTO " + getDataTblName(data.sensor) + " values (?");
+        for (Object ignored : data.value)
+            sb.append(",?");
+        sb.append(")");
+        Log.v("DATA", sb.toString() + " " + h.toArray()[0] + " " + h.toArray()[1]);
+        _sav.execSQL(sb.toString(), h.toArray());
+    }
+
+    @Override
+    public String toString() {
+        return "SQLiteOutput-" + _name;
+    }
+
+    public static String getDataTblName(ISensor s) {
+        return "[data_" + s.toString().replace("[", "").replace("]", "") + "]";
+    }
+
+    public static String getEventsTblName(ISensor s) {
+        return "[events_" + s.toString().replace("[", "").replace("]", "") + "]";
+    }
+}

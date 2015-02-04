@@ -5,13 +5,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,6 +22,38 @@ import java.util.UUID;
  * thread for performing data transmissions when connected.
  */
 @SuppressLint("NewApi") public class BluetoothService {
+
+    public static interface DataDelegate {
+        void receive(Packet p);
+    }
+
+    public static class Packet {
+        long dataReceivedTime;
+        int countT;
+        int ax,ay,az,gx,gy,gz,mx,my,mz;
+        long checksum_received,checksum;
+
+        public boolean isValid() {
+            return checksum_received == checksum;
+        }
+
+        public Packet (long dataReceivedTime, int countT, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum) {
+            this.dataReceivedTime = dataReceivedTime;
+            this.countT = countT;
+            this.ax = ax;
+            this.ay = ay;
+            this.az = az;
+            this.gx = gx;
+            this.gy = gy;
+            this.gz = gz;
+            this.mx = mx;
+            this.my = my;
+            this.mz = mz;
+            this.checksum_received = checksum_received;
+            this.checksum = checksum;
+        }
+    }
+
     // Debugging
     private static final String TAG = "BluetoothChatService";
     private static final boolean D = true;
@@ -46,6 +76,7 @@ import java.util.UUID;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
     private int mState;
+    private DataDelegate mDataDelegate;
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -54,25 +85,28 @@ import java.util.UUID;
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
     public static final int STATE_DISCONNECTED = 4;  // Disconnected from device
 
-    private int contaT, contaT_prev, flag_inertial_update;
-    private int ax, ay, az, gx, gy, gz, mx, my, mz;
-    public int test_state, test_num, temp_state, download_process, packet_counter_global, packet_loss;
-    public BufferedWriter out_log;
+    public static final String DEVICE_NAME = "DEVICE_NAME";
+    public static final String TOAST = "TOAST";
 
-    public long StartStremingTime;
+    public int test_state;
+    public int temp_state;
+    public int download_process;
+    public int packet_counter_global;
+    public int packet_loss;
+
+    public long StartStreamingTime;
     public boolean IsConnected = false;
-    private long DataReceivedTime;
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
      *
-     * @param context The UI Activity Context
      * @param handler A Handler to send messages back to the UI Activity
      */
-    public BluetoothService(Context context, Handler handler) {
+    public BluetoothService(Handler handler, DataDelegate output) {
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mHandler = handler;
+        mDataDelegate = output;
     }
 
     /**
@@ -195,7 +229,7 @@ import java.util.UUID;
         // Send the name of the connected device back to the UI Activity
         Message msg = mHandler.obtainMessage(CupidLogApp.MESSAGE_DEVICE_NAME);
         Bundle bundle = new Bundle();
-        bundle.putString(CupidLogApp.DEVICE_NAME, device.getName());
+        bundle.putString(DEVICE_NAME, device.getName());
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -241,8 +275,10 @@ import java.util.UUID;
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
-            if (mState != STATE_CONNECTED) return;
-            r = mConnectedThread;
+            if (mState == STATE_CONNECTED)
+                r = mConnectedThread;
+            else
+                return;
         }
         // Perform the write unsynchronized
         r.write(out);
@@ -255,7 +291,7 @@ import java.util.UUID;
         // Send a failure message back to the Activity
         Message msg = mHandler.obtainMessage(CupidLogApp.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(CupidLogApp.TOAST, "Unable to connect device");
+        bundle.putString(TOAST, "Unable to connect device");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
         IsConnected = false;
@@ -314,14 +350,19 @@ import java.util.UUID;
                     "BEGIN mAcceptThread" + this);
             setName("AcceptThread" + mSocketType);
 
-            BluetoothSocket socket = null;
+            BluetoothSocket socket;
 
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
                 try {
                     // This is a blocking call and will only return on a
                     // successful connection or an exception
-                    socket = mmServerSocket.accept();
+                    if (mmServerSocket != null)
+                        socket = mmServerSocket.accept();
+                    else {
+                        Log.e(TAG, "Null mmServerSocket");
+                        return;
+                    }
                 } catch (IOException e) {
                     Log.e(TAG, "Socket Type: " + mSocketType + "accept() failed", e);
                     break;
@@ -465,78 +506,70 @@ import java.util.UUID;
             mmOutStream = tmpOut;
         }
 
-        public void run() {
+        public void run() { // TODO HEAD Analyze
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
-            int bytes;
+
 
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
+                    byte[] buffer = new byte[1024];
+                    int pointer;
+
                     // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
+                    //noinspection ResultOfMethodCallIgnored
+                    mmInStream.read(buffer);
 
-                    // Send the obtained bytes to the UI Activity
-                    int b_tmp = 0;
-                    int b_tmp_aug = 0;
-                    int cnt = 0;
+                    long dataReceivedTime = System.currentTimeMillis(); // TODO 4 Make the timing monotonic
 
-                    contaT = 0;
-                    contaT_prev = 0;
-                    long checksum = 0, checksum_received = 0;
-                    flag_inertial_update = 0;
+                    // Send the obtained bytes to the DataDelegate
+                    int b_read;
+                    int b_read_aux;
 
-                    cnt = 0;
-                    //flag=0;
                     while (mState == STATE_CONNECTED) {
                         try {
                             // Read from the InputStream
-                            cnt = 0;
+                            int ct = 0, countT_prev = 0;
+                            long checksum_received, checksum = 0;
+                            pointer = 0;
 
-                            b_tmp = (int) mmInStream.read();
-                            if (b_tmp == 0x20) {//
-                                b_tmp_aug = (int) mmInStream.read();
-                                if (b_tmp_aug == 0x0A || b_tmp_aug == 0x0B) {
+                            b_read = mmInStream.read();
+
+                            if (b_read == 0x20) {
+                                b_read_aux = mmInStream.read();
+
+                                if (b_read_aux == 0x0A || b_read_aux == 0x0B) {
                                     try {
-                                        DataReceivedTime = android.os.SystemClock.elapsedRealtime() - StartStremingTime;
-                                        buffer[cnt] = (byte) b_tmp;//b_tmp[0];
-                                        //out.writeByte(buffer[cnt]);
-                                        cnt++;
-                                        buffer[cnt] = (byte) b_tmp_aug;//b_tmp[0];
-                                        cnt++;
-                                        while (cnt < 22) { //
-                                            b_tmp = mmInStream.read();//mmInStream.read(b_tmp);//.read();//
-                                            buffer[cnt] = (byte) b_tmp;//b_tmp[0];
-                                            cnt++;
+                                        buffer[pointer++] = (byte) b_read;
+                                        buffer[pointer++] = (byte) b_read_aux;
+                                        while (pointer < 22) {
+                                            b_read = mmInStream.read();
+                                            buffer[pointer++] = (byte) b_read;
                                         }
-
 
                                         if (buffer[0] == 0x20 && (buffer[1] == 0x0A || buffer[1] == 0x0B)) {
 
-                                            contaT = ((int) buffer[2] & 0xFF);// (int)(buffer[indiceS + 2]);
+                                            ct = ((int) buffer[2] & 0xFF);
 
-                                            ax = (short) ((buffer[3] & 0xFF) + ((buffer[4] & 0xFF) * 256));//buff_conv.getShort();//(short) ((readBuf[3]& 0xFF) |(short)((short)(readBuf[4]& 0xFF)<<8));// (short)(buffer[indiceS + 3] + ((buffer[indiceS + 4]) << 8));
-                                            ay = (short) ((buffer[5] & 0xFF) + ((buffer[6] & 0xFF) * 256));//buff_conv.getShort();//((short)readBuf[5]& 0xFF)+(((short)readBuf[6]& 0xFF)<<8);// (short)(buffer[indiceS + 5] + ((buffer[indiceS + 6]) << 8));
-                                            az = (short) ((buffer[7] & 0xFF) + ((buffer[8] & 0xFF) * 256));//buff_conv.getShort();//((short)readBuf[7]& 0xFF)+(((short)readBuf[8]& 0xFF)<<8);//(short)(buffer[indiceS + 7] + ((buffer[indiceS + 8]) << 8));
+                                            int ax = (short) ((buffer[3] & 0xFF) + ((buffer[4] & 0xFF) * 256));
+                                            int ay = (short) ((buffer[5] & 0xFF) + ((buffer[6] & 0xFF) * 256));
+                                            int az = (short) ((buffer[7] & 0xFF) + ((buffer[8] & 0xFF) * 256));
 
-                                            gx = (short) ((buffer[9] & 0xFF) + ((buffer[10] & 0xFF) * 256));//buff_conv.getShort(9);//((int)readBuf[9]& 0xFF)+(((int)readBuf[10]& 0xFF)<<8);//(short)(buffer[indiceS + 9] + ((buffer[indiceS + 10]) << 8));
-                                            gy = (short) ((buffer[11] & 0xFF) + ((buffer[12] & 0xFF) * 256));//buff_conv.getShort(11);//((int)readBuf[11]& 0xFF)+(((int)readBuf[12]& 0xFF)<<8);//(short)(buffer[indiceS + 11] + ((buffer[indiceS + 12]) << 8));
-                                            gz = (short) ((buffer[13] & 0xFF) + ((buffer[14] & 0xFF) * 256));//buff_conv.getShort(13);//((int)readBuf[13]& 0xFF)+(((int)readBuf[14]& 0xFF)<<8);//(short)(buffer[indiceS + 13] + ((buffer[indiceS + 14]) << 8));
+                                            int gx = (short) ((buffer[9] & 0xFF) + ((buffer[10] & 0xFF) * 256));
+                                            int gy = (short) ((buffer[11] & 0xFF) + ((buffer[12] & 0xFF) * 256));
+                                            int gz = (short) ((buffer[13] & 0xFF) + ((buffer[14] & 0xFF) * 256));
 
-                                            mx = (short) ((buffer[16] & 0xFF) + ((buffer[15] & 0xFF) * 256));//buff_conv.getShort(15);//((int)readBuf[15]& 0xFF)+(((int)readBuf[16]& 0xFF)<<8);//(short)(buffer[indiceS + 15] + ((buffer[indiceS + 16]) << 8));
-                                            my = (short) ((buffer[18] & 0xFF) + ((buffer[17] & 0xFF) * 256));//buff_conv.getShort(17);//((int)readBuf[17]& 0xFF)+(((int)readBuf[18]& 0xFF)<<8);//(short)(buffer[indiceS + 17] + ((buffer[indiceS + 18]) << 8));
-                                            mz = (short) ((buffer[20] & 0xFF) + ((buffer[19] & 0xFF) * 256));//buff_conv.getShort(19);//((int)readBuf[19]& 0xFF)+(((int)readBuf[20]& 0xFF)<<8);//(short)(buffer[indiceS + 19] + ((buffer[indiceS + 20]) << 8));
+                                            int mx = (short) ((buffer[16] & 0xFF) + ((buffer[15] & 0xFF) * 256));
+                                            int my = (short) ((buffer[18] & 0xFF) + ((buffer[17] & 0xFF) * 256));
+                                            int mz = (short) ((buffer[20] & 0xFF) + ((buffer[19] & 0xFF) * 256));
 
-                                            checksum_received = ((int) buffer[21] & 0xFF);//+(((int)buffer[22]& 0xFF)<<8); //(ushort)(buffer[indiceS + 21] + ((buffer[indiceS + 22]) << 8));
-
+                                            checksum_received = ((int) buffer[21] & 0xFF);
 
                                             for (int j = 0; j < 21; j++)
-                                                checksum = checksum ^ ((int) buffer[j] & 0xFF);// (int)(dataBuffer[j] + (u16)(dataBuffer[j+1]<<8));
-
+                                                checksum = checksum ^ ((int) buffer[j] & 0xFF);
 
                                             if (checksum_received == checksum) {
 
-                                                flag_inertial_update = 1;
                                                 if (test_state == 1 || test_state == 2) {
                                                     temp_state--;
                                                     if (temp_state == 0)
@@ -546,10 +579,8 @@ import java.util.UUID;
 
                                                 try {
                                                     if (download_process == 0) {
-
-                                                        out_log.write(DataReceivedTime + " ;" + contaT + ";" + ax + ";" + ay + ";" + az + ";" + gx + ";" + gy + ";" + gz + ";" + mx + ";" + my + ";" + mz + ";" + checksum_received + ";" + checksum/*+";"+test_num+";"+test_state*/ + ";\n");
-                                                        out_log.flush();
-                                                    } else if (download_process == 1) {
+                                                        out_log.write(dataReceivedTime + " ;" + ct + ";" + ax + ";" + ay + ";" + az + ";" + gx + ";" + gy + ";" + gz + ";" + mx + ";" + my + ";" + mz + ";" + checksum_received + ";" + checksum/*+";"+test_num+";"+test_state*/ + ";\n");
+                                                    }else if (download_process == 1) {
                                                     }
 
                                                 } catch (IOException e) {
@@ -561,13 +592,13 @@ import java.util.UUID;
 
                                                 if (packet_counter_global > 1000) {
                                                     //check number packet loss
-                                                    if ((contaT - contaT_prev) > 1) {
+                                                    if ((ct - countT_prev) > 1) {
                                                         packet_loss++;
                                                     }
 
                                                 }
 
-                                                contaT_prev = contaT;
+                                                countT_prev = ct;
                                             }
 
                                         }
@@ -586,7 +617,7 @@ import java.util.UUID;
                                     echoMsg[1] = ay;
                                     echoMsg[2] = az;
                                     echoMsg[9] = packet_loss;
-                                    if ((contaT % 20 == 0)) {
+                                    if ((ct % 20 == 0)) {
                                         mHandler.obtainMessage(CupidLogApp.MESSAGE_READ, 1, -1,
                                                 echoMsg).sendToTarget();
                                     }
@@ -634,5 +665,21 @@ import java.util.UUID;
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
+    }
+
+    public void sendStart() {
+        String message = "= =";
+        StartStreamingTime = android.os.SystemClock.elapsedRealtime();
+        write(message.getBytes());
+    }
+
+    public void sendStop() {
+        String message = ": :";
+        write(message.getBytes());
+    }
+
+    public void sendStartLog(int trialID, int patientID) {
+        String message = "% SET PATIENTID " + trialID + " " + patientID + "\r\n  - -";
+        write(message.getBytes());
     }
 }

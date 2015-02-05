@@ -5,9 +5,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 
 import java.io.IOException;
@@ -21,25 +18,36 @@ import java.util.UUID;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-@SuppressLint("NewApi") public class BluetoothService {
+@SuppressLint("NewApi")
+public class BluetoothService {
+    // TODO Parse the AGMQB packet!!!
 
     public static interface DataDelegate {
-        void receive(Packet p);
+        void receive(BluetoothService sender, Packet p);
+    }
+
+    public static interface StatusDelegate {
+        void idle(BluetoothService sender);
+        void listening(BluetoothService sender);
+        void connecting(BluetoothService sender, BluetoothDevice device, boolean secureMode);
+        void connected(BluetoothService sender, String deviceName);
+        void connectionFailed(BluetoothService sender);
+        void connectionLost(BluetoothService sender);
     }
 
     public static class Packet {
-        long dataReceivedTime;
-        int countT;
-        int ax,ay,az,gx,gy,gz,mx,my,mz;
-        long checksum_received,checksum;
+        public long dataReceivedTime;
+        public int counter;
+        public int ax,ay,az,gx,gy,gz,mx,my,mz;
+        public long checksum_received, checksum_actual;
 
         public boolean isValid() {
-            return checksum_received == checksum;
+            return checksum_received == checksum_actual;
         }
 
-        public Packet (long dataReceivedTime, int countT, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum) {
+        public Packet (long dataReceivedTime, int countT, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum_actual) {
             this.dataReceivedTime = dataReceivedTime;
-            this.countT = countT;
+            this.counter = countT;
             this.ax = ax;
             this.ay = ay;
             this.az = az;
@@ -50,7 +58,7 @@ import java.util.UUID;
             this.my = my;
             this.mz = mz;
             this.checksum_received = checksum_received;
-            this.checksum = checksum;
+            this.checksum_actual = checksum_actual;
         }
     }
 
@@ -70,43 +78,45 @@ import java.util.UUID;
 
     // Member fields
     private final BluetoothAdapter mAdapter;
-    private final Handler mHandler;
+    private final DataDelegate mDataDelegate;
+    private final StatusDelegate mStatusDelegate;
     private AcceptThread mSecureAcceptThread;
     private AcceptThread mInsecureAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
-    private int mState;
-    private DataDelegate mDataDelegate;
+    private BTSrvState mState;
 
-    // Constants that indicate the current connection state
-    public static final int STATE_NONE = 0;       // we're doing nothing
-    public static final int STATE_LISTEN = 1;     // now listening for incoming connections
-    public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
-    public static final int STATE_CONNECTED = 3;  // now connected to a remote device
-    public static final int STATE_DISCONNECTED = 4;  // Disconnected from device
+    public enum BTSrvState {
+        IDLE,          // we're doing nothing
+        LISTENING,        // now listening for incoming connections
+        CONNECTING,    // now initiating an outgoing connection
+        CONNECTED,     // now connected to a remote device
+        DISCONNECTED   // Disconnected from device
+    }
 
-    public static final String DEVICE_NAME = "DEVICE_NAME";
-    public static final String TOAST = "TOAST";
+    public int packetsReceived = 0;
+    public int packetCounterTotal = 0;
+    public int lostPackets = 0;
 
-    public int test_state;
-    public int temp_state;
-    public int download_process;
-    public int packet_counter_global;
-    public int packet_loss;
+    public long startStreamingTime = 0;
 
-    public long StartStreamingTime;
-    public boolean IsConnected = false;
+    /**
+     * Constructor. Prepares a new BluetoothChat session with the default BluetoothAdapter.
+     *
+     */
+    public BluetoothService(StatusDelegate statusDelegate, DataDelegate dataDelegate) {
+        this(statusDelegate, dataDelegate, BluetoothAdapter.getDefaultAdapter());
+    }
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
      *
-     * @param handler A Handler to send messages back to the UI Activity
      */
-    public BluetoothService(Handler handler, DataDelegate output) {
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
-        mState = STATE_NONE;
-        mHandler = handler;
-        mDataDelegate = output;
+    public BluetoothService(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothAdapter adapter) {
+        mDataDelegate = dataDelegate;
+        mStatusDelegate = statusDelegate;
+        mAdapter = adapter;
+        setState(BTSrvState.IDLE);
     }
 
     /**
@@ -114,18 +124,24 @@ import java.util.UUID;
      *
      * @param state An integer defining the current connection state
      */
-    private synchronized void setState(int state) {
+    private synchronized void setState(BTSrvState state) {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
-
-        // Give the new state to the Handler so the UI Activity can update
-        mHandler.obtainMessage(CupidLogApp.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        if (mStatusDelegate != null)
+            switch (state) {
+                case IDLE:
+                    mStatusDelegate.idle(this);
+                    break;
+                case LISTENING:
+                    mStatusDelegate.listening(this);
+                    break;
+            }
     }
 
     /**
      * Return the current connection state.
      */
-    public synchronized int getState() {
+    public synchronized BTSrvState getState() {
         return mState;
     }
 
@@ -148,7 +164,7 @@ import java.util.UUID;
             mConnectedThread = null;
         }
 
-        setState(STATE_LISTEN);
+        setState(BTSrvState.LISTENING);
 
         // Start the thread to listen on a BluetoothServerSocket
         if (mSecureAcceptThread == null) {
@@ -171,7 +187,7 @@ import java.util.UUID;
         if (D) Log.d(TAG, "connect to: " + device);
 
         // Cancel any thread attempting to make a connection
-        if (mState == STATE_CONNECTING) {
+        if (mState == BTSrvState.CONNECTING) {
             if (mConnectThread != null) {
                 mConnectThread.cancel();
                 mConnectThread = null;
@@ -187,7 +203,9 @@ import java.util.UUID;
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device, secure);
         mConnectThread.start();
-        setState(STATE_CONNECTING);
+        setState(BTSrvState.CONNECTING);
+        if (mStatusDelegate != null)
+            mStatusDelegate.connecting(this, device, secure);
     }
 
     /**
@@ -196,7 +214,7 @@ import java.util.UUID;
      * @param socket The BluetoothSocket on which the connection was made
      * @param device The BluetoothDevice that has been connected
      */
-    public synchronized void connected(BluetoothSocket socket, BluetoothDevice
+    protected synchronized void connected(BluetoothSocket socket, BluetoothDevice
             device, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
 
@@ -226,14 +244,11 @@ import java.util.UUID;
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
 
-        // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(CupidLogApp.MESSAGE_DEVICE_NAME);
-        Bundle bundle = new Bundle();
-        bundle.putString(DEVICE_NAME, device.getName());
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        setState(BTSrvState.CONNECTED);
 
-        setState(STATE_CONNECTED);
+        // Send the name of the connected device back to the UI Activity
+        if (mStatusDelegate != null)
+            mStatusDelegate.connected(this, device.getName());
     }
 
     /**
@@ -261,7 +276,7 @@ import java.util.UUID;
             mInsecureAcceptThread.cancel();
             mInsecureAcceptThread = null;
         }
-        setState(STATE_NONE);
+        setState(BTSrvState.IDLE);
     }
 
     /**
@@ -275,7 +290,7 @@ import java.util.UUID;
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
-            if (mState == STATE_CONNECTED)
+            if (mState == BTSrvState.CONNECTED)
                 r = mConnectedThread;
             else
                 return;
@@ -289,15 +304,14 @@ import java.util.UUID;
      */
     private void connectionFailed() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(CupidLogApp.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(TOAST, "Unable to connect device");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-        IsConnected = false;
-        setState(STATE_DISCONNECTED);
-        // Start the service over to restart listening mode
-        BluetoothService.this.start();
+
+        if (mStatusDelegate != null)
+            mStatusDelegate.connectionFailed(this);
+
+        setState(BTSrvState.DISCONNECTED);
+        // WAS Start the service over to restart listening mode
+        // Makes sense stopping everything as it has been notified to the user
+        BluetoothService.this.stop();
     }
 
     /**
@@ -305,15 +319,28 @@ import java.util.UUID;
      */
     private void connectionLost() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(CupidLogApp.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(CupidLogApp.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        if (mStatusDelegate != null)
+            mStatusDelegate.connectionLost(this);
 
-        IsConnected = false;
+        setState(BTSrvState.DISCONNECTED);
         // Start the service over to restart listening mode
         BluetoothService.this.start();
+    }
+
+    public void sendStart() {
+        String message = "==";
+        startStreamingTime = android.os.SystemClock.elapsedRealtime();
+        write(message.getBytes());
+    }
+
+    public void sendStop() {
+        String message = "::";
+        write(message.getBytes());
+    }
+
+    public void sendStartLog(int trialID, int patientID) {
+        String message = "% SET PATIENTID " + trialID + " " + patientID + "\r\n  - -";
+        write(message.getBytes());
     }
 
     /**
@@ -321,7 +348,7 @@ import java.util.UUID;
      * like a server-side client. It runs until a connection is accepted
      * (or until cancelled).
      */
-    private class AcceptThread extends Thread {
+    class AcceptThread extends Thread {
         // The local server socket
         private final BluetoothServerSocket mmServerSocket;
         private String mSocketType;
@@ -353,7 +380,7 @@ import java.util.UUID;
             BluetoothSocket socket;
 
             // Listen to the server socket if we're not connected
-            while (mState != STATE_CONNECTED) {
+            while (mState != BTSrvState.CONNECTED) {
                 try {
                     // This is a blocking call and will only return on a
                     // successful connection or an exception
@@ -372,14 +399,14 @@ import java.util.UUID;
                 if (socket != null) {
                     synchronized (BluetoothService.this) {
                         switch (mState) {
-                            case STATE_LISTEN:
-                            case STATE_CONNECTING:
+                            case LISTENING:
+                            case CONNECTING:
                                 // Situation normal. Start the connected thread.
                                 connected(socket, socket.getRemoteDevice(),
                                         mSocketType);
                                 break;
-                            case STATE_NONE:
-                            case STATE_CONNECTED:
+                            case IDLE:
+                            case CONNECTED:
                                 // Either not ready or already connected. Terminate new socket.
                                 try {
                                     socket.close();
@@ -405,13 +432,12 @@ import java.util.UUID;
         }
     }
 
-
     /**
      * This thread runs while attempting to make an outgoing connection
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
-    private class ConnectThread extends Thread {
+    class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
         private String mSocketType;
@@ -483,7 +509,7 @@ import java.util.UUID;
      * This thread runs during a connection with a remote device.
      * It handles all incoming and outgoing transmissions.
      */
-    private class ConnectedThread extends Thread {
+    class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
@@ -506,7 +532,7 @@ import java.util.UUID;
             mmOutStream = tmpOut;
         }
 
-        public void run() { // TODO HEAD Analyze
+        public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
 
 
@@ -514,28 +540,24 @@ import java.util.UUID;
             while (true) {
                 try {
                     byte[] buffer = new byte[1024];
-                    int pointer;
 
                     // Read from the InputStream
                     //noinspection ResultOfMethodCallIgnored
                     mmInStream.read(buffer);
-
                     long dataReceivedTime = System.currentTimeMillis(); // TODO 4 Make the timing monotonic
 
                     // Send the obtained bytes to the DataDelegate
-                    int b_read;
-                    int b_read_aux;
+                    int b_read, b_read_aux, ct_prev = 0;
 
-                    while (mState == STATE_CONNECTED) {
+                    while (mState == BTSrvState.CONNECTED) {
                         try {
                             // Read from the InputStream
-                            int ct = 0, countT_prev = 0;
-                            long checksum_received, checksum = 0;
-                            pointer = 0;
+                            int pointer = 0;
 
                             b_read = mmInStream.read();
 
                             if (b_read == 0x20) {
+
                                 b_read_aux = mmInStream.read();
 
                                 if (b_read_aux == 0x0A || b_read_aux == 0x0B) {
@@ -549,81 +571,46 @@ import java.util.UUID;
 
                                         if (buffer[0] == 0x20 && (buffer[1] == 0x0A || buffer[1] == 0x0B)) {
 
-                                            ct = ((int) buffer[2] & 0xFF);
+                                            Packet p = new Packet(
+                                                    dataReceivedTime,
+                                                    ((int) buffer[2] & 0xFF),
+                                                    (short) ((buffer[3] & 0xFF) + ((buffer[4] & 0xFF) * 256)),
+                                                    (short) ((buffer[5] & 0xFF) + ((buffer[6] & 0xFF) * 256)),
+                                                    (short) ((buffer[7] & 0xFF) + ((buffer[8] & 0xFF) * 256)),
 
-                                            int ax = (short) ((buffer[3] & 0xFF) + ((buffer[4] & 0xFF) * 256));
-                                            int ay = (short) ((buffer[5] & 0xFF) + ((buffer[6] & 0xFF) * 256));
-                                            int az = (short) ((buffer[7] & 0xFF) + ((buffer[8] & 0xFF) * 256));
+                                                    (short) ((buffer[9] & 0xFF) + ((buffer[10] & 0xFF) * 256)),
+                                                    (short) ((buffer[11] & 0xFF) + ((buffer[12] & 0xFF) * 256)),
+                                                    (short) ((buffer[13] & 0xFF) + ((buffer[14] & 0xFF) * 256)),
 
-                                            int gx = (short) ((buffer[9] & 0xFF) + ((buffer[10] & 0xFF) * 256));
-                                            int gy = (short) ((buffer[11] & 0xFF) + ((buffer[12] & 0xFF) * 256));
-                                            int gz = (short) ((buffer[13] & 0xFF) + ((buffer[14] & 0xFF) * 256));
+                                                    (short) ((buffer[16] & 0xFF) + ((buffer[15] & 0xFF) * 256)),
+                                                    (short) ((buffer[18] & 0xFF) + ((buffer[17] & 0xFF) * 256)),
+                                                    (short) ((buffer[20] & 0xFF) + ((buffer[19] & 0xFF) * 256)),
+                                                    ((int) buffer[21] & 0xFF), 0);
 
-                                            int mx = (short) ((buffer[16] & 0xFF) + ((buffer[15] & 0xFF) * 256));
-                                            int my = (short) ((buffer[18] & 0xFF) + ((buffer[17] & 0xFF) * 256));
-                                            int mz = (short) ((buffer[20] & 0xFF) + ((buffer[19] & 0xFF) * 256));
-
-                                            checksum_received = ((int) buffer[21] & 0xFF);
-
+                                            long checksum_cmp = 0;
                                             for (int j = 0; j < 21; j++)
-                                                checksum = checksum ^ ((int) buffer[j] & 0xFF);
+                                                checksum_cmp = checksum_cmp ^ ((int) buffer[j] & 0xFF);
 
-                                            if (checksum_received == checksum) {
+                                            p.checksum_actual = checksum_cmp;
 
-                                                if (test_state == 1 || test_state == 2) {
-                                                    temp_state--;
-                                                    if (temp_state == 0)
-                                                        test_state = 0;
-                                                } else
-                                                    temp_state = 20;
+                                            lostPackets += (p.counter - ct_prev + 255) % 256;
+                                            packetCounterTotal += (p.counter - ct_prev + 256) % 256;
+                                            packetsReceived++;
+                                            ct_prev = p.counter;
 
-                                                try {
-                                                    if (download_process == 0) {
-                                                        out_log.write(dataReceivedTime + " ;" + ct + ";" + ax + ";" + ay + ";" + az + ";" + gx + ";" + gy + ";" + gz + ";" + mx + ";" + my + ";" + mz + ";" + checksum_received + ";" + checksum/*+";"+test_num+";"+test_state*/ + ";\n");
-                                                    }else if (download_process == 1) {
-                                                    }
-
-                                                } catch (IOException e) {
-                                                    // TODO Auto-generated catch block
-                                                    e.printStackTrace();
-                                                }
-
-                                                packet_counter_global++;
-
-                                                if (packet_counter_global > 1000) {
-                                                    //check number packet loss
-                                                    if ((ct - countT_prev) > 1) {
-                                                        packet_loss++;
-                                                    }
-
-                                                }
-
-                                                countT_prev = ct;
-                                            }
-
+                                            if (mDataDelegate != null)
+                                                mDataDelegate.receive(BluetoothService.this, p);
                                         }
-                                        checksum = 0;
                                     } catch (IOException e1) {
-                                        // TODO Auto-generated catch block
-                                        //connectionLost();
-                                        e1.printStackTrace();
+                                        lostPackets++;
+                                        Log.e(TAG, "Unexpected packet format (short)");
                                     }
-
-
-                                    // Send the obtained bytes to the UI Activity
-                                    int[] echoMsg;
-                                    echoMsg = new int[10];
-                                    echoMsg[0] = ax;
-                                    echoMsg[1] = ay;
-                                    echoMsg[2] = az;
-                                    echoMsg[9] = packet_loss;
-                                    if ((ct % 20 == 0)) {
-                                        mHandler.obtainMessage(CupidLogApp.MESSAGE_READ, 1, -1,
-                                                echoMsg).sendToTarget();
-                                    }
-
                                 }
+                                else
+                                    Log.e(TAG, "Unexpected packet format (" + Integer.toHexString(b_read) + " and " + Integer.toHexString(b_read_aux) +")");
                             }
+                            else
+                                Log.e(TAG, "Unexpected packet format (" + Integer.toHexString(b_read) +")");
 
                         } catch (IOException e) {
                             Log.e(TAG, "disconnected", e);
@@ -649,10 +636,6 @@ import java.util.UUID;
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-
-                // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(CupidLogApp.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
@@ -665,21 +648,5 @@ import java.util.UUID;
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
-    }
-
-    public void sendStart() {
-        String message = "= =";
-        StartStreamingTime = android.os.SystemClock.elapsedRealtime();
-        write(message.getBytes());
-    }
-
-    public void sendStop() {
-        String message = ": :";
-        write(message.getBytes());
-    }
-
-    public void sendStartLog(int trialID, int patientID) {
-        String message = "% SET PATIENTID " + trialID + " " + patientID + "\r\n  - -";
-        write(message.getBytes());
     }
 }

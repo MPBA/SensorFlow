@@ -1,21 +1,11 @@
 package eu.fbk.mpba.sensorsflows.debugapp.util;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
-import android.view.View;
-import android.widget.Toast;
-
-import java.io.File;
 
 /**
  * This is the main Activity that displays the current chat session.
  */
-public class CupidLogApp extends Activity {
+public class CupidLogApp extends Activity {/*
     // Message types sent from the BluetoothChatService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
     public static final int MESSAGE_READ = 2;
@@ -81,7 +71,7 @@ public class CupidLogApp extends Activity {
         // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
         if (mChatService[0] != null) {
             // Only if the state is STATE_NONE, do we know that we haven't started already
-            if (mChatService[0].getState() == BluetoothService.STATE_NONE) {
+            if (mChatService[0].getState() == BluetoothService.BTSrvState.IDLE) {
                 // Start the Bluetooth chat services
                 mChatService[0].start();
             }
@@ -138,7 +128,7 @@ public class CupidLogApp extends Activity {
             byte[] send = message.getBytes();
             for (int i = 0; i < 7; i++) {
                 if (mChatService[i].getState() == BluetoothService.STATE_CONNECTED) {
-                    mChatService[i].StartStreamingTime = android.os.SystemClock.elapsedRealtime();
+                    mChatService[i].startStreamingTime = android.os.SystemClock.elapsedRealtime();
                     mChatService[i].write(send);
                 }
             }
@@ -586,4 +576,4 @@ public class CupidLogApp extends Activity {
 //            }
 //        }
 //    };
-}
+*/}

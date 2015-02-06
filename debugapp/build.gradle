@@ -5,7 +5,7 @@ android {
     buildToolsVersion '21.1.2'
     defaultConfig {
         applicationId 'eu.fbk.mpba.sensorflows.debugapp'
-        minSdkVersion 18
+        minSdkVersion 17
         targetSdkVersion 21
         versionCode 1
         versionName "1.0"
@@ -22,4 +22,5 @@ android {
 
 dependencies {
     compile project(':sensorsflows')
+    compile 'com.google.protobuf:protobuf-java:2.6.0'
 }

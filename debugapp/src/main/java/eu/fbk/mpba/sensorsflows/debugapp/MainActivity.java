@@ -76,32 +76,27 @@ public class MainActivity extends Activity {
     }
 
     private final BluetoothService.StatusDelegate btsStatus = new BluetoothService.StatusDelegate() {
-        @Override
+
         public void idle(BluetoothService sender) {
             Log.i(TAG, "+++++++++++ IDLE");
         }
 
-        @Override
         public void listening(BluetoothService sender) {
             Log.i(TAG, "+++++++++++ LISTENING");
         }
 
-        @Override
         public void connecting(BluetoothService sender, BluetoothDevice device, boolean secureMode) {
             Log.i(TAG, "+++++++++++ CONNECTING to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure"));
         }
 
-        @Override
         public void connected(BluetoothService sender, String deviceName) {
             Log.i(TAG, "+++++++++++ CONNECTED to " + deviceName);
         }
 
-        @Override
         public void connectionFailed(BluetoothService sender) {
             Log.i(TAG, "+++++++++++ Conn FAILED");
         }
 
-        @Override
         public void connectionLost(BluetoothService sender) {
             Log.i(TAG, "+++++++++++ Conn LOST");
         }

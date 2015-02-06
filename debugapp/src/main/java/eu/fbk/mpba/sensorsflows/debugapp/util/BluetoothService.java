@@ -36,7 +36,7 @@ public class BluetoothService {
     }
 
     public static class Packet {
-        public long dataReceivedTime;
+        public long receptionTime;
         public int counter;
         public int ax,ay,az,gx,gy,gz,mx,my,mz;
         public long checksum_received, checksum_actual;
@@ -45,9 +45,9 @@ public class BluetoothService {
             return checksum_received == checksum_actual;
         }
 
-        public Packet (long dataReceivedTime, int countT, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum_actual) {
-            this.dataReceivedTime = dataReceivedTime;
-            this.counter = countT;
+        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum_actual) {
+            this.receptionTime = receptionTime;
+            this.counter = counter;
             this.ax = ax;
             this.ay = ay;
             this.az = az;
@@ -534,7 +534,9 @@ public class BluetoothService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
+            Log.i(TAG, "++ SET bootNanos");
 
+            long bootNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
 
             // Keep listening to the InputStream while connected
             while (true) {
@@ -544,7 +546,7 @@ public class BluetoothService {
                     // Read from the InputStream
                     //noinspection ResultOfMethodCallIgnored
                     mmInStream.read(buffer);
-                    long dataReceivedTime = System.currentTimeMillis(); // TODO 4 Make the timing monotonic
+                    long receptionTime = System.nanoTime() + bootNanos;
 
                     // Send the obtained bytes to the DataDelegate
                     int b_read, b_read_aux, ct_prev = 0;
@@ -572,7 +574,7 @@ public class BluetoothService {
                                         if (buffer[0] == 0x20 && (buffer[1] == 0x0A || buffer[1] == 0x0B)) {
 
                                             Packet p = new Packet(
-                                                    dataReceivedTime,
+                                                    receptionTime,
                                                     ((int) buffer[2] & 0xFF),
                                                     (short) ((buffer[3] & 0xFF) + ((buffer[4] & 0xFF) * 256)),
                                                     (short) ((buffer[5] & 0xFF) + ((buffer[6] & 0xFF) * 256)),

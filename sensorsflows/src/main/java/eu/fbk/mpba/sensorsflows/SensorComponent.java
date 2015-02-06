@@ -12,7 +12,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  */
 public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePlugIn<TimeT, ValueT>> {
     private boolean _listened = true;
-    private ArrayList<OutputPlugIn<TimeT, ValueT>> _outputs = new ArrayList<OutputPlugIn<TimeT, ValueT>>();
+    private ArrayList<OutputManager<TimeT, ValueT>> _outputs = new ArrayList<>();
     private SensorStatus _status = SensorStatus.OFF;
     private DevicePlugIn<TimeT, ValueT> _parent = null;
 
@@ -20,16 +20,12 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePl
         _parent = parent;
     }
 
-    void addOutput(OutputPlugIn<TimeT, ValueT> _output) {
+    void addOutput(OutputManager<TimeT, ValueT> _output) {
         this._outputs.add(_output);
     }
 
-    Iterable<OutputPlugIn<TimeT, ValueT>> getOutputs() {
+    Iterable<OutputManager<TimeT, ValueT>> getOutputs() {
         return new ReadOnlyIterable<>(_outputs.iterator());
-    }
-
-    int getOutputsCount() {
-        return _outputs.size();
     }
 
     // Managed protected getters setters

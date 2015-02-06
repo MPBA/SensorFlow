@@ -16,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
  * This plug-in saves the data in a CSV file. The table is composed by the timestamp column and a
  * column for each float value in the array (the ValueT type is specified).
  */
-public class CsvOutput extends OutputPlugIn<Long, double[]> {
+public class CsvOutput implements OutputPlugIn<Long, double[]> {
 
     String _name;
     String _path;
@@ -38,8 +38,7 @@ public class CsvOutput extends OutputPlugIn<Long, double[]> {
         return a;
     }
 
-    @Override
-    protected void pluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
         _sav = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/",
                 streamingSensors.toArray(), ".csv", ";", "\n");
         _linkedSensors.addAll(streamingSensors);
@@ -52,18 +51,15 @@ public class CsvOutput extends OutputPlugIn<Long, double[]> {
         _sav.init(headers);
     }
 
-    @Override
-    protected void pluginFinalize() {
+    public void outputPluginFinalize() {
 
     }
 
-    @Override
-    protected void newSensorEvent(SensorEventEntry event) {
+    public void newSensorEvent(SensorEventEntry event) {
 
     }
 
-    @Override
-    protected void newSensorData(SensorDataEntry<Long, double[]> data) {
+    public void newSensorData(SensorDataEntry<Long, double[]> data) {
         List<Object> line = new ArrayList<>();
         line.add(data.time.toString());
         for (int i = 0; i < data.value.length; i++)

@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  * This plug-in saves the data in an SQLite database. The table is composed by the timestamp column
  * and a column for each float value in the array (the ValueT type is specified).
  */
-public class SQLiteOutput extends OutputPlugIn<Long, double[]> {
+public class SQLiteOutput implements OutputPlugIn<Long, double[]> {
 
     String _name;
     String _path;
@@ -33,8 +33,7 @@ public class SQLiteOutput extends OutputPlugIn<Long, double[]> {
         return Arrays.asList(_sav.getPath());
     }
 
-    @Override
-    protected void pluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
+    public void outputPluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
         _sav = SQLiteDatabase.openOrCreateDatabase(_path + "/" + sessionTag.toString() /*+ "/" + toString()*/ + ".sqlitedb", null);
         for (ISensor l : linkedSensors) {
             _sav.execSQL(
@@ -55,13 +54,11 @@ public class SQLiteOutput extends OutputPlugIn<Long, double[]> {
         }
     }
 
-    @Override
-    protected void pluginFinalize() {
+    public void outputPluginFinalize() {
         _sav.close();
     }
 
-    @Override
-    protected void newSensorEvent(SensorEventEntry event) {
+    public void newSensorEvent(SensorEventEntry event) {
         _sav.execSQL("INSERT INTO " + getEventsTblName(event.sensor) + " VALUES(?,?,?)", Arrays.asList(
                 event.timestamp,
                 event.code,
@@ -69,8 +66,7 @@ public class SQLiteOutput extends OutputPlugIn<Long, double[]> {
         ).toArray());
     }
 
-    @Override
-    protected void newSensorData(SensorDataEntry<Long, double[]> data) {
+    public void newSensorData(SensorDataEntry<Long, double[]> data) {
         ArrayList<Object> h = new ArrayList<>();
 
         h.add(data.time);

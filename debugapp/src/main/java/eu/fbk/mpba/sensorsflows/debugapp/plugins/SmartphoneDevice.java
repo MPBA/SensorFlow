@@ -30,14 +30,14 @@ public class SmartphoneDevice extends DevicePlugIn<Long, double[]> implements IM
     }
 
     @Override
-    protected void pluginInitialize() {
+    protected void inputPluginInitialize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOnAsync();
         }
     }
 
     @Override
-    protected void pluginFinalize() {
+    protected void inputPluginFinalize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOffAsync();
         }

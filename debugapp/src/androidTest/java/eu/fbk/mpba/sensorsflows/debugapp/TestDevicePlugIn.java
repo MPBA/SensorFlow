@@ -12,6 +12,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 /**
  * Test device with two basic sensors.
  */
+@SuppressWarnings("UnusedDeclaration")
 public class TestDevicePlugIn extends DevicePlugIn<Long, float[]> {
 
     private String _name;
@@ -30,14 +31,14 @@ public class TestDevicePlugIn extends DevicePlugIn<Long, float[]> {
     }
 
     @Override
-    protected void pluginInitialize() {
+    protected void inputPluginInitialize() {
         for (SensorComponent<Long, float[]> s : _sensors) {
             s.switchOnAsync();
         }
     }
 
     @Override
-    protected void pluginFinalize() {
+    protected void inputPluginFinalize() {
 
     }
 

@@ -28,7 +28,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
     public DevicePlugInStub(String name, int sensors) {
 
         _name = name;
-        _sensors = new ArrayList<SensorComponent<Long, float[]>>(sensors);
+        _sensors = new ArrayList<>(sensors);
         for (int i = 0; i < sensors; i++) {
             this._sensors.add(new SensorStub(name + "-" + i, this));
         }
@@ -41,7 +41,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
      */
     @Override
     public Iterable<SensorComponent<Long, float[]>> getSensors() {
-        return new ReadOnlyIterable<SensorComponent<Long, float[]>>(_sensors.iterator());
+        return new ReadOnlyIterable<>(_sensors.iterator());
     }
 
     /**
@@ -49,7 +49,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
      * prima dell'avvio della libreria. Meglio se le connessioni sono gestite prima dello start.
      */
     @Override
-    protected void pluginInitialize() {
+    protected void inputPluginInitialize() {
 
     }
 
@@ -57,7 +57,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
      * Qualsiasi cosa da eseguire quando la libreria viene chiusa.
      */
     @Override
-    protected void pluginFinalize() {
+    protected void inputPluginFinalize() {
 
     }
 

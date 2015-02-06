@@ -1,7 +1,7 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -11,7 +11,6 @@ import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
-import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
@@ -107,7 +106,7 @@ public class FlowsMan<TimeT, ValueT> implements
         if (sender.isListened()) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
-                ((OutputPlugIn<TimeT, ValueT>)o).sensorValue(sender, time, value);
+                ((OutputManager<TimeT, ValueT>)o).sensorValue(sender, time, value);
             }
         }
     }
@@ -124,7 +123,7 @@ public class FlowsMan<TimeT, ValueT> implements
         if (sender.isListened()) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
-                ((OutputPlugIn<TimeT, ValueT>)o).sensorEvent(sender, time, type, message);
+                ((OutputManager<TimeT, ValueT>)o).sensorEvent(sender, time, type, message);
             }
         }
     }
@@ -142,8 +141,7 @@ public class FlowsMan<TimeT, ValueT> implements
     private AutoLinkMode _linkMode = AutoLinkMode.PRODUCT;
 
     protected List<DevicePlugIn<TimeT, ValueT>> _userDevices = new ArrayList<>();
-    protected List<OutputPlugIn<TimeT, ValueT>> _userOutputs = new ArrayList<>();
-    private Hashtable<OutputPlugIn<TimeT, ValueT>, List<ISensor>> _outputsSensors = new Hashtable<>();
+    protected List<OutputManager<TimeT, ValueT>> _userOutputs = new ArrayList<>();
 
     protected List<DevicePlugIn> _devicesToInit = new ArrayList<>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null
@@ -189,8 +187,12 @@ public class FlowsMan<TimeT, ValueT> implements
     public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPlugIn<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
             // TODO N1 Remember enabling/disabling each link
-            fromSensor.addOutput(toOutput);
-            _outputsSensors.get(toOutput).add(fromSensor);
+            // Manual indexOf for performance
+            for (OutputManager<TimeT, ValueT> outMan : _userOutputs)
+                if (toOutput == outMan.getPlugIn()) { // for reference, safe
+                    fromSensor.addOutput(outMan);
+                    outMan.addSensor(fromSensor);
+                }
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -203,9 +205,10 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addOutput(OutputPlugIn<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY) {
-            output.setOutputCallbackManager(this);
-            _userOutputs.add(output);
-            _outputsSensors.put(output, new ArrayList<ISensor>());
+            OutputManager<TimeT, ValueT> outMan = new OutputManager<>(output);
+            outMan.setOutputCallbackManager(this);
+            _userOutputs.add(outMan);
+            // WAS _outputsSensors.put(outMan, new ArrayList<ISensor>());
         }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -230,7 +233,29 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public Iterable<OutputPlugIn<TimeT, ValueT>> getOutputs() {
-        return new ReadOnlyIterable<>(_userOutputs.iterator());
+        return new Iterable<OutputPlugIn<TimeT, ValueT>>() {
+            @Override
+            public Iterator<OutputPlugIn<TimeT, ValueT>> iterator() {
+                final Iterator<OutputManager<TimeT, ValueT>> i = _userOutputs.iterator();
+                return new Iterator<OutputPlugIn<TimeT, ValueT>>() {
+
+                    @Override
+                    public boolean hasNext() {
+                        return i.hasNext();
+                    }
+
+                    @Override
+                    public OutputPlugIn<TimeT, ValueT> next() {
+                        return i.next().getPlugIn();
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException("Cannot remove objects from here.");
+                    }
+                };
+            }
+        };
     }
 
     //      Internal init and final management
@@ -243,6 +268,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void initialize(DevicePlugIn device) {
         // The connection state is checked before the start end callback.
+        //noinspection StatementWithEmptyBody
         if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
             device.initialize();
         } else {
@@ -256,9 +282,10 @@ public class FlowsMan<TimeT, ValueT> implements
      *
      * @param output {@code IOutput} to finalize.
      */
-    void initialize(OutputPlugIn<TimeT, ValueT> output, String sessionName, List<ISensor> notifiedSensors) {
+    void initialize(OutputManager<TimeT, ValueT> output, String sessionName) {
+        //noinspection StatementWithEmptyBody
         if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
-            output.initialize(sessionName, notifiedSensors);
+            output.initialize(sessionName);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
         }
@@ -272,6 +299,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void finalize(DevicePlugIn device) {
         // The connection state is not checked
+        //noinspection StatementWithEmptyBody
         if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.INITIALIZED) {
             device.finalizeDevice();
         } else {
@@ -286,6 +314,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param output {@code IOutput} to finalize.
      */
     void finalize(IOutput<TimeT, ValueT> output) {
+        //noinspection StatementWithEmptyBody
         if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
         } else {
@@ -405,15 +434,15 @@ public class FlowsMan<TimeT, ValueT> implements
                 // SENSORS x OUTPUTS
                 for (DevicePlugIn<TimeT, ValueT> d : _userDevices)
                     for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
-                        for (OutputPlugIn<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
-                            addLink(s, o);
+                        for (OutputManager<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
+                            addLink(s, o.getPlugIn()); // FIXME Stupid inefficiency, add an overload.
                 break;
             case NTH_TO_NTH:
                 // max SENSORS, OUTPUTS
                 int maxi = Math.max(_userDevices.size(), _userOutputs.size());
                 for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
                     for (SensorComponent<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
-                        addLink(s, _userOutputs.get(i % _userOutputs.size()));
+                        addLink(s, _userOutputs.get(i % _userOutputs.size()).getPlugIn()); // FIXME Stupid inefficiency, add an overload.
                 break;
         }
         changeState(EngineStatus.PREPARING);
@@ -424,12 +453,12 @@ public class FlowsMan<TimeT, ValueT> implements
             initialize(d);
         }
         _outputsToInit.addAll(_userOutputs);
-        for (OutputPlugIn<TimeT, ValueT> o : _outputsSensors.keySet()) {
+        for (OutputManager<TimeT, ValueT> o : _userOutputs) {
             // only if NOT_INITIALIZED: checked in the initialize method
-            initialize(o, sessionName, _outputsSensors.get(o));
+            initialize(o, sessionName);
         }
-        _outputsSensors.clear();
-        _outputsSensors = null;
+        // WAS _outputsSensors.clear();
+        // WAS _outputsSensors = null;
     }
 
     /**

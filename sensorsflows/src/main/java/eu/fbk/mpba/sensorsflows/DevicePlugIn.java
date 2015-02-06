@@ -22,14 +22,14 @@ public abstract class DevicePlugIn<TimeT, ValueT> implements IDevice<SensorCompo
     @Override
     public void initialize() {
         changeState(DeviceStatus.INITIALIZING);
-        pluginInitialize();
+        inputPluginInitialize();
         changeState(DeviceStatus.INITIALIZED);
     }
 
     @Override
     public void finalizeDevice() {
         changeState(DeviceStatus.FINALIZING);
-        pluginFinalize();
+        inputPluginFinalize();
         changeState(DeviceStatus.FINALIZED);
     }
 
@@ -42,8 +42,8 @@ public abstract class DevicePlugIn<TimeT, ValueT> implements IDevice<SensorCompo
 
     // Abstracts to be implemented by the plug-in
 
-    protected abstract void pluginInitialize();
+    protected abstract void inputPluginInitialize();
 
-    protected abstract void pluginFinalize();
+    protected abstract void inputPluginFinalize();
 
 }

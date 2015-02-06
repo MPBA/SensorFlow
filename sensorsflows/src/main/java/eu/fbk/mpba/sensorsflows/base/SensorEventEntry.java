@@ -1,7 +1,7 @@
 package eu.fbk.mpba.sensorsflows.base;
 
-public class SensorEventEntry<TimeT, ValueT> {
-    public SensorEventEntry(ISensor sensor, TimeT timestamp, ValueT code, String message){
+public class SensorEventEntry<TimeT> {
+    public SensorEventEntry(ISensor sensor, TimeT timestamp, int code, String message){
         this.sensor = sensor;
         this.timestamp = timestamp;
         this.code = code;
@@ -10,6 +10,6 @@ public class SensorEventEntry<TimeT, ValueT> {
 
     public ISensor sensor;
     public TimeT timestamp;
-    public ValueT code;
+    public int code;
     public String message;
 }

@@ -100,7 +100,7 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
     public void sensorEvent(ISensor sensor, TimeT time, int type, String message) {
         try {
             // FIXME WARN Locks the sensor's thread
-            _eventsQueue.put(new SensorEventEntry<TimeT, Integer>(sensor, time, type, message));
+            _eventsQueue.put(new SensorEventEntry<>(sensor, time, type, message));
         } catch (InterruptedException e) {
 //            Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorEvent() find-me:924nj89f8j2");
         }
@@ -110,7 +110,7 @@ public abstract class OutputPlugIn<TimeT, ValueT> implements IOutput<TimeT, Valu
     public void sensorValue(ISensor sensor, TimeT time, ValueT value) {
         try {
             // FIXME WARN Locks the sensor's thread
-            SensorDataEntry<TimeT, ValueT> a = new SensorDataEntry<TimeT, ValueT>(sensor, time, value);
+            SensorDataEntry<TimeT, ValueT> a = new SensorDataEntry<>(sensor, time, value);
             _dataQueue.put(a);
         } catch (InterruptedException e) {
 //            Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorValue() find-me:24bhi5ti89");

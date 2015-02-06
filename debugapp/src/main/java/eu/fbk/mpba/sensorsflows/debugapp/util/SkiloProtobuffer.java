@@ -134,7 +134,7 @@ public final class SkiloProtobuffer {
             }
             case 29: {
               if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-                value_ = new java.util.ArrayList<java.lang.Float>();
+                value_ = new java.util.ArrayList<>();
                 mutable_bitField0_ |= 0x00000004;
               }
               value_.add(input.readFloat());
@@ -144,7 +144,7 @@ public final class SkiloProtobuffer {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
               if (!((mutable_bitField0_ & 0x00000004) == 0x00000004) && input.getBytesUntilLimit() > 0) {
-                value_ = new java.util.ArrayList<java.lang.Float>();
+                value_ = new java.util.ArrayList<>();
                 mutable_bitField0_ |= 0x00000004;
               }
               while (input.getBytesUntilLimit() > 0) {
@@ -185,12 +185,8 @@ public final class SkiloProtobuffer {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return SkiloProtobuffer.internal_static_SensorData_descriptor;
-    }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return SkiloProtobuffer.internal_static_SensorData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -213,8 +209,7 @@ public final class SkiloProtobuffer {
     }
 
     private int bitField0_;
-    public static final int ID_FIELD_NUMBER = 1;
-    private int id_;
+      private int id_;
     /**
      * <code>required int32 id = 1;</code>
      */
@@ -228,8 +223,7 @@ public final class SkiloProtobuffer {
       return id_;
     }
 
-    public static final int SENSOR_ID_FK_FIELD_NUMBER = 2;
-    private int sensorIdFk_;
+      private int sensorIdFk_;
     /**
      * <code>required int32 sensor_id_fk = 2;</code>
      */
@@ -243,8 +237,7 @@ public final class SkiloProtobuffer {
       return sensorIdFk_;
     }
 
-    public static final int VALUE_FIELD_NUMBER = 3;
-    private java.util.List<java.lang.Float> value_;
+      private java.util.List<java.lang.Float> value_;
     /**
      * <code>repeated float value = 3 [packed = true];</code>
      */
@@ -264,10 +257,9 @@ public final class SkiloProtobuffer {
     public float getValue(int index) {
       return value_.get(index);
     }
-    private int valueMemoizedSerializedSize = -1;
+    private int valueMemorizedSerializedSize = -1;
 
-    public static final int TEXT_FIELD_NUMBER = 4;
-    private com.google.protobuf.LazyStringList text_;
+      private com.google.protobuf.LazyStringList text_;
     /**
      * <code>repeated string text = 4;</code>
      */
@@ -295,8 +287,7 @@ public final class SkiloProtobuffer {
       return text_.getByteString(index);
     }
 
-    public static final int TIMESTAMP_FIELD_NUMBER = 5;
-    private double timestamp_;
+      private double timestamp_;
     /**
      * <code>required double timestamp = 5;</code>
      */
@@ -317,25 +308,25 @@ public final class SkiloProtobuffer {
       text_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       timestamp_ = 0D;
     }
-    private byte memoizedIsInitialized = -1;
+    private byte memorizedIsInitialized = -1;
     public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
+      byte isInitialized = memorizedIsInitialized;
       if (isInitialized == 1) return true;
       if (isInitialized == 0) return false;
 
       if (!hasId()) {
-        memoizedIsInitialized = 0;
+        memorizedIsInitialized = 0;
         return false;
       }
       if (!hasSensorIdFk()) {
-        memoizedIsInitialized = 0;
+        memorizedIsInitialized = 0;
         return false;
       }
       if (!hasTimestamp()) {
-        memoizedIsInitialized = 0;
+        memorizedIsInitialized = 0;
         return false;
       }
-      memoizedIsInitialized = 1;
+      memorizedIsInitialized = 1;
       return true;
     }
 
@@ -350,7 +341,7 @@ public final class SkiloProtobuffer {
       }
       if (getValueList().size() > 0) {
         output.writeRawVarint32(26);
-        output.writeRawVarint32(valueMemoizedSerializedSize);
+        output.writeRawVarint32(valueMemorizedSerializedSize);
       }
       for (int i = 0; i < value_.size(); i++) {
         output.writeFloatNoTag(value_.get(i));
@@ -364,9 +355,9 @@ public final class SkiloProtobuffer {
       getUnknownFields().writeTo(output);
     }
 
-    private int memoizedSerializedSize = -1;
+    private int memorizedSerializedSize = -1;
     public int getSerializedSize() {
-      int size = memoizedSerializedSize;
+      int size = memorizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
@@ -379,7 +370,7 @@ public final class SkiloProtobuffer {
           .computeInt32Size(2, sensorIdFk_);
       }
       {
-        int dataSize = 0;
+        int dataSize;
         dataSize = 4 * getValueList().size();
         size += dataSize;
         if (!getValueList().isEmpty()) {
@@ -387,7 +378,7 @@ public final class SkiloProtobuffer {
           size += com.google.protobuf.CodedOutputStream
               .computeInt32SizeNoTag(dataSize);
         }
-        valueMemoizedSerializedSize = dataSize;
+        valueMemorizedSerializedSize = dataSize;
       }
       {
         int dataSize = 0;
@@ -396,14 +387,14 @@ public final class SkiloProtobuffer {
             .computeBytesSizeNoTag(text_.getByteString(i));
         }
         size += dataSize;
-        size += 1 * getTextList().size();
+        size += getTextList().size();
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeDoubleSize(5, timestamp_);
       }
       size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
+      memorizedSerializedSize = size;
       return size;
     }
 
@@ -477,17 +468,15 @@ public final class SkiloProtobuffer {
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
+        return new Builder(parent);
     }
     /**
      * Protobuf type {@code SensorData}
      */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:SensorData)
         SkiloProtobuffer.SensorDataOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return SkiloProtobuffer.internal_static_SensorData_descriptor;
       }
@@ -510,8 +499,6 @@ public final class SkiloProtobuffer {
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
       }
       private static Builder create() {
         return new Builder();
@@ -533,6 +520,7 @@ public final class SkiloProtobuffer {
       }
 
       public Builder clone() {
+        super.clone();
         return create().mergeFrom(buildPartial());
       }
 
@@ -633,15 +621,7 @@ public final class SkiloProtobuffer {
           
           return false;
         }
-        if (!hasSensorIdFk()) {
-          
-          return false;
-        }
-        if (!hasTimestamp()) {
-          
-          return false;
-        }
-        return true;
+          return hasSensorIdFk() && hasTimestamp();
       }
 
       public Builder mergeFrom(
@@ -730,7 +710,7 @@ public final class SkiloProtobuffer {
       private java.util.List<java.lang.Float> value_ = java.util.Collections.emptyList();
       private void ensureValueIsMutable() {
         if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-          value_ = new java.util.ArrayList<java.lang.Float>(value_);
+          value_ = new java.util.ArrayList<>(value_);
           bitField0_ |= 0x00000004;
          }
       }
@@ -918,7 +898,6 @@ public final class SkiloProtobuffer {
         return this;
       }
 
-      // @@protoc_insertion_point(builder_scope:SensorData)
     }
 
     static {
@@ -926,11 +905,9 @@ public final class SkiloProtobuffer {
       defaultInstance.initFields();
     }
 
-    // @@protoc_insertion_point(class_scope:SensorData)
   }
 
   public interface SensorInfoOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:SensorInfo)
       com.google.protobuf.MessageOrBuilder {
 
     /**
@@ -999,8 +976,7 @@ public final class SkiloProtobuffer {
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       initFields();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
@@ -1051,7 +1027,7 @@ public final class SkiloProtobuffer {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return SkiloProtobuffer.internal_static_SensorInfo_descriptor;
     }
@@ -1250,7 +1226,7 @@ public final class SkiloProtobuffer {
           getDescriptorForType() {
         return getDescriptor();
       }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
+      public static com.google.protobuf.Descriptors.EnumDescriptor
           getDescriptor() {
         return SkiloProtobuffer.SensorInfo.getDescriptor().getEnumTypes().get(0);
       }
@@ -1485,8 +1461,7 @@ public final class SkiloProtobuffer {
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
+        return new Builder(parent);
     }
     /**
      * Protobuf type {@code SensorInfo}
@@ -1495,7 +1470,7 @@ public final class SkiloProtobuffer {
         com.google.protobuf.GeneratedMessage.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:SensorInfo)
         SkiloProtobuffer.SensorInfoOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return SkiloProtobuffer.internal_static_SensorInfo_descriptor;
       }
@@ -1518,8 +1493,6 @@ public final class SkiloProtobuffer {
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
       }
       private static Builder create() {
         return new Builder();
@@ -1537,6 +1510,8 @@ public final class SkiloProtobuffer {
       }
 
       public Builder clone() {
+
+          super.clone();
         return create().mergeFrom(buildPartial());
       }
 
@@ -1613,11 +1588,7 @@ public final class SkiloProtobuffer {
           
           return false;
         }
-        if (!hasType()) {
-          
-          return false;
-        }
-        return true;
+          return hasType();
       }
 
       public Builder mergeFrom(
@@ -2021,7 +1992,7 @@ public final class SkiloProtobuffer {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return SkiloProtobuffer.internal_static_TrackSplit_descriptor;
     }
@@ -2435,8 +2406,7 @@ public final class SkiloProtobuffer {
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
+        return new Builder(parent);
     }
     /**
      * Protobuf type {@code TrackSplit}
@@ -2445,7 +2415,7 @@ public final class SkiloProtobuffer {
         com.google.protobuf.GeneratedMessage.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:TrackSplit)
         SkiloProtobuffer.TrackSplitOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return SkiloProtobuffer.internal_static_TrackSplit_descriptor;
       }
@@ -2507,6 +2477,7 @@ public final class SkiloProtobuffer {
       }
 
       public Builder clone() {
+          super.clone();
         return create().mergeFrom(buildPartial());
       }
 

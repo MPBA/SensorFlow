@@ -58,7 +58,7 @@ public class SQLiteOutput implements OutputPlugIn<Long, double[]> {
         _sav.close();
     }
 
-    public void newSensorEvent(SensorEventEntry event) {
+    public void newSensorEvent(SensorEventEntry<Long> event) {
         _sav.execSQL("INSERT INTO " + getEventsTblName(event.sensor) + " VALUES(?,?,?)", Arrays.asList(
                 event.timestamp,
                 event.code,

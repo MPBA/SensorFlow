@@ -14,7 +14,7 @@ public interface OutputPlugIn<TimeT, ValueT> {
 
     void outputPluginFinalize();
 
-    void newSensorEvent(SensorEventEntry event);
+    void newSensorEvent(SensorEventEntry<TimeT> event);
 
     void newSensorData(SensorDataEntry<TimeT, ValueT> data);
 }

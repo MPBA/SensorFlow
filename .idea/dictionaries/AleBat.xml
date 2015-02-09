@@ -4,8 +4,10 @@
       <w>accessors</w>
       <w>iterable</w>
       <w>listenage</w>
+      <w>mkdirs</w>
       <w>protobuf</w>
       <w>smartphone</w>
+      <w>splitted</w>
       <w>unsynchronized</w>
     </words>
   </dictionary>

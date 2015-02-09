@@ -5,14 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import eu.fbk.mpba.sensorsflows.OutputPlugIn;
+import eu.fbk.mpba.sensorsflows.OutputPluginX;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
 import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer.SensorInfo;
 
-public class ProtobufferOutput implements OutputPlugIn<Long, double[]> {
+public class ProtobufferOutput implements OutputPluginX<Long, double[]> {
 
     protected File mFolder;
     protected long mSize;

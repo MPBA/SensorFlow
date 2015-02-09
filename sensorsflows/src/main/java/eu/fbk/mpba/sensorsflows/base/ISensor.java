@@ -7,7 +7,7 @@ import java.util.List;
  *
  * The user should access to these methods only to have a higher control of the operation.
  */
-public interface ISensor<DeviceT extends IDevice> {
+public interface ISensor {
 
     public void switchOnAsync();
 
@@ -15,7 +15,7 @@ public interface ISensor<DeviceT extends IDevice> {
 
     public SensorStatus getState();
 
-    public DeviceT getParentDevice();
+    public Object getParentDevice();
 
     public abstract List<Object> getValuesDescriptors();
 }

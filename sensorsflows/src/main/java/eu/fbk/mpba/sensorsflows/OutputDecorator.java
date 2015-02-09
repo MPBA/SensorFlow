@@ -16,20 +16,21 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * This class adds internal support for the library data-paths.
  * Polls but has a fixed sleep time in the case that each queue is empty.
  */
-class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
+class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
 //    final String LOG_TAG = "ALE SFW";
     private IOutputCallback<TimeT, ValueT> _manager = null;
 
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
     private Object sessionTag = "unspecified";
-    private OutputPlugIn<TimeT, ValueT> outputPlugIn;
+    private OutputPluginX<TimeT, ValueT> outputPlugIn;
     private List<ISensor> linkedSensors;
 
     private ArrayBlockingQueue<SensorEventEntry<TimeT>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
-    protected OutputManager(OutputPlugIn<TimeT, ValueT> output) {
+    protected OutputDecorator(OutputPluginX<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
+        _manager = manager;
         linkedSensors = new ArrayList<>();
         outputPlugIn = output;
         int dataQueueCapacity = 80;
@@ -74,10 +75,6 @@ class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private void changeState(OutputStatus s) {
         if (_manager != null)
             _manager.outputStateChanged(this, _status = s);
-    }
-
-    void setOutputCallbackManager(IOutputCallback<TimeT, ValueT> manager) {
-        _manager = manager;
     }
 
     // Implemented Callbacks
@@ -134,7 +131,7 @@ class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         return _status;
     }
 
-    OutputPlugIn<TimeT, ValueT> getPlugIn() {
+    OutputPluginX<TimeT, ValueT> getPlugIn() {
         return outputPlugIn;
     }
 }

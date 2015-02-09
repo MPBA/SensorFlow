@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.OutputPlugIn;
+import eu.fbk.mpba.sensorsflows.OutputPluginX;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  * This plug-in saves the data in an SQLite database. The table is composed by the timestamp column
  * and a column for each float value in the array (the ValueT type is specified).
  */
-public class SQLiteOutput implements OutputPlugIn<Long, double[]> {
+public class SQLiteOutput implements OutputPluginX<Long, double[]> {
 
     String _name;
     String _path;

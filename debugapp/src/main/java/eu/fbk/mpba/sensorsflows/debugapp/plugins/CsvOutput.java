@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.OutputPluginX;
+import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
@@ -16,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
  * This plug-in saves the data in a CSV file. The table is composed by the timestamp column and a
  * column for each float value in the array (the ValueT type is specified).
  */
-public class CsvOutput implements OutputPluginX<Long, double[]> {
+public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     String _name;
     String _path;

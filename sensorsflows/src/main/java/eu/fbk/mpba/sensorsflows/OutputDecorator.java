@@ -23,13 +23,13 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
     private Object sessionTag = "unspecified";
-    private OutputPluginX<TimeT, ValueT> outputPlugIn;
+    private OutputPlugin<TimeT, ValueT> outputPlugIn;
     private List<ISensor> linkedSensors;
 
     private ArrayBlockingQueue<SensorEventEntry<TimeT>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
-    protected OutputDecorator(OutputPluginX<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
+    protected OutputDecorator(OutputPlugin<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
         _manager = manager;
         linkedSensors = new ArrayList<>();
         outputPlugIn = output;
@@ -131,7 +131,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         return _status;
     }
 
-    OutputPluginX<TimeT, ValueT> getPlugIn() {
+    OutputPlugin<TimeT, ValueT> getPlugIn() {
         return outputPlugIn;
     }
 }

@@ -9,9 +9,9 @@ import eu.fbk.mpba.sensorsflows.base.IDevice;
 class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, ValueT>> {
     private FlowsMan<TimeT, ValueT> _manager = null;
     private DeviceStatus _status = DeviceStatus.NOT_INITIALIZED;
-    private DevicePluginX<TimeT, ValueT> _devicePlugin;
+    private DevicePlugin<TimeT, ValueT> _devicePlugin;
 
-    DeviceDecorator(DevicePluginX<TimeT, ValueT> devicePlugin, FlowsMan<TimeT, ValueT> manager) {
+    DeviceDecorator(DevicePlugin<TimeT, ValueT> devicePlugin, FlowsMan<TimeT, ValueT> manager) {
         _devicePlugin = devicePlugin;
         _manager = manager;
     }
@@ -51,7 +51,7 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
         return _manager;
     }
 
-    DevicePluginX<TimeT, ValueT> getPlugIn() {
+    DevicePlugin<TimeT, ValueT> getPlugIn() {
         return _devicePlugin;
     }
 }

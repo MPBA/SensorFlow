@@ -6,7 +6,7 @@ import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
-public interface OutputPluginX<TimeT, ValueT> {
+public interface OutputPlugin<TimeT, ValueT> {
 
     void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors);
 

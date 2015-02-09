@@ -24,7 +24,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
 public class FlowsMan<TimeT, ValueT> implements
-        IUserInterface<DevicePluginX<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPluginX<TimeT, ValueT>>,
+        IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
         IDeviceCallback<DeviceDecorator<TimeT, ValueT>>,
         ISensorDataCallback<SensorComponent, TimeT, ValueT>,
         IOutputCallback<TimeT, ValueT> {
@@ -147,10 +147,10 @@ public class FlowsMan<TimeT, ValueT> implements
     protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();   // FIXME Can change to OutputPlugin?                                    // null
 
-    protected EventCallback<IUserInterface<DevicePluginX<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPluginX<TimeT, ValueT>>
+    protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
             , EngineStatus> _onStateChanged = null;                   // null
-    protected EventCallback<DevicePluginX<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
-    protected EventCallback<OutputPluginX<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
+    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
+    protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
 
     // Engine implementation
 
@@ -169,7 +169,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param device Device to add.
      */
     @Override
-    public void addDevice(DevicePluginX<TimeT, ValueT> device) {
+    public void addDevice(DevicePlugin<TimeT, ValueT> device) {
         if (_status == EngineStatus.STANDBY) {
             _userDevices.add(new DeviceDecorator<>(device, this));
         }
@@ -184,7 +184,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param toOutput   Output channel.
      */
     @Override
-    public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPluginX<TimeT, ValueT> toOutput) {
+    public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPlugin<TimeT, ValueT> toOutput) {
         if (_status == EngineStatus.STANDBY) {
             // TODO N1 Remember enabling/disabling each link
             // Manual indexOf for performance
@@ -203,7 +203,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param output Output to add.
      */
     @Override
-    public void addOutput(OutputPluginX<TimeT, ValueT> output) {
+    public void addOutput(OutputPlugin<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY) {
             _userOutputs.add(new OutputDecorator<>(output, this));
         }
@@ -219,12 +219,12 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IDevice d : enumerator)
      */
     @Override
-    public Iterable<DevicePluginX<TimeT, ValueT>> getDevices() {
-        return new Iterable<DevicePluginX<TimeT, ValueT>>() {
+    public Iterable<DevicePlugin<TimeT, ValueT>> getDevices() {
+        return new Iterable<DevicePlugin<TimeT, ValueT>>() {
             @Override
-            public Iterator<DevicePluginX<TimeT, ValueT>> iterator() {
+            public Iterator<DevicePlugin<TimeT, ValueT>> iterator() {
                 final Iterator<DeviceDecorator<TimeT, ValueT>> i = _userDevices.iterator();
-                return new Iterator<DevicePluginX<TimeT, ValueT>>() {
+                return new Iterator<DevicePlugin<TimeT, ValueT>>() {
 
                     @Override
                     public boolean hasNext() {
@@ -232,7 +232,7 @@ public class FlowsMan<TimeT, ValueT> implements
                     }
 
                     @Override
-                    public DevicePluginX<TimeT, ValueT> next() {
+                    public DevicePlugin<TimeT, ValueT> next() {
                         return i.next().getPlugIn();
                     }
 
@@ -251,12 +251,12 @@ public class FlowsMan<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
     @Override
-    public Iterable<OutputPluginX<TimeT, ValueT>> getOutputs() {
-        return new Iterable<OutputPluginX<TimeT, ValueT>>() {
+    public Iterable<OutputPlugin<TimeT, ValueT>> getOutputs() {
+        return new Iterable<OutputPlugin<TimeT, ValueT>>() {
             @Override
-            public Iterator<OutputPluginX<TimeT, ValueT>> iterator() {
+            public Iterator<OutputPlugin<TimeT, ValueT>> iterator() {
                 final Iterator<OutputDecorator<TimeT, ValueT>> i = _userOutputs.iterator();
-                return new Iterator<OutputPluginX<TimeT, ValueT>>() {
+                return new Iterator<OutputPlugin<TimeT, ValueT>>() {
 
                     @Override
                     public boolean hasNext() {
@@ -264,7 +264,7 @@ public class FlowsMan<TimeT, ValueT> implements
                     }
 
                     @Override
-                    public OutputPluginX<TimeT, ValueT> next() {
+                    public OutputPlugin<TimeT, ValueT> next() {
                         return i.next().getPlugIn();
                     }
 
@@ -549,7 +549,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStateChanged(EventCallback<IUserInterface<DevicePluginX<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPluginX<TimeT, ValueT>>, EngineStatus> callback) {
+    public void setOnStateChanged(EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>, EngineStatus> callback) {
         _onStateChanged = callback;
     }
 
@@ -559,7 +559,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStateChanged(EventCallback<DevicePluginX<TimeT, ValueT>, DeviceStatus> callback) {
+    public void setOnDeviceStateChanged(EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> callback) {
         _onDeviceStateChanged = callback;
     }
 
@@ -569,7 +569,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnOutputStateChanged(EventCallback<OutputPluginX<TimeT, ValueT>, OutputStatus> callback) {
+    public void setOnOutputStateChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
     }
 }

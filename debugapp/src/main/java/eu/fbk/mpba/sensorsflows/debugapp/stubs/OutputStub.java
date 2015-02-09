@@ -2,7 +2,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.stubs;
 
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.OutputPluginX;
+import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  * Si presuppone che in questa classe vengano implementati dei metodi callback richiamati dal thread
  * della libreria che elaborino i dati e gli eventi protetti quindi visibili nella sottoclasse.
  */
-public class OutputStub implements OutputPluginX<Long, float[]> {
+public class OutputStub implements OutputPlugin<Long, float[]> {
 
     /**
      * Costruttore pienamente personalizzato

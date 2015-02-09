@@ -10,37 +10,30 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePlugIn<TimeT, ValueT>> {
+public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     private boolean _listened = true;
-    private ArrayList<OutputManager<TimeT, ValueT>> _outputs = new ArrayList<>();
+    private ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
     private SensorStatus _status = SensorStatus.OFF;
-    private DevicePlugIn<TimeT, ValueT> _parent = null;
+    private DeviceDecorator<TimeT, ValueT> _parent = null;
 
-    protected SensorComponent(DevicePlugIn<TimeT, ValueT> parent) {
+    protected SensorComponent(DeviceDecorator<TimeT, ValueT> parent) {
         _parent = parent;
+        ___manager = parent.getManager();
     }
 
-    void addOutput(OutputManager<TimeT, ValueT> _output) {
+    void addOutput(OutputDecorator<TimeT, ValueT> _output) {
         this._outputs.add(_output);
     }
 
-    Iterable<OutputManager<TimeT, ValueT>> getOutputs() {
+    Iterable<OutputDecorator<TimeT, ValueT>> getOutputs() {
         return new ReadOnlyIterable<>(_outputs.iterator());
     }
 
     // Managed protected getters setters
 
-    protected FlowsMan<TimeT, ValueT> getManager() {
-        return getParentDevice()._manager;
-    }
-
     protected void changeStatus(SensorStatus state) {
-        _parent._manager.sensorStateChanged(this, null, _status = state);
+        _parent.getManager().sensorStateChanged(this, null, _status = state);
     }
-
-    /*protected void setParentDevice(DevicePlugIn<TimeT, ValueT> parent) {
-        _parent = parent;
-    }*/
 
     // Managed Overrides
 
@@ -50,18 +43,19 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor<DevicePl
     }
 
     @Override
-    public DevicePlugIn<TimeT, ValueT> getParentDevice() {
+    public DeviceDecorator<TimeT, ValueT> getParentDevice() {
         return _parent;
     }
 
     // Notify methods
 
+    private FlowsMan<TimeT, ValueT> ___manager;
     public void sensorValue(TimeT time, ValueT value) {
-        getManager().sensorValue(this, time, value);
+        ___manager.sensorValue(this, time, value);
     }
 
     public void sensorEvent(TimeT time, int type, String message) {
-        getManager().sensorEvent(this, time, type, message);
+        ___manager.sensorEvent(this, time, type, message);
     }
 
     // Listenage

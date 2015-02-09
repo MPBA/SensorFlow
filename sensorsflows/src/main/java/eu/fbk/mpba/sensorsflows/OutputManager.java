@@ -26,7 +26,7 @@ class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private OutputPlugIn<TimeT, ValueT> outputPlugIn;
     private List<ISensor> linkedSensors;
 
-    private ArrayBlockingQueue<SensorEventEntry<TimeT, Integer>> _eventsQueue;
+    private ArrayBlockingQueue<SensorEventEntry<TimeT>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
 
     protected OutputManager(OutputPlugIn<TimeT, ValueT> output) {
@@ -53,7 +53,7 @@ class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
 
     private void dispatchLoopWhileNotStopPending() {
         SensorDataEntry<TimeT, ValueT> data;
-        SensorEventEntry event;
+        SensorEventEntry<TimeT> event;
         while (!_stopPending) {
             data = _dataQueue.poll();
             event = _eventsQueue.poll();

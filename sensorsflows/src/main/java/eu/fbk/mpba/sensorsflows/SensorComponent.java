@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.base.ISensor;
+import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
@@ -14,15 +15,19 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     private boolean _listened = true;
     private ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
     private SensorStatus _status = SensorStatus.OFF;
-    private DeviceDecorator<TimeT, ValueT> _parent = null;
+    private DevicePlugin<TimeT, ValueT> _parent = null;
+    private ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
 
-    protected SensorComponent(DeviceDecorator<TimeT, ValueT> parent) {
+    protected SensorComponent(DevicePlugin<TimeT, ValueT> parent) {
         _parent = parent;
-        ___manager = parent.getManager();
     }
 
     void addOutput(OutputDecorator<TimeT, ValueT> _output) {
         this._outputs.add(_output);
+    }
+
+    void setManager(ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> man) {
+        _handler = man;
     }
 
     Iterable<OutputDecorator<TimeT, ValueT>> getOutputs() {
@@ -32,7 +37,7 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        _parent.getManager().sensorStateChanged(this, null, _status = state);
+        _handler.sensorStateChanged(this, null, _status = state);
     }
 
     // Managed Overrides
@@ -42,20 +47,17 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         return _status;
     }
 
-    @Override
-    public DeviceDecorator<TimeT, ValueT> getParentDevice() {
+    public DevicePlugin<TimeT, ValueT> getParentDevicePlugin() {
         return _parent;
     }
 
     // Notify methods
-
-    private FlowsMan<TimeT, ValueT> ___manager;
     public void sensorValue(TimeT time, ValueT value) {
-        ___manager.sensorValue(this, time, value);
+        _handler.sensorValue(this, time, value);
     }
 
     public void sensorEvent(TimeT time, int type, String message) {
-        ___manager.sensorEvent(this, time, type, message);
+        _handler.sensorEvent(this, time, type, message);
     }
 
     // Listenage

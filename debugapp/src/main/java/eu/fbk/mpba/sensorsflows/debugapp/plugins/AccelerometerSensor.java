@@ -9,7 +9,7 @@ import android.hardware.SensorManager;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugIn;
+import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
@@ -24,7 +24,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
     private String _name;
     private int _delay;
 
-    public AccelerometerSensor(DevicePlugIn<Long, double[]> d, Context context, String name, int sensorDelay) {
+    public AccelerometerSensor(DevicePlugin<Long, double[]> d, Context context, String name, int sensorDelay) {
         super(d);
         _delay = sensorDelay;
         _name = name;
@@ -39,7 +39,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         else if (getState() == SensorStatus.OFF) {
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(System.nanoTime()),
+            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
                     0, "switched on");
         }
     }
@@ -49,7 +49,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         if (getState() == SensorStatus.ON) {
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(System.nanoTime()),
+            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
                     0, "switched off");
         }
     }
@@ -70,7 +70,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onSensorChanged(SensorEvent event) {
-        sensorValue(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(event.timestamp),
+        sensorValue(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(event.timestamp),
                 new double[] {event.values[0], event.values[1], event.values[2]});
     }
 
@@ -86,7 +86,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevice()).getMonoTimestampNanos(System.nanoTime()),
+        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
                 accuracy, "Accuracy changed");
     }
 
@@ -97,6 +97,6 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     @Override
     public String toString() {
-        return getParentDevice().toString() + "/" + _sAcc.getName() + "-" + _name;
+        return getParentDevicePlugin().toString() + "/" + _sAcc.getName() + "-" + _name;
     }
 }

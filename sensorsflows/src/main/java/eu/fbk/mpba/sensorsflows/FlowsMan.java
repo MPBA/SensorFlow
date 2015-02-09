@@ -3,7 +3,6 @@ package eu.fbk.mpba.sensorsflows;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
@@ -353,12 +352,12 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOn(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
+        /*if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
-            sensor.switchOnAsync();
+            */sensor.switchOnAsync();/* FIXME
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
-        }
+        }*/
     }
 
     /**
@@ -371,12 +370,12 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOff(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
+        /*if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
-            sensor.switchOffAsync();
+            */sensor.switchOffAsync();/* FIXME
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
-        }
+        }*/
     }
 
     //      ACTIVE operation commands (improper, public in the implementations)
@@ -391,10 +390,10 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
-        if (_userDevices.contains(sensor.getParentDevice()))
-            sensor.setListened(streaming);
+        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME
+            */sensor.setListened(streaming);/*
         else
-            throw new NoSuchElementException("ISensor not present in the collection.");
+            throw new NoSuchElementException("ISensor not present in the collection.");*/
     }
 
     /**
@@ -407,10 +406,10 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
-        if (_userDevices.contains(sensor.getParentDevice()))
-            return sensor.isListened();
+        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME
+            */return sensor.isListened();/*
         else
-            throw new NoSuchElementException("ISensor not present in the collection.");
+            throw new NoSuchElementException("ISensor not present in the collection.");*/
     }
 
     //      Engine operation

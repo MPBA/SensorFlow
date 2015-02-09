@@ -6,12 +6,12 @@ import android.hardware.SensorManager;
 import java.util.ArrayList;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugIn;
+import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice extends DevicePlugIn<Long, double[]> implements IMonotonicTimestampReference {
+public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
 
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
@@ -30,14 +30,14 @@ public class SmartphoneDevice extends DevicePlugIn<Long, double[]> implements IM
     }
 
     @Override
-    protected void inputPluginInitialize() {
+    public void inputPluginInitialize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOnAsync();
         }
     }
 
     @Override
-    protected void inputPluginFinalize() {
+    public void inputPluginFinalize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOffAsync();
         }
@@ -50,12 +50,10 @@ public class SmartphoneDevice extends DevicePlugIn<Long, double[]> implements IM
 
     private long bootUTCNanos;
 
-    @Override
     public void resetMonoTimestamp(long timestamp, long realTimeNanos) {
         bootUTCNanos = timestamp * 1000000 - realTimeNanos;
     }
 
-    @Override
     public long getMonoTimestampNanos(long realTimeNanos) {
         return realTimeNanos + bootUTCNanos;
     }

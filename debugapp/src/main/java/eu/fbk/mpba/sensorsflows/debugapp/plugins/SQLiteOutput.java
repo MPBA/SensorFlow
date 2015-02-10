@@ -34,7 +34,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
-        _sav = SQLiteDatabase.openOrCreateDatabase(_path + "/" + sessionTag.toString() /*+ "/" + toString()*/ + ".sqlitedb", null);
+        _sav = SQLiteDatabase.openOrCreateDatabase(_path + "/" + sessionTag.toString() + "/" + /*toString()*/"m" + ".sqlitedb", null);
         for (ISensor l : linkedSensors) {
             _sav.execSQL(
                     "CREATE TABLE IF NOT EXISTS " + getEventsTblName(l) +
@@ -81,16 +81,16 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         _sav.execSQL(sb.toString(), h.toArray());
     }
 
-    @Override
-    public String toString() {
-        return "SQLiteOutput-" + _name;
-    }
-
     public static String getDataTblName(ISensor s) {
         return "[data_" + s.toString().replace("[", "").replace("]", "") + "]";
     }
 
     public static String getEventsTblName(ISensor s) {
         return "[events_" + s.toString().replace("[", "").replace("]", "") + "]";
+    }
+
+    @Override
+    public String toString() {
+        return "SQLiteOutput-" + _name;
     }
 }

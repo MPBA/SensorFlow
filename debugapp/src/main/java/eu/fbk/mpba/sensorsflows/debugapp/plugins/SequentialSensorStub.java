@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugIn;
+import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -17,7 +17,7 @@ public class SequentialSensorStub extends SensorComponent<Long, float[]> {
     private String _name;
     private volatile boolean _streaming = false;
 
-    public SequentialSensorStub(DevicePlugIn<Long, float[]> d) {
+    public SequentialSensorStub(DevicePlugin<Long, float[]> d) {
         super(d);
         _name = "SequentialSensor";
         final SequentialSensorStub t = this;
@@ -65,7 +65,7 @@ public class SequentialSensorStub extends SensorComponent<Long, float[]> {
 
     @Override
     public String toString() {
-        return getParentDevice().toString() + "/" + _name;
+        return getParentDevicePlugin().toString() + "/" + _name;
     }
 
     @Override

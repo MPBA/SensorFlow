@@ -1,6 +1,9 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -23,6 +26,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected ArrayList<SensorEventEntry<Long>> mEvents;
     protected final String uuid;
     private int tsSeq = 0;
+    List<SkiloProtobuffer.SensorData> sensorData = new ArrayList<>();
 
     public ProtobufferOutput(File dir, long flushSizeElements) { // TODO Horrible
         mFolder = dir;
@@ -36,29 +40,29 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void flushTrackSplit(String fileName) {
-        List<SkiloProtobuffer.SensorData> l = new ArrayList<>();
-        for (SensorDataEntry<Long, double[]> d : mData){
-
-            List<Float> v = new ArrayList<>();          // double conversion to Float
-            for (int i = 0; i < d.value.length; i++)    // double conversion to Float
-                v.add((float)d.value[i]);               // double conversion to Float
-
-            l.add(SkiloProtobuffer.SensorData.newBuilder()
-                            .setId(-1)
-                            .setSensorIdFk(mSensors.indexOf(d.sensor))
-                            .addAllValue(v)
-                            .build()
-            );
+        FileOutputStream output = null;
+        try {
+            output = new FileOutputStream(fileName, false);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
-
         SkiloProtobuffer.TrackSplit s = SkiloProtobuffer.TrackSplit.newBuilder()
                 .addAllInfo(mSensorInfo)
-                .addAllDatas(l)
+                .addAllDatas(sensorData)
                 .setIsLast(false)
                 .setPhoneId(uuid)
                 .setSequenceNumber(tsSeq++)
-                .setTsStart(Math.max(mData.get(0).time, mEvents.get(0).timestamp))
+                .setTsStart(mData.get(0).time)
+                .setTsStop(mData.get(mData.size() - 1).time)
                 .build();
+
+        try {
+            s.writeTo(output);
+            if (output != null)
+                output.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String getTrackSplitNameForNow() {
@@ -81,7 +85,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 //                    .setSensorId(s)
 //                    .setDesc("events_" + mSensors.get(s).toString())
 //                    .setType(SensorInfo.TYPESENSOR.OTHER)
-//                    .build());
+//                    .build()); TODO Add events support
         }
     }
 
@@ -96,7 +100,16 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void newSensorData(SensorDataEntry<Long, double[]> data) {
-        mData.add(data);
+    public void newSensorData(SensorDataEntry<Long, double[]> data) { // TODO Add auto-flush support
+        List<Float> v = new ArrayList<>(7);
+        for (int i = 0; i < data.value.length; i++)    // double conversion to Float
+            v.add((float)data.value[i]);               // double conversion to Float
+
+        sensorData.add(SkiloProtobuffer.SensorData.newBuilder()
+                        .setId(-1)
+                        .setSensorIdFk(mSensors.indexOf(data.sensor))
+                        .addAllValue(v)
+                        .build()
+        );
     }
 }

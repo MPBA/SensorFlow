@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.stubs;
 import java.util.ArrayList;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugIn;
+import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
@@ -15,7 +15,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * all'inizio una volta per tutti i sensori (es. E3 è il Device che racchiude i sensori BVP Temp
  * ecc. oppure AndroidSmartphone(Context) può essere il Device che comprende acc. gyro. & co.)
  */
-public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
+public class DevicePlugInStub implements DevicePlugin<Long, float[]> {
 
     private String _name;
     private List<SensorComponent<Long, float[]>> _sensors;
@@ -49,7 +49,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
      * prima dell'avvio della libreria. Meglio se le connessioni sono gestite prima dello start.
      */
     @Override
-    protected void inputPluginInitialize() {
+    public void inputPluginInitialize() {
 
     }
 
@@ -57,7 +57,7 @@ public class DevicePlugInStub extends DevicePlugIn<Long, float[]> {
      * Qualsiasi cosa da eseguire quando la libreria viene chiusa.
      */
     @Override
-    protected void inputPluginFinalize() {
+    public void inputPluginFinalize() {
 
     }
 

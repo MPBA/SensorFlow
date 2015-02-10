@@ -66,7 +66,7 @@ public class SensorStub extends SensorComponent<Long, float[]> {
      */
     @Override
     public String toString() {
-        return getParentDevice().toString() + "/" + name;
+        return getParentDevicePlugin().toString() + "/" + name;
     }
 
     /**

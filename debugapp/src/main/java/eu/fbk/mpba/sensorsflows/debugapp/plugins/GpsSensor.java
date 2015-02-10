@@ -44,8 +44,8 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void onLocationChanged(Location location) {
-        sensorValue(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos()),
-                new double[] {
+        sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos()),
+                new double[]{
                         location.getLatitude(),
                         location.getLongitude(),
                         location.getAltitude(),
@@ -57,37 +57,37 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     @Override
     public void onProviderDisabled(String provider) {
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -2, provider + "\\\\" + ":m Gps provider disabled");
+                -2, provider + "\\\\" + "provider disabled");
         Toast.makeText(context, "Switch on the gps please", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -1, provider + "\\\\" + ":m Gps provider enabled");
-        Toast.makeText(context, "Gps turned on ", Toast.LENGTH_LONG).show();
+        sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+                -1, provider + "\\\\" + "provider enabled");
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
+        StringBuilder x = new StringBuilder(60);
+        for (String i : extras.keySet())
+            x.append('[')
+             .append(i)
+             .append(", ")
+             .append(extras.get(i))
+             .append(']');
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                status, provider + "\\\\" + extras.toString());
-        Toast.makeText(context, "Gps StatusChanged " + status, Toast.LENGTH_LONG).show();
+                status, provider + "\\\\" + x);
     }
 
     @Override
     public List<Object> getValuesDescriptors() {
         return Arrays.asList((Object)
-                "android.location.Location#getLatitude",
-                "android.location.Location#getLongitude",
-                "android.location.Location#getAltitude",
-                "android.location.Location#getBearing",
-                "android.location.Location#getAccuracy");
-    }
-
-    @Override
-    public String toString() {
-        return getParentDevicePlugin().toString() + "/" + LocationManager.GPS_PROVIDER + "-" + name; // TODO 2 NullRefExc in every toString!
+                "Latitude",
+                "Longitude",
+                "Altitude",
+                "Bearing",
+                "Accuracy");
     }
 
     @Override
@@ -100,5 +100,10 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     public void switchOffAsync() {
         locationManager.removeUpdates(this);
         changeStatus(SensorStatus.OFF);
+    }
+
+    @Override
+    public String toString() {
+        return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + LocationManager.GPS_PROVIDER + "-" + name;
     }
 }

@@ -40,7 +40,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
             sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                    0, "switched on");
+                    0, "Switched on");
         }
     }
 
@@ -50,7 +50,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
             sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                    0, "switched off");
+                    0, "Switched off");
         }
     }
 
@@ -92,11 +92,11 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     @Override
     public List<Object> getValuesDescriptors() {
-        return Arrays.asList((Object)"SensorEvent#values[0]", "SensorEvent#values[1]", "SensorEvent#values[2]");
+        return Arrays.asList((Object)"x0", "x1", "x2");
     }
 
     @Override
     public String toString() {
-        return getParentDevicePlugin().toString() + "/" + _sAcc.getName() + "-" + _name;
+        return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + _sAcc.getName() + "-" + _name;
     }
 }

@@ -21,7 +21,7 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
         resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
         _sensors = new ArrayList<>();
         _sensors.add(new GpsSensor(this, context, "0", 0, 0));
-        _sensors.add(new AccelerometerSensor(this, context, "1-noSafeTS", SensorManager.SENSOR_DELAY_GAME));
+        _sensors.add(new AccelerometerSensor(this, context, "acc", SensorManager.SENSOR_DELAY_GAME));
     }
 
     @Override
@@ -43,11 +43,6 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
         }
     }
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
     private long bootUTCNanos;
 
     public void resetMonoTimestamp(long timestamp, long realTimeNanos) {
@@ -56,6 +51,11 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     public long getMonoTimestampNanos(long realTimeNanos) {
         return realTimeNanos + bootUTCNanos;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
 

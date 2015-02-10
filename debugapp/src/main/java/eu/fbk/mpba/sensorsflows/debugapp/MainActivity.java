@@ -10,9 +10,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import java.io.File;
+
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.CsvOutput;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.ProtobufferOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.util.BluetoothService;
@@ -39,6 +42,9 @@ public class MainActivity extends Activity {
         m.addOutput(new SQLiteOutput("DB",
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"));
+        m.addOutput(new ProtobufferOutput("Protobuf", new File(
+                Environment.getExternalStorageDirectory().getPath()
+                        + "/eu.fbk.mpba.sensorsflows/"), -1));
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
 

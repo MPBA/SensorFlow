@@ -18,6 +18,10 @@ import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
  */
 public class CsvOutput implements OutputPlugin<Long, double[]> {
 
+    private final String _tsCol;
+    private final String _ext;
+    private final String _nl;
+    private final String _sep;
     String _name;
     String _path;
     CsvDataSaver _sav;
@@ -25,8 +29,16 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     List<ISensor> _linkedSensors = new ArrayList<>();
 
     public CsvOutput(String name, String path) {
+        this(name, path, "timestamp", ".csv", ";", "\n");
+    }
+
+    public CsvOutput(String name, String path, String timestampColumnName, String fileSuffix, String separator, String newLine) {
         _name = name;
         _path = path;
+        _tsCol = timestampColumnName;
+        _ext = fileSuffix;
+        _sep = separator;
+        _nl = newLine;
     }
 
     public List<String> getFiles() {
@@ -39,12 +51,12 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
-        _sav = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/",
-                streamingSensors.toArray(), ".csv", ";", "\n");
+        _sav = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + toString(),
+                streamingSensors.toArray(), _ext, _sep, _nl);
         _linkedSensors.addAll(streamingSensors);
         for (ISensor l : streamingSensors) {
             List<Object> h = new ArrayList<>();
-            h.add("timestamp");
+            h.add(_tsCol);
             h.addAll(l.getValuesDescriptors());
             headers.add(h);
         }
@@ -52,11 +64,11 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginFinalize() {
-
+        _sav.close();
     }
 
     public void newSensorEvent(SensorEventEntry event) {
-
+        // TODO Manage events
     }
 
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
@@ -70,6 +82,6 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String toString() {
-        return "CsvOutput-" + _name;
+        return CsvOutput.class.getSimpleName() + "-" + _name;
     }
 }

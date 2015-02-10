@@ -3,6 +3,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +35,10 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
-        _sav = SQLiteDatabase.openOrCreateDatabase(_path + "/" + sessionTag.toString() /*+ "/" + toString()*/ + ".sqlitedb", null);
+        File f = new File(_path + "/" + sessionTag.toString());
+        //noinspection ResultOfMethodCallIgnored
+        f.mkdirs();
+        _sav = SQLiteDatabase.openOrCreateDatabase(new File(f, toString() + ".db"), null);
         for (ISensor l : linkedSensors) {
             _sav.execSQL(
                     "CREATE TABLE IF NOT EXISTS " + getEventsTblName(l) +
@@ -77,13 +81,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         for (Object ignored : data.value)
             sb.append(",?");
         sb.append(")");
-        Log.v("DATA", sb.toString() + " " + h.toArray()[0] + " " + h.toArray()[1]);
         _sav.execSQL(sb.toString(), h.toArray());
-    }
-
-    @Override
-    public String toString() {
-        return "SQLiteOutput-" + _name;
     }
 
     public static String getDataTblName(ISensor s) {
@@ -92,5 +90,10 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
 
     public static String getEventsTblName(ISensor s) {
         return "[events_" + s.toString().replace("[", "").replace("]", "") + "]";
+    }
+
+    @Override
+    public String toString() {
+        return SQLiteOutput.class.getSimpleName() + "-" + _name;
     }
 }

@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugIn;
+import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -17,7 +17,7 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
     private String _name;
     private volatile boolean _streaming = false;
 
-    public RandomSensorStub(DevicePlugIn<Long, float[]> d) {
+    public RandomSensorStub(DevicePlugin<Long, float[]> d) {
         super(d);
         _name = "RandomSensor";
         final RandomSensorStub t = this;
@@ -64,12 +64,12 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
     }
 
     @Override
-    public String toString() {
-        return getParentDevice().toString() + "/" + _name;
+    public List<Object> getValuesDescriptors() {
+        return Arrays.asList((Object)"RandX", "RandY", "RandZ");
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
-        return Arrays.asList((Object)"RandX", "RandY", "RandZ");
+    public String toString() {
+        return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + "/" + _name;
     }
 }

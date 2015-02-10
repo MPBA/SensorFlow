@@ -10,6 +10,7 @@ import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
+import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;

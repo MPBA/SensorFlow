@@ -23,7 +23,7 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     }
 
     void addOutput(OutputDecorator<TimeT, ValueT> _output) {
-        this._outputs.add(_output);
+        _outputs.add(_output);
     }
 
     void setManager(ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> man) {

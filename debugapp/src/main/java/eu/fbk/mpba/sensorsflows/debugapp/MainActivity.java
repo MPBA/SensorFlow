@@ -18,7 +18,7 @@ import eu.fbk.mpba.sensorsflows.debugapp.plugins.CsvOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.ProtobufferOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
-import eu.fbk.mpba.sensorsflows.debugapp.util.BluetoothService;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
 
 
 public class MainActivity extends Activity {
@@ -31,17 +31,21 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        s = new BluetoothService(btsStatus, btsData);
+        s = new EXLs3Manager(btsStatus, btsData);
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     public void onMStart(View v) {
         m.addDevice(new SmartphoneDevice(this, "Smartphone"));
+
         m.addOutput(new CsvOutput("CSV",
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"));
+
         m.addOutput(new SQLiteOutput("DB",
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"));
+
         m.addOutput(new ProtobufferOutput("Protobuf", new File(
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"), -1));
@@ -55,7 +59,7 @@ public class MainActivity extends Activity {
         m.close();
     }
 
-    BluetoothService s;
+    EXLs3Manager s;
 
     public void onBTSTest(View v) {
         s.connect(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:E1:B3:4E:A9"), false);
@@ -81,36 +85,36 @@ public class MainActivity extends Activity {
         return id == R.id.action_settings || super.onOptionsItemSelected(item);
     }
 
-    private final BluetoothService.StatusDelegate btsStatus = new BluetoothService.StatusDelegate() {
+    private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
 
-        public void idle(BluetoothService sender) {
+        public void idle(EXLs3Manager sender) {
             Log.i(TAG, "+++++++++++ IDLE");
         }
 
-        public void listening(BluetoothService sender) {
+        public void listening(EXLs3Manager sender) {
             Log.i(TAG, "+++++++++++ LISTENING");
         }
 
-        public void connecting(BluetoothService sender, BluetoothDevice device, boolean secureMode) {
+        public void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode) {
             Log.i(TAG, "+++++++++++ CONNECTING to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure"));
         }
 
-        public void connected(BluetoothService sender, String deviceName) {
+        public void connected(EXLs3Manager sender, String deviceName) {
             Log.i(TAG, "+++++++++++ CONNECTED to " + deviceName);
         }
 
-        public void connectionFailed(BluetoothService sender) {
+        public void connectionFailed(EXLs3Manager sender) {
             Log.i(TAG, "+++++++++++ Conn FAILED");
         }
 
-        public void connectionLost(BluetoothService sender) {
+        public void connectionLost(EXLs3Manager sender) {
             Log.i(TAG, "+++++++++++ Conn LOST");
         }
     };
 
-    private final BluetoothService.DataDelegate btsData = new BluetoothService.DataDelegate() {
+    private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
         @Override
-        public void receive(BluetoothService sender, BluetoothService.Packet p) {
+        public void receive(EXLs3Manager sender, EXLs3Manager.Packet p) {
             Log.v(TAG, String.format("+ DATA %s %s %s %s", p.counter, sender.packetCounterTotal, sender.packetsReceived, sender.lostPackets));
         }
     };

@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.Handler;
 
-import eu.fbk.mpba.sensorsflows.debugapp.util.BluetoothService;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
 
 public class CupidManager {
     // Message types sent from the BluetoothChatService Handler
@@ -16,11 +16,11 @@ public class CupidManager {
 
     protected BluetoothAdapter btAda;
 
-    protected BluetoothService[] svcs;
+    protected EXLs3Manager[] svcs;
 
     public CupidManager(BluetoothAdapter adapter) {
         btAda = adapter;
-        svcs = new BluetoothService[16];
+        svcs = new EXLs3Manager[16];
     }
 
     public void connect(BluetoothDevice device) {

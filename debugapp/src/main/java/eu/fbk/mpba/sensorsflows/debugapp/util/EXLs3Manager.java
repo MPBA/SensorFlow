@@ -19,35 +19,82 @@ import java.util.UUID;
  * thread for performing data transmissions when connected.
  */
 @SuppressLint("NewApi")
-public class BluetoothService {
-    // TODO Parse the A G M Q B packet!!!
+public class EXLs3Manager {
+    // TODO Parse the AGMQB packet!!!
 
     public static interface DataDelegate {
-        void receive(BluetoothService sender, Packet p);
+        void receive(EXLs3Manager sender, Packet p);
     }
 
     public static interface StatusDelegate {
-        void idle(BluetoothService sender);
-        void listening(BluetoothService sender);
-        void connecting(BluetoothService sender, BluetoothDevice device, boolean secureMode);
-        void connected(BluetoothService sender, String deviceName);
-        void connectionFailed(BluetoothService sender);
-        void connectionLost(BluetoothService sender);
+        void idle(EXLs3Manager sender);
+        void listening(EXLs3Manager sender);
+        void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode);
+        void connected(EXLs3Manager sender, String deviceName);
+        void connectionFailed(EXLs3Manager sender);
+        void connectionLost(EXLs3Manager sender);
     }
 
     public static class Packet {
         public long receptionTime;
         public int counter;
-        public int ax,ay,az,gx,gy,gz,mx,my,mz;
+        public PacketType type;
+        public int ax,ay,az,gx,gy,gz,mx,my,mz,q1,q2,q3,q4;
         public long checksum_received, checksum_actual;
 
-        public boolean isValid() {
+       /* public boolean isValid() {
             return checksum_received == checksum_actual;
+        }*/
+
+        public Packet (long receptionTime, byte[] r, int start) {
+            this.receptionTime = receptionTime;
+
+            int s = start;
+
+            if (r[s] == 0x20)
+                s++;
+
+            if (r[s] == PacketType.RAW.id || r[s] == PacketType.AGMQB.id) {
+                type = r[s] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
+                s++;
+                counter = r[s++] + r[s++] * 0x100;
+                ax = r[s++] + r[s++] * 0x100;
+                ay = r[s++] + r[s++] * 0x100;
+                az = r[s++] + r[s++] * 0x100;
+                gx = r[s++] + r[s++] * 0x100;
+                gy = r[s++] + r[s++] * 0x100;
+                gz = r[s++] + r[s++] * 0x100;
+                mx = r[s++] + r[s++] * 0x100;
+                my = r[s++] + r[s++] * 0x100;
+                mz = r[s++] + r[s++] * 0x100;
+                if (r[s] == PacketType.AGMQB.id) {
+                    q1 = r[s++] + r[s++] * 0x100;
+                    q2 = r[s++] + r[s++] * 0x100;
+                    q3 = r[s++] + r[s++] * 0x100;
+                    q4 = r[s++] + r[s++] * 0x100;
+                }
+                else
+                    q1 = q2 = q3 = q4 = 0;
+                checksum_received = r[s++] + r[s] * 0x100;
+                checksum_actual = 0;
+                for (; start < s; start++) {
+
+                }
+            }
         }
 
-        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received, long checksum_actual) {
+        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, long checksum_received) {
+            this(receptionTime, PacketType.RAW, counter, ax, ay, az,gx, gy, gz, mx, my, mz, 0, 0, 0, 0, checksum_received);
+        }
+
+        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, long checksum_received) {
+            this(receptionTime, PacketType.RAW, counter, ax, ay, az,gx, gy, gz, mx, my, mz, q1, q2, q3, q4, checksum_received);
+        }
+        
+        public Packet (long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, long checksum_received) {
             this.receptionTime = receptionTime;
             this.counter = counter;
+            this.type = type;
             this.ax = ax;
             this.ay = ay;
             this.az = az;
@@ -57,18 +104,39 @@ public class BluetoothService {
             this.mx = mx;
             this.my = my;
             this.mz = mz;
+            this.q1 = q1;
+            this.q2 = q2;
+            this.q3 = q3;
+            this.q4 = q4;
             this.checksum_received = checksum_received;
-            this.checksum_actual = checksum_actual;
         }
     }
 
+    public enum PacketType {
+        AGMQB((byte)0x9f),
+        RAW((byte)0x0A);
+
+        byte id;
+
+        PacketType(byte id) {
+            this.id = id;
+        }
+    }
+
+    public enum BTSrvState {
+        IDLE,          // we're doing nothing
+        LISTENING,        // now listening for incoming connections
+        CONNECTING,    // now initiating an outgoing connection
+        CONNECTED,     // now connected to a remote device
+        DISCONNECTED   // Disconnected from device
+    }
+
     // Debugging
-    private static final String TAG = "BluetoothChatService";
-    private static final boolean D = true;
+    private static final String TAG = EXLs3Manager.class.getSimpleName();
 
     // Name for the SDP record when creating server socket
-    private static final String NAME_SECURE = "BluetoothChatSecure";
-    private static final String NAME_INSECURE = "BluetoothChatInsecure";
+    private static final String NAME_SECURE = EXLs3Manager.class.getSimpleName() + "Secure";
+    private static final String NAME_INSECURE = EXLs3Manager.class.getSimpleName() + "Insecure";
 
     // Unique UUID for this application
     @SuppressWarnings("SpellCheckingInspection")
@@ -87,14 +155,6 @@ public class BluetoothService {
     private ConnectedThread mConnectedThread;
     private BTSrvState mState;
 
-    public enum BTSrvState {
-        IDLE,          // we're doing nothing
-        LISTENING,        // now listening for incoming connections
-        CONNECTING,    // now initiating an outgoing connection
-        CONNECTED,     // now connected to a remote device
-        DISCONNECTED   // Disconnected from device
-    }
-
     public int packetsReceived = 0;
     public int packetCounterTotal = 0;
     public int lostPackets = 0;
@@ -105,7 +165,7 @@ public class BluetoothService {
      * Constructor. Prepares a new BluetoothChat session with the default BluetoothAdapter.
      *
      */
-    public BluetoothService(StatusDelegate statusDelegate, DataDelegate dataDelegate) {
+    public EXLs3Manager(StatusDelegate statusDelegate, DataDelegate dataDelegate) {
         this(statusDelegate, dataDelegate, BluetoothAdapter.getDefaultAdapter());
     }
 
@@ -113,7 +173,7 @@ public class BluetoothService {
      * Constructor. Prepares a new BluetoothChat session.
      *
      */
-    public BluetoothService(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothAdapter adapter) {
+    public EXLs3Manager(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothAdapter adapter) {
         mDataDelegate = dataDelegate;
         mStatusDelegate = statusDelegate;
         mAdapter = adapter;
@@ -126,7 +186,7 @@ public class BluetoothService {
      * @param state An integer defining the current connection state
      */
     private synchronized void setState(BTSrvState state) {
-        if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
+        Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
         if (mStatusDelegate != null)
             switch (state) {
@@ -150,8 +210,8 @@ public class BluetoothService {
      * Start the chat service. Specifically start AcceptThread to begin a
      * session in listening (server) mode. Called by the Activity onResume()
      */
-    public synchronized void start() {
-        if (D) Log.d(TAG, "start");
+    protected synchronized void start() {
+        Log.d(TAG, "start()");
 
         // Cancel any thread attempting to make a connection
         if (mConnectThread != null) {
@@ -178,14 +238,8 @@ public class BluetoothService {
         }
     }
 
-    /**
-     * Start the ConnectThread to initiate a connection to a remote device.
-     *
-     * @param device The BluetoothDevice to connect
-     * @param secure Socket Security type - Secure (true) , Insecure (false)
-     */
     public synchronized void connect(BluetoothDevice device, boolean secure) {
-        if (D) Log.d(TAG, "connect to: " + device);
+        Log.d(TAG, "connect to: " + device);
 
         // Cancel any thread attempting to make a connection
         if (mState == BTSrvState.CONNECTING) {
@@ -209,15 +263,9 @@ public class BluetoothService {
             mStatusDelegate.connecting(this, device, secure);
     }
 
-    /**
-     * Start the ConnectedThread to begin managing a Bluetooth connection
-     *
-     * @param socket The BluetoothSocket on which the connection was made
-     * @param device The BluetoothDevice that has been connected
-     */
     protected synchronized void connected(BluetoothSocket socket, BluetoothDevice
-            device, final String socketType) {
-        if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
+            device, String socketType) {
+        Log.d(TAG, "connected, Socket Type:" + socketType);
 
         // Cancel the thread that completed the connection
         if (mConnectThread != null) {
@@ -256,7 +304,7 @@ public class BluetoothService {
      * Stop all threads
      */
     public synchronized void stop() {
-        if (D) Log.d(TAG, "stop");
+        Log.d(TAG, "stop()");
 
         if (mConnectThread != null) {
             mConnectThread.cancel();
@@ -280,13 +328,7 @@ public class BluetoothService {
         setState(BTSrvState.IDLE);
     }
 
-    /**
-     * Write to the ConnectedThread in an unsynchronized manner
-     *
-     * @param out The bytes to write
-     * @see ConnectedThread#write(byte[])
-     */
-    public void write(byte[] out) {
+    protected void write(byte[] out) {
         // Create temporary object
         ConnectedThread r;
         // Synchronize a copy of the ConnectedThread
@@ -312,7 +354,7 @@ public class BluetoothService {
         setState(BTSrvState.DISCONNECTED);
         // WAS Start the service over to restart listening mode
         // Makes sense stopping everything as it has been notified to the user
-        BluetoothService.this.stop();
+        EXLs3Manager.this.stop();
     }
 
     /**
@@ -325,23 +367,20 @@ public class BluetoothService {
 
         setState(BTSrvState.DISCONNECTED);
         // Start the service over to restart listening mode
-        BluetoothService.this.start();
+        EXLs3Manager.this.start();
     }
 
     public void sendStart() {
-        String message = "==";
         startStreamingTime = android.os.SystemClock.elapsedRealtime();
-        write(message.getBytes());
+        write("==".getBytes());
     }
 
     public void sendStop() {
-        String message = "::";
-        write(message.getBytes());
+        write("::".getBytes());
     }
 
     public void sendStartLog(int trialID, int patientID) {
-        String message = "% SET PATIENTID " + trialID + " " + patientID + "\r\n  - -";
-        write(message.getBytes());
+        write("--".getBytes());
     }
 
     /**
@@ -374,7 +413,7 @@ public class BluetoothService {
         }
 
         public void run() {
-            if (D) Log.d(TAG, "Socket Type: " + mSocketType +
+            Log.d(TAG, "Socket Type: " + mSocketType +
                     "BEGIN mAcceptThread" + this);
             setName("AcceptThread" + mSocketType);
 
@@ -398,7 +437,7 @@ public class BluetoothService {
 
                 // If a connection was accepted
                 if (socket != null) {
-                    synchronized (BluetoothService.this) {
+                    synchronized (EXLs3Manager.this) {
                         switch (mState) {
                             case LISTENING:
                             case CONNECTING:
@@ -419,12 +458,12 @@ public class BluetoothService {
                     }
                 }
             }
-            if (D) Log.i(TAG, "END mAcceptThread, socket Type: " + mSocketType);
+            Log.i(TAG, "END mAcceptThread, socket Type: " + mSocketType);
 
         }
 
         public void cancel() {
-            if (D) Log.d(TAG, "Socket Type" + mSocketType + "cancel " + this);
+            Log.d(TAG, "Socket Type" + mSocketType + "cancel " + this);
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
@@ -489,7 +528,7 @@ public class BluetoothService {
             }
 
             // Reset the ConnectThread because we're done
-            synchronized (BluetoothService.this) {
+            synchronized (EXLs3Manager.this) {
                 mConnectThread = null;
             }
 
@@ -541,12 +580,12 @@ public class BluetoothService {
 
             // Keep listening to the InputStream while connected
             while (true) {
-                try {
-                    byte[] buffer = new byte[1024];
+                /*try {*/
+//                    byte[] buffer = new byte[1024];
 
                     // Read from the InputStream
                     //noinspection ResultOfMethodCallIgnored
-                    mmInStream.read(buffer);
+//                    mmInStream.read(buffer);
                     long receptionTime = System.nanoTime() + bootNanos;
 
                     // Send the obtained bytes to the DataDelegate
@@ -557,9 +596,19 @@ public class BluetoothService {
                             // Read from the InputStream
                             int pointer = 0;
 
-                            b_read = mmInStream.read();
+                            /*StringBuilder x = new StringBuilder(100);
+                            for (int i = 0; i < 33; i++) {
+                                int a = mmInStream.read();
+                                if (a < 16)
+                                    x.append(' ');
+                                x.append(Integer.toHexString(a))
+                                 .append(' ');
+                            }
+                            Log.i(TAG, x.toString());*/
 
-                            if (b_read == 0x20) {
+                            // TODO
+
+                            /*if (b_read == 0x20) {
 
                                 b_read_aux = mmInStream.read();
 
@@ -602,7 +651,7 @@ public class BluetoothService {
                                             ct_prev = p.counter;
 
                                             if (mDataDelegate != null)
-                                                mDataDelegate.receive(BluetoothService.this, p);
+                                                mDataDelegate.receive(EXLs3Manager.this, p);
                                         }
                                     } catch (IOException e1) {
                                         lostPackets++;
@@ -613,21 +662,21 @@ public class BluetoothService {
                                     Log.e(TAG, "Unexpected packet format (" + Integer.toHexString(b_read) + " and " + Integer.toHexString(b_read_aux) +")");
                             }
                             else
-                                Log.e(TAG, "Unexpected packet format (" + Integer.toHexString(b_read) +")");
+                                Log.e(TAG, "Unexpected packet format (" + Integer.toHexString(b_read) +")");*/
 
                         } catch (IOException e) {
-                            Log.e(TAG, "disconnected", e);
+                            Log.e(TAG, "disconnected");
                             connectionLost();
                             break;
                         }
                     }
 
 
-                } catch (IOException e) {
+                /*} catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
                     break;
-                }
+                }*/
             }
         }
 

@@ -25,7 +25,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 public class FlowsMan<TimeT, ValueT> implements
         IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
         IDeviceCallback<DeviceDecorator<TimeT, ValueT>>,
-        ISensorDataCallback<SensorComponent, TimeT, ValueT>,
+        ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>,
         IOutputCallback<TimeT, ValueT> {
 
     // Status Interface
@@ -87,7 +87,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void sensorStateChanged(SensorComponent sender, TimeT time, SensorStatus state) {
+    public void sensorStateChanged(SensorComponent<TimeT, ValueT> sender, TimeT time, SensorStatus state) {
         // TO DO The sensor has to send also an event on a status change.
     }
 
@@ -102,7 +102,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param value  value
      */
     @Override
-    public void sensorValue(SensorComponent sender, TimeT time, ValueT value) {
+    public void sensorValue(SensorComponent<TimeT, ValueT> sender, TimeT time, ValueT value) {
         if (sender.isListened()) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
@@ -119,7 +119,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param message message text
      */
     @Override
-    public void sensorEvent(SensorComponent sender, TimeT time, int type, String message) {
+    public void sensorEvent(SensorComponent<TimeT, ValueT> sender, TimeT time, int type, String message) {
         if (sender.isListened()) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
@@ -170,6 +170,8 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addDevice(DevicePlugin<TimeT, ValueT> device) {
         if (_status == EngineStatus.STANDBY) {
+            for (SensorComponent<TimeT, ValueT> s : device.getSensors())
+                s.setManager(this);
             _userDevices.add(new DeviceDecorator<>(device, this));
         }
         else
@@ -528,6 +530,7 @@ public class FlowsMan<TimeT, ValueT> implements
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
+        changeState(EngineStatus.CLOSED);
     }
 
     /**

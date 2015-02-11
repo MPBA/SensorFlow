@@ -39,7 +39,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         return -1; //mData.size() + mEvents.size();  TODO Add events and auto-flush support
     }
 
-    public void flushTrackSplit(String fileName) {
+    public void flushTrackSplit(List<SkiloProtobuffer.SensorData> x, String fileName) {
         FileOutputStream output = null;
         try {
             output = new FileOutputStream(fileName, false);
@@ -48,13 +48,13 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }
         SkiloProtobuffer.TrackSplit s = SkiloProtobuffer.TrackSplit.newBuilder()
                 .addAllInfo(mSensorInfo)
-                .addAllDatas(sensorData)
+                .addAllDatas(x)
                 .setTrackUid(uid.toString())
                 .setIsLast(true)
                 .setPhoneId(uuid)
                 .setSequenceNumber(0) // TODO Sequence number
-                .setTsStart(sensorData.get(0).getTimestamp())
-                .setTsStop(sensorData.get(sensorData.size() - 1).getTimestamp())
+                .setTsStart(x.get(0).getTimestamp())
+                .setTsStop(x.get(x.size() - 1).getTimestamp())
                 .build();
 
         try {
@@ -64,7 +64,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        sensorData.clear();
+        x.clear();
     }
 
     public String getTrackSplitNameForNow() {
@@ -96,7 +96,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void outputPluginFinalize() {
-        flushTrackSplit(getTrackSplitNameForNow());
+        flushTrackSplit(sensorData, getTrackSplitNameForNow());
     }
 
     @Override
@@ -125,7 +125,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    flushTrackSplit(getTrackSplitNameForNow());
+                    flushTrackSplit(x, getTrackSplitNameForNow());
                 }
             }).start();
         }

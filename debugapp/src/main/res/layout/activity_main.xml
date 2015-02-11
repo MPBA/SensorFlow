@@ -1,4 +1,4 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -6,7 +6,8 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:orientation="vertical">
 
     <TextView
         android:text="@string/hello_world"
@@ -18,7 +19,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="m.start()"
-        android:id="@+id/button"
         android:onClick="onMStart"
         android:layout_below="@+id/textView"
         android:layout_alignParentStart="true" />
@@ -27,27 +27,33 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="m.close()"
-        android:id="@+id/button2"
         android:onClick="onMClose"
-        android:layout_below="@+id/button"
         android:layout_alignParentStart="true" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Write Test"
-        android:id="@+id/button4"
-        android:layout_below="@+id/button4"
+        android:text="BTS Test"
+        android:onClick="onBTSTest" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start"
         android:layout_alignParentStart="true"
         android:onClick="onWriteTest" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BTS Test"
-        android:id="@+id/button4"
-        android:onClick="onBTSTest"
-        android:layout_below="@+id/button2"
-        android:layout_alignEnd="@+id/button2" />
+        android:text="Stop"
+        android:layout_alignParentStart="true"
+        android:onClick="onStopTest" />
 
-</RelativeLayout>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="BTS Close"
+        android:onClick="onBTCloseTest" />
+
+</LinearLayout>

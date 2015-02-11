@@ -11,6 +11,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import java.io.File;
+import java.util.UUID;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
@@ -48,7 +49,7 @@ public class MainActivity extends Activity {
 
         m.addOutput(new ProtobufferOutput("Protobuf", new File(
                 Environment.getExternalStorageDirectory().getPath()
-                        + "/eu.fbk.mpba.sensorsflows/"), -1));
+                        + "/eu.fbk.mpba.sensorsflows/"), 100, UUID.randomUUID().toString()));
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
 
@@ -62,11 +63,19 @@ public class MainActivity extends Activity {
     EXLs3Manager s;
 
     public void onBTSTest(View v) {
-        s.connect(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:E1:B3:4E:A9"), false);
+        s.connect(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:E1:B0:B9:11"), false);
     }
 
     public void onWriteTest(View v) {
         s.sendStart();
+    }
+
+    public void onStopTest(View v) {
+        s.sendStop();
+    }
+
+    public void onBTCloseTest(View v) {
+        s.stop();
     }
 
     @Override
@@ -115,7 +124,7 @@ public class MainActivity extends Activity {
     private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
         @Override
         public void receive(EXLs3Manager sender, EXLs3Manager.Packet p) {
-            Log.v(TAG, String.format("+ DATA %s %s %s %s", p.counter, sender.packetCounterTotal, sender.packetsReceived, sender.lostPackets));
+            Log.v(TAG, String.format("+ DATA %s %s %s %s", p.counter, sender.packetCounterTotal, sender.packetsReceived, sender.lostBytes));
         }
     };
 }

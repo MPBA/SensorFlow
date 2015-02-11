@@ -6,7 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
@@ -24,14 +24,15 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected List<ISensor> mSensors = new ArrayList<>();
     protected final String uuid;
     protected List<SkiloProtobuffer.SensorData> sensorData = new ArrayList<>();
-    protected Random r = new Random(500);
     private String mName;
+    private UUID uid;
 
-    public ProtobufferOutput(String name, File dir, long flushSizeElements) { // TODO Horrible
+    public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId) { // TODO Horrible
         mName = name;
         mFolder = dir;
         mSize = flushSizeElements;
-        uuid = "AleB.Test/" + Integer.toHexString(r.nextInt()) + "_" + Integer.toHexString(r.nextInt());
+        uuid = phoneId;
+        uid = UUID.randomUUID();
     }
 
     public long currentBacklogSize() {
@@ -48,7 +49,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         SkiloProtobuffer.TrackSplit s = SkiloProtobuffer.TrackSplit.newBuilder()
                 .addAllInfo(mSensorInfo)
                 .addAllDatas(sensorData)
-                .setTrackId(0)
+                .setTrackUid(uid.toString())
                 .setIsLast(true)
                 .setPhoneId(uuid)
                 .setSequenceNumber(0) // TODO Sequence number
@@ -63,6 +64,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        sensorData.clear();
     }
 
     public String getTrackSplitNameForNow() {
@@ -102,6 +104,8 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         // mEvents.add(event); TODO Add events support
     }
 
+    private int dataInc = 0;
+
     @Override
     public void newSensorData(SensorDataEntry<Long, double[]> data) { // TODO Add auto-flush support
         List<Float> v = new ArrayList<>(7);
@@ -109,12 +113,22 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             v.add((float)data.value[i]);               // double conversion to Float
 
         sensorData.add(SkiloProtobuffer.SensorData.newBuilder()
-                        .setId(-1)
+                        .setId(dataInc++)
                         .setSensorIdFk(mSensors.indexOf(data.sensor))
                         .addAllValue(v)
-                        .setTimestamp(System.currentTimeMillis()) // TODO Set to a monotonic centralized ts
+                        .setTimestamp(data.time)
                         .build()
         );
+        if (sensorData.size() >= mSize) {
+            final List<SkiloProtobuffer.SensorData> x = sensorData;
+            sensorData = new ArrayList<>();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    flushTrackSplit(getTrackSplitNameForNow());
+                }
+            }).start();
+        }
     }
 
     @Override

@@ -49,7 +49,7 @@ public class MainActivity extends Activity {
 
         m.addOutput(new ProtobufferOutput("Protobuf", new File(
                 Environment.getExternalStorageDirectory().getPath()
-                        + "/eu.fbk.mpba.sensorsflows/"), 100, UUID.randomUUID().toString()));
+                        + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString()));
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
 

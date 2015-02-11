@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -125,6 +127,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d("ProtoOut", "Flushing" + x.size() + "SensorData");
                     flushTrackSplit(x, getTrackSplitNameForNow());
                 }
             }).start();

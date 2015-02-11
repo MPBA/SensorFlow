@@ -46,10 +46,9 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     public void onLocationChanged(Location location) {
         sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos()),
                 new double[]{
-                        location.getLatitude(),
                         location.getLongitude(),
+                        location.getLatitude(),
                         location.getAltitude(),
-                        location.getBearing(),
                         location.getAccuracy()
                 });
     }
@@ -83,10 +82,9 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     @Override
     public List<Object> getValuesDescriptors() {
         return Arrays.asList((Object)
-                "Latitude",
                 "Longitude",
+                "Latitude",
                 "Altitude",
-                "Bearing",
                 "Accuracy");
     }
 

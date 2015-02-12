@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs;
 
 import android.util.Log;
 
@@ -20,41 +20,45 @@ import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer.SensorInfo;
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     protected File mFolder;
-    protected long mSize;
+    protected long mFlushSize;
     protected Object mSessionTag = "undefined";
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
     protected List<ISensor> mSensors = new ArrayList<>();
+    protected List<SkiloProtobuffer.SensorData> mSensorData = new ArrayList<>();
     protected final String uuid;
-    protected List<SkiloProtobuffer.SensorData> sensorData = new ArrayList<>();
     private String mName;
     private UUID uid;
 
     public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId) { // TODO Horrible
         mName = name;
         mFolder = dir;
-        mSize = flushSizeElements;
+        mFlushSize = flushSizeElements;
         uuid = phoneId;
         uid = UUID.randomUUID();
     }
 
     public long currentBacklogSize() {
-        return -1; //mData.size() + mEvents.size();  TODO Add events and auto-flush support
+        return mSensorData.size();
     }
 
-    public void flushTrackSplit(List<SkiloProtobuffer.SensorData> x, String fileName) {
+    private int seqNumber = 0;
+
+    public void flushTrackSplit(List<SkiloProtobuffer.SensorData> x, String fileName, boolean last) {
+        Log.d("ProtoOut", "Flushing " + x.size() + " SensorData");
         FileOutputStream output = null;
         try {
             output = new FileOutputStream(fileName, false);
         } catch (FileNotFoundException e) {
+            Log.e("ProtoOut", "Flush can't open the file");
             e.printStackTrace();
         }
         SkiloProtobuffer.TrackSplit s = SkiloProtobuffer.TrackSplit.newBuilder()
                 .addAllInfo(mSensorInfo)
                 .addAllDatas(x)
                 .setTrackUid(uid.toString())
-                .setIsLast(true)
+                .setIsLast(last)
                 .setPhoneId(uuid)
-                .setSequenceNumber(0) // TODO Sequence number
+                .setSequenceNumber(seqNumber++)
                 .setTsStart(x.get(0).getTimestamp())
                 .setTsStop(x.get(x.size() - 1).getTimestamp())
                 .build();
@@ -64,9 +68,12 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             if (output != null)
                 output.close();
         } catch (IOException e) {
+            Log.e("ProtoOut", "Flush can't write or close the file");
             e.printStackTrace();
         }
+        int xl = x.size();
         x.clear();
+        Log.v("ProtoOut", "Flush cleared list of size:" + xl);
     }
 
     public String getTrackSplitNameForNow() {
@@ -74,6 +81,16 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     // OutputPlugIn implementation
+
+    String join(List<Object> x) {
+        StringBuilder r = new StringBuilder();
+        if (x.size() > 0) {
+            r.append(x.get(0).toString());
+            for (int i = 1; i < x.size(); i++)
+                r.append(';').append(x.get(i));
+        }
+        return r.toString();
+    }
 
     @Override
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
@@ -87,51 +104,66 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     .setSensorId(s)
                     .setDesc("data_" + mSensors.get(s).toString())
                     .setType(SensorInfo.TYPESENSOR.OTHER)
+                    .setMeta(join(mSensors.get(s).getValuesDescriptors()))
                     .build());
-//            mSensorInfo.add(SensorInfo.newBuilder()
-//                    .setSensorId(s)
-//                    .setDesc("events_" + mSensors.get(s).toString())
-//                    .setType(SensorInfo.TYPESENSOR.OTHER)
-//                    .build()); TODO Add events support
+            mSensorInfo.add(SensorInfo.newBuilder()
+                    .setSensorId(mSensors.size() + s)
+                    .setDesc("events_" + mSensors.get(s).toString())
+                    .setType(SensorInfo.TYPESENSOR.OTHER)
+                    .setMeta("timestamp;code;message")
+                    .build());
         }
     }
 
     @Override
     public void outputPluginFinalize() {
-        flushTrackSplit(sensorData, getTrackSplitNameForNow());
+        flushTrackSplit(mSensorData, getTrackSplitNameForNow(), true);
     }
 
     @Override
     public void newSensorEvent(SensorEventEntry<Long> event) {
-        // mEvents.add(event); TODO Add events support
+        mSensorData.add(SkiloProtobuffer.SensorData.newBuilder()
+                        .setId(dataInc++)
+                        .setSensorIdFk(mSensors.indexOf(event.sensor) + mSensors.size())
+                        .setTimestamp(event.timestamp / 1000000000.)
+                        .addValue(event.code)
+                        .addText(event.message)
+                        .build()
+        );
+        if (mSensorData.size() >= mFlushSize) {
+            flushAsync();
+        }
     }
 
     private int dataInc = 0;
 
     @Override
-    public void newSensorData(SensorDataEntry<Long, double[]> data) { // TODO Add auto-flush support
-        List<Float> v = new ArrayList<>(7);
+    public void newSensorData(SensorDataEntry<Long, double[]> data) {
+        List<Double> v = new ArrayList<>(7);
         for (int i = 0; i < data.value.length; i++)    // double conversion to Float
-            v.add((float)data.value[i]);               // double conversion to Float
+            v.add(data.value[i]);                      // double conversion to Float
 
-        sensorData.add(SkiloProtobuffer.SensorData.newBuilder()
+        mSensorData.add(SkiloProtobuffer.SensorData.newBuilder()
                         .setId(dataInc++)
                         .setSensorIdFk(mSensors.indexOf(data.sensor))
                         .addAllValue(v)
-                        .setTimestamp(data.time)
+                        .setTimestamp(data.time / 1000000000.)
                         .build()
         );
-        if (sensorData.size() >= mSize) {
-            final List<SkiloProtobuffer.SensorData> x = sensorData;
-            sensorData = new ArrayList<>();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d("ProtoOut", "Flushing" + x.size() + "SensorData");
-                    flushTrackSplit(x, getTrackSplitNameForNow());
-                }
-            }).start();
+        if (mSensorData.size() >= mFlushSize) {
+            flushAsync();
         }
+    }
+
+    private void flushAsync() {
+        final List<SkiloProtobuffer.SensorData> x = mSensorData;
+        mSensorData = new ArrayList<>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                flushTrackSplit(x, getTrackSplitNameForNow(), false);
+            }
+        }, "Flush " + x.size() + " from "  + x.get(0).getTimestamp()).start();
     }
 
     @Override

@@ -19,16 +19,31 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="m.start()"
-        android:onClick="onMStart"
-        android:layout_below="@+id/textView"
-        android:layout_alignParentStart="true" />
+        android:onClick="onMStart" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Ciao"
+        android:onClick="onAddText" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Capraa"
+        android:onClick="onAddText" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Mucca"
+        android:onClick="onAddText" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="m.close()"
-        android:onClick="onMClose"
-        android:layout_alignParentStart="true" />
+        android:onClick="onMClose" />
 
     <Button
         android:layout_width="wrap_content"
@@ -40,14 +55,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Start"
-        android:layout_alignParentStart="true"
         android:onClick="onWriteTest" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Stop"
-        android:layout_alignParentStart="true"
         android:onClick="onStopTest" />
 
     <Button

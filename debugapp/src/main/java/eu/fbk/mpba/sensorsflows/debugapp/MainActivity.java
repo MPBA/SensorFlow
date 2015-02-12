@@ -9,16 +9,17 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 
 import java.io.File;
 import java.util.UUID;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.CsvOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.ProtobufferOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
 
 
@@ -27,6 +28,7 @@ public class MainActivity extends Activity {
     final String TAG = "€€A";
 
     FlowsMan<Long, double[]> m = new FlowsMan<>();
+    SmartphoneDevice smartphoneDevice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +39,7 @@ public class MainActivity extends Activity {
 
     @SuppressWarnings("SpellCheckingInspection")
     public void onMStart(View v) {
-        m.addDevice(new SmartphoneDevice(this, "Smartphone"));
+        m.addDevice(smartphoneDevice = new SmartphoneDevice(this, "Smartphone"));
 
         m.addOutput(new CsvOutput("CSV",
                 Environment.getExternalStorageDirectory().getPath()
@@ -76,6 +78,10 @@ public class MainActivity extends Activity {
 
     public void onBTCloseTest(View v) {
         s.stop();
+    }
+
+    public void onAddText(View v) {
+        smartphoneDevice.addNoteNow(((Button)v).getText().toString());
     }
 
     @Override

@@ -1,7 +1,8 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
@@ -24,8 +25,8 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     private final String _sep;
     String _name;
     String _path;
-    CsvDataSaver _sav;
-    List<List<Object>> headers = new ArrayList<>();
+    CsvDataSaver _savData;
+    CsvDataSaver _savEvents;
     List<ISensor> _linkedSensors = new ArrayList<>();
 
     public CsvOutput(String name, String path) {
@@ -42,7 +43,9 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public List<String> getFiles() {
-        List<File> f = _sav.getSupports();
+        List<File>
+        f = _savData.getSupports();
+        f.addAll(_savEvents.getSupports());
         List<String> a = new ArrayList<>(f.size());
         for (int i = 0; i < f.size(); i++) {
             a.add(f.get(i).getAbsolutePath());
@@ -51,24 +54,35 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
-        _sav = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + toString(),
+        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/data_" + toString(),
+                streamingSensors.toArray(), _ext, _sep, _nl);
+        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/events_" + toString(),
                 streamingSensors.toArray(), _ext, _sep, _nl);
         _linkedSensors.addAll(streamingSensors);
+        List<List<Object>> dataH = new ArrayList<>();
+        List<List<Object>> evtH = new ArrayList<>();
         for (ISensor l : streamingSensors) {
             List<Object> h = new ArrayList<>();
             h.add(_tsCol);
             h.addAll(l.getValuesDescriptors());
-            headers.add(h);
+            dataH.add(h);
+            evtH.add(Arrays.asList((Object)_tsCol, "code", "message"));
         }
-        _sav.init(headers);
+        _savData.init(dataH);
+        _savEvents.init(evtH);
     }
 
     public void outputPluginFinalize() {
-        _sav.close();
+        _savData.close();
+        _savEvents.close();
     }
 
     public void newSensorEvent(SensorEventEntry event) {
-        // TODO Manage events
+        List<Object> line = new ArrayList<>();
+        line.add(event.timestamp.toString());
+        line.add(event.code);
+        line.add(event.message);
+        _savEvents.save(_linkedSensors.indexOf(event.sensor), line);
     }
 
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
@@ -76,8 +90,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         line.add(data.time.toString());
         for (int i = 0; i < data.value.length; i++)
             line.add(data.value[i]);
-        //noinspection SuspiciousMethodCalls
-        _sav.save(_linkedSensors.indexOf(data.sensor), line);
+        _savData.save(_linkedSensors.indexOf(data.sensor), line);
     }
 
     @Override

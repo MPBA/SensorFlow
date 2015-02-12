@@ -15,6 +15,7 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
+    private TextEventsSensor<double[]> _textSensor;
 
     public SmartphoneDevice(Context context, String name) {
         this.name = name;
@@ -22,6 +23,11 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
         _sensors = new ArrayList<>();
         _sensors.add(new GpsSensor(this, context, "0", 0, 0));
         _sensors.add(new AccelerometerSensor(this, context, "acc", SensorManager.SENSOR_DELAY_GAME));
+        _sensors.add(_textSensor = new TextEventsSensor<>(this, "notes"));
+    }
+
+    public void addNoteNow(String text) {
+        _textSensor.addText(text);
     }
 
     @Override

@@ -21,7 +21,6 @@ import java.util.UUID;
  */
 @SuppressLint("NewApi")
 public class EXLs3Manager {
-    // TODO Parse the AGMQB packet!!!
 
     public static interface DataDelegate {
         void receive(EXLs3Manager sender, Packet p);
@@ -37,7 +36,7 @@ public class EXLs3Manager {
     }
 
     public static class Packet {
-        public final long receptionTime;
+        public final long receprionNanos;
         public final int counter;
         public final PacketType type;
         public final int ax,ay,az,gx,gy,gz,mx,my,mz,q1,q2,q3,q4,vbatt;
@@ -47,8 +46,8 @@ public class EXLs3Manager {
             return checksum_received == checksum_actual;
         }*/
 
-        public Packet (long receptionTime, InputStream s) throws IOException {
-            this.receptionTime = receptionTime;
+        public Packet (long receprionNanos, InputStream s) throws IOException {
+            this.receprionNanos = receprionNanos;
 
             int[] b = new int[40];
             int u = 0, x;
@@ -57,8 +56,8 @@ public class EXLs3Manager {
             if ((x = (byte)s.read()) != 0x20)
                 b[u++] = (byte)x;
 
-            if (b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
-                  type = b[1] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
+            if (b[1] == PacketType.calib.id || b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
+                  type = PacketType.parse(b[1]);
                   counter = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                        ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                        ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
@@ -88,16 +87,16 @@ public class EXLs3Manager {
                 throw new UnsupportedEncodingException("Packet type not supported " + Integer.toHexString(b[0]) + " " + Integer.toHexString(b[1]));
         }
 
-        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int checksum_received) {
-            this(receptionTime, PacketType.RAW, counter, ax, ay, az,gx, gy, gz, mx, my, mz, 0, 0, 0, 0, 0, checksum_received);
+        public Packet (long receprionNanos, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int checksum_received) {
+            this(receprionNanos, PacketType.RAW, counter, ax, ay, az,gx, gy, gz, mx, my, mz, 0, 0, 0, 0, 0, checksum_received);
         }
 
-        public Packet (long receptionTime, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int checksum_received) {
-            this(receptionTime, PacketType.AGMQB, counter, ax, ay, az,gx, gy, gz, mx, my, mz, q1, q2, q3, q4, 0, checksum_received);
+        public Packet (long receprionNanos, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int checksum_received) {
+            this(receprionNanos, PacketType.AGMQB, counter, ax, ay, az,gx, gy, gz, mx, my, mz, q1, q2, q3, q4, 0, checksum_received);
         }
         
-        public Packet (long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received) {
-            this.receptionTime = receptionTime;
+        public Packet (long receprionNanos, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received) {
+            this.receprionNanos = receprionNanos;
             this.counter = counter;
             this.type = type;
             this.ax = ax;
@@ -121,12 +120,26 @@ public class EXLs3Manager {
 
     public enum PacketType {
         AGMQB((byte)0x9f),
-        RAW((byte)0x0A);
+        RAW((byte)0x0A),
+        calib((byte)0x0B);
 
         byte id;
 
         PacketType(byte id) {
             this.id = id;
+        }
+
+        static PacketType parse(int id) {
+            switch (id & 0xFF) {
+                case 0x0A:
+                    return RAW;
+                case 0x0B:
+                    return calib;
+                case 0x9F:
+                    return AGMQB;
+                default:
+                    return null;
+            }
         }
     }
 
@@ -162,8 +175,6 @@ public class EXLs3Manager {
     private ConnectedThread mConnectedThread;
     private BTSrvState mState;
 
-    public int packetsReceived = 0;
-    public int packetCounterTotal = 0;
     public int lostBytes = 0;
 
     public long startStreamingTime = 0;
@@ -184,7 +195,6 @@ public class EXLs3Manager {
         mDataDelegate = dataDelegate;
         mStatusDelegate = statusDelegate;
         mAdapter = adapter;
-        setState(BTSrvState.IDLE);
     }
 
     /**
@@ -264,10 +274,10 @@ public class EXLs3Manager {
 
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device, secure);
-        mConnectThread.start();
         setState(BTSrvState.CONNECTING);
         if (mStatusDelegate != null)
             mStatusDelegate.connecting(this, device, secure);
+        mConnectThread.run();
     }
 
     protected synchronized void connected(BluetoothSocket socket, BluetoothDevice
@@ -582,22 +592,30 @@ public class EXLs3Manager {
             mmOutStream = tmpOut;
         }
 
-        public void run() {
-            Log.i(TAG, "BEGIN mConnectedThread");
+        private long last = 0;
+        private int readByte() throws IOException {
+            if (last - System.nanoTime() > 1900_000000) {
+                sendStart();
+                last = System.nanoTime();
+            }
+            return mmInStream.read();
+        }
 
-            Log.i(TAG, "++ SET bootNanos");
-            long bootNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
+        public void run() {
+            Log.i(TAG, "++BEGIN reading thread");
 
             // Keep listening to the InputStream while connected
             while (true) {
                 Packet p;
                 while (caller.mState == BTSrvState.CONNECTED) {
                     try {
-                        while (mmInStream.read() != 0x20) {
+
+                        while (readByte() != 0x20) {
                             caller.lostBytes++;
                         }
                         try {
-                            p = new Packet(System.nanoTime() + bootNanos, mmInStream);
+                            p = new Packet(System.nanoTime(), mmInStream);
+                            Log.v("@@@", "c:" + p.counter);
 
                         } catch (UnsupportedEncodingException e) {
                             p = null;

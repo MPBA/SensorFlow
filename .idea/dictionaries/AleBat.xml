@@ -2,11 +2,13 @@
   <dictionary name="AleBat">
     <words>
       <w>accessors</w>
+      <w>calib</w>
       <w>iterable</w>
       <w>listenage</w>
       <w>mkdirs</w>
       <w>proto</w>
       <w>protobuf</w>
+      <w>rfcomm</w>
       <w>smartphone</w>
       <w>splitted</w>
       <w>unsynchronized</w>

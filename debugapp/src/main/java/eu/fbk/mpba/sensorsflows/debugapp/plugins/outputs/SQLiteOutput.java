@@ -41,12 +41,12 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         for (ISensor l : linkedSensors) {
             _sav.execSQL(
                     "CREATE TABLE IF NOT EXISTS " + getEventsTblName(l) +
-                    " (timestamp INTEGER PRIMARY KEY ASC, code INTEGER, message TEXT)");
+                    " (timestamp INTEGER ASC, code INTEGER, message TEXT)");
 
             StringBuilder sb = new StringBuilder(100);
             sb.append("CREATE TABLE IF NOT EXISTS ");
             sb.append(getDataTblName(l));
-            sb.append(" (timestamp INTEGER PRIMARY KEY ASC");
+            sb.append(" (timestamp INTEGER ASC");
             for (Object i : l.getValuesDescriptors()) {
                 sb.append(",[");
                 sb.append(i.toString().replace("[", "").replace("]", ""));

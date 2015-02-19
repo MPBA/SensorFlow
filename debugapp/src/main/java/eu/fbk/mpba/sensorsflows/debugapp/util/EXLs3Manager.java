@@ -604,6 +604,8 @@ public class EXLs3Manager {
         public void run() {
             Log.i(TAG, "++BEGIN reading thread");
 
+            int lastC = -1;
+
             // Keep listening to the InputStream while connected
             while (true) {
                 Packet p;
@@ -615,7 +617,8 @@ public class EXLs3Manager {
                         }
                         try {
                             p = new Packet(System.nanoTime(), mmInStream);
-                            Log.v("@@@", "c:" + p.counter);
+                            if ((lastC + 1) % 10000 != p.counter)
+                                Log.v("@@@", "l:" + lastC + "c:" + (lastC = p.counter));
 
                         } catch (UnsupportedEncodingException e) {
                             p = null;

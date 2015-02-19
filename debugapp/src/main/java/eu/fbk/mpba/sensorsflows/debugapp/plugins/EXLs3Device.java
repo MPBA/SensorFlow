@@ -1,6 +1,7 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 
 import android.bluetooth.BluetoothDevice;
+import android.util.Log;
 
 import java.util.Arrays;
 import java.util.List;
@@ -131,8 +132,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             }
         };
 
-        private final int freq = 100;
-        private final int mpkc = 10000;
+        private final long freq = 100;
+        private final long mpkc = 10000_000000L;
         
         private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
             long st = -1;
@@ -147,9 +148,10 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
                 long ft = p.counter / freq + st;
 
-                if (Math.abs(ft - lrc) > 0.1 * (mpkc / freq)) {
+                if (Math.abs(ft - lrc) > (0.05 * mpkc / freq)) {
                     sensorEvent(lrc, 3, "Warning, packet time drift over 10% of packet counter cycle time, resetting reference.");
-                    // TODO Reset reference (?)
+                    Log.e("@@@", "resetting reference " + (Math.abs(ft - lrc) - (0.05 * mpkc / freq)));
+                    st = lrc - p.counter / freq;
                 }
 
                 sensorValue(ft, new double[] { lpkc = p.counter, p.ax, p.ay, p.az, p.gx, p.gy, p.gz, p.mx, p.my, p.mz, p.q1, p.q2, p.q3, p.q4, p.vbatt } );

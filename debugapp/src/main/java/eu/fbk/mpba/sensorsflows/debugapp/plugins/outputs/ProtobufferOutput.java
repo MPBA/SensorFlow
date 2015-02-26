@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,13 +29,15 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected final String uuid;
     private String mName;
     private UUID uid;
+    private Dictionary<Class, SensorInfo.TYPESENSOR> mTypesMap;
 
-    public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId) { // TODO Horrible
+    public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId, Dictionary<Class, SensorInfo.TYPESENSOR> sensorTypesMap) { // TODO Horrible
         mName = name;
         mFolder = dir;
         mFlushSize = flushSizeElements;
         uuid = phoneId;
         uid = UUID.randomUUID();
+        mTypesMap = sensorTypesMap;
     }
 
     public long currentBacklogSize() {
@@ -106,10 +109,11 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     .setType(SensorInfo.TYPESENSOR.OTHER)
                     .setMeta(join(mSensors.get(s).getValuesDescriptors()))
                     .build());
+            SensorInfo.TYPESENSOR type = mTypesMap.get(mSensors.get(s).getClass());
             mSensorInfo.add(SensorInfo.newBuilder()
                     .setSensorId(mSensors.size() + s)
                     .setDesc("events_" + mSensors.get(s).toString())
-                    .setType(SensorInfo.TYPESENSOR.OTHER)
+                    .setType(type == null ? SensorInfo.TYPESENSOR.OTHER : type)
                     .setMeta("timestamp;code;message")
                     .build());
         }

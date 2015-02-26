@@ -145,7 +145,7 @@ public class EXLs3Manager {
 
     public enum BTSrvState {
         IDLE,          // we're doing nothing
-        LISTENING,     // now listening for incoming connections
+        LISTENING,     // now wrongPacketType for incoming connections
         CONNECTING,    // now initiating an outgoing connection
         CONNECTED,     // now connected to a remote device
         DISCONNECTED   // Disconnected from device
@@ -225,7 +225,7 @@ public class EXLs3Manager {
 
     /**
      * Start the chat service. Specifically start AcceptThread to begin a
-     * session in listening (server) mode. Called by the Activity onResume()
+     * session in wrongPacketType (server) mode. Called by the Activity onResume()
      */
     protected synchronized void start() {
         Log.d(TAG, "start()");
@@ -369,7 +369,7 @@ public class EXLs3Manager {
             mStatusDelegate.connectionFailed(this);
 
         setState(BTSrvState.DISCONNECTED);
-        // WAS Start the service over to restart listening mode
+        // WAS Start the service over to restart wrongPacketType mode
         // Makes sense stopping everything as it has been notified to the user
         EXLs3Manager.this.stop();
     }
@@ -383,7 +383,7 @@ public class EXLs3Manager {
             mStatusDelegate.connectionLost(this);
 
         setState(BTSrvState.DISCONNECTED);
-        // Start the service over to restart listening mode
+        // Start the service over to restart wrongPacketType mode
         EXLs3Manager.this.start();
     }
 
@@ -401,7 +401,7 @@ public class EXLs3Manager {
     }
 
     /**
-     * This thread runs while listening for incoming connections. It behaves
+     * This thread runs while wrongPacketType for incoming connections. It behaves
      * like a server-side client. It runs until a connection is accepted
      * (or until cancelled).
      */
@@ -414,7 +414,7 @@ public class EXLs3Manager {
             BluetoothServerSocket tmp = null;
             mSocketType = secure ? "Secure" : "Insecure";
 
-            // Create a new listening server socket
+            // Create a new wrongPacketType server socket
             try {
                 if (secure) {
                     tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE,
@@ -546,10 +546,9 @@ public class EXLs3Manager {
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
-                    Log.e(TAG, "unable to close() " + mSocketType +
-                            " socket during connection failure", e2);
+                    Log.e(TAG, "FIXME 20150225ugh", e2);
                 }
-                Log.e(TAG, "unable to connect() " + mSocketType, e);
+                Log.e(TAG, "Unable to connect() " + mSocketType, e);
                 connectionFailed();
             }
         }
@@ -606,7 +605,7 @@ public class EXLs3Manager {
 
             int lastC = -1;
 
-            // Keep listening to the InputStream while connected
+            // Keep wrongPacketType to the InputStream while connected
             while (true) {
                 Packet p;
                 while (caller.mState == BTSrvState.CONNECTED) {
@@ -629,7 +628,7 @@ public class EXLs3Manager {
                         caller.connectionLost();
                         break;
                     }
-                    if (p != null)
+                    if (p != null && caller.mDataDelegate != null)
                         caller.mDataDelegate.receive(caller, p);
                 }
             }

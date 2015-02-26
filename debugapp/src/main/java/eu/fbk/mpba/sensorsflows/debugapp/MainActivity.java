@@ -10,15 +10,20 @@ import android.view.View;
 import android.widget.Button;
 
 import java.io.File;
+import java.util.Hashtable;
 import java.util.UUID;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.AccelerometerSensor;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.EXLs3Device;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.GpsSensor;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SQLiteOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3ManagerD;
+import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
 
 
 public class MainActivity extends Activity {
@@ -34,9 +39,20 @@ public class MainActivity extends Activity {
 
     @SuppressWarnings("SpellCheckingInspection")
     public void onMStart(View v) {
+        Hashtable<Class, SkiloProtobuffer.SensorInfo.TYPESENSOR> types = new Hashtable<>();
+        types.put(GpsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GPS);
+        types.put(AccelerometerSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
+        types.put(TextEventsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MARKER);
+        types.put(EXLs3Device.EXLAccelerometer.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
+        types.put(EXLs3Device.EXLGyroscope.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GYRO);
+        types.put(EXLs3Device.EXLMagnetometer.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MAGNE);
+        types.put(EXLs3Device.EXLQuaternion.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.QUAT);
+        types.put(EXLs3Device.EXLBattery.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.BATTERY);
+
         m.addDevice(smartphoneDevice = new SmartphoneDevice(this, "Smartphone"));
 
-        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:a9".toUpperCase()), "EXL"));
+        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
+        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:af".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_176"));
 
 //        m.addOutput(new CsvOutput("CSV",
 //                Environment.getExternalStorageDirectory().getPath()
@@ -48,7 +64,7 @@ public class MainActivity extends Activity {
 
         m.addOutput(new ProtobufferOutput("Protobuf", new File(
                 Environment.getExternalStorageDirectory().getPath()
-                        + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString()));
+                        + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
 
@@ -60,22 +76,27 @@ public class MainActivity extends Activity {
         m = new FlowsMan<>();
     }
 
-    EXLs3Manager s;
+    EXLs3ManagerD s = new EXLs3ManagerD(null, null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
+    EXLs3ManagerD p = new EXLs3ManagerD(null, null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:af".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
 
     public void onBTSTest(View v) {
-        s.connect(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:a9".toUpperCase()), false);
+        s.connect();
+        p.connect();
     }
 
     public void onWriteTest(View v) {
-        s.sendStart();
+        s.startStream();
+        p.startStream();
     }
 
     public void onStopTest(View v) {
-        s.sendStop();
+        s.stopStream();
+        p.stopStream();
     }
 
     public void onBTCloseTest(View v) {
-        s.stop();
+        s.close();
+        p.close();
     }
 
     public void onAddText(View v) {

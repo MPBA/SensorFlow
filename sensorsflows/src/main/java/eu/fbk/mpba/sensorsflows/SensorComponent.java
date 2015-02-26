@@ -53,12 +53,17 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     }
 
     // Notify methods
+
     public void sensorValue(TimeT time, ValueT value) {
-        _handler.sensorValue(this, time, value);
+        //noinspection StatementWithEmptyBody
+        if (_handler != null)
+            _handler.sensorValue(this, time, value);
     }
 
     public void sensorEvent(TimeT time, int type, String message) {
-        _handler.sensorEvent(this, time, type, message);
+        //noinspection StatementWithEmptyBody
+        if (_handler != null)
+            _handler.sensorEvent(this, time, type, message);
     }
 
     // Listenage

@@ -1,5 +1,6 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
@@ -9,7 +10,7 @@ import java.util.List;
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
-import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3ManagerD;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
@@ -17,10 +18,21 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
     private String name;
     private EXLSensor _sensor;
 
-    public EXLs3Device(BluetoothDevice realDevice, String name) {
+    EXLAccelerometer er;
+    EXLBattery ry;
+    EXLGyroscope pe;
+    EXLMagnetometer ma;
+    EXLQuaternion on;
+
+    public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
         this.name = name;
         resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
-        _sensor = new EXLSensor(this, realDevice);
+        er = new EXLAccelerometer(this);
+        ry = new EXLBattery(this);
+        pe = new EXLGyroscope(this);
+        ma = new EXLMagnetometer(this);
+        on = new EXLQuaternion(this);
+        _sensor = new EXLSensor(this, realDevice, adapter);
     }
 
     @Override
@@ -53,41 +65,45 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
     public String toString() {
         return name;
     }
-    
-    private static class EXLSensor extends SensorComponent<Long, double[]> {
 
-        EXLs3Manager manager;
-        DevicePlugin<Long, double[]> parent;
+    public static class EXLSensor extends SensorComponent<Long, double[]> {
+
+        EXLs3ManagerD manager;
+        EXLs3Device parent;
         String name;
         String address;
         BluetoothDevice dev;
         
-        protected EXLSensor(DevicePlugin<Long, double[]> parent, BluetoothDevice device) {
+        protected EXLSensor(EXLs3Device parent, BluetoothDevice device, BluetoothAdapter adapter) {
             super(parent);
             this.parent = parent;
-            manager = new EXLs3Manager(btsStatus, btsData);
+            manager = new EXLs3ManagerD(btsStatus, btsData, device, adapter);
             name = device.getName();
             address = device.getAddress();
             dev = device;
         }
 
+        protected EXLSensor(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
         public void connect() {
-            manager.connect(dev, false);
+            manager.connect();
         }
 
         @Override
         public void switchOnAsync() {
-            manager.sendStart();
+            manager.startStream();
         }
 
         @Override
         public void switchOffAsync() {
-            manager.sendStop();
+            manager.stopStream();
         }
 
         @Override
         public List<Object> getValuesDescriptors() {
-            return Arrays.asList((Object)"counter", "ax", "ay", "az", "gx", "gy", "gz", "mx", "my", "mz", "q1", "q2", "q3", "q4", "vbatt");
+            return manager.getValuesDescriptors();
         }
 
         @Override
@@ -95,67 +111,106 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             return address.replace(":", "") + "_" + name;
         }
 
-        private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
+        private final EXLs3ManagerD.StatusDelegate btsStatus = new EXLs3ManagerD.StatusDelegate() {
 
-            public void idle(EXLs3Manager sender) {
+            public void idle(EXLs3ManagerD sender) {
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
                         1, "idle");
             }
 
-            public void listening(EXLs3Manager sender) {
+            public void wrongPacketType(EXLs3ManagerD sender) {
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "listening");
+                        1, "wrongPacketType");
             }
 
-            public void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode) {
+            public void connecting(EXLs3ManagerD sender, BluetoothDevice device, boolean secureMode) {
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
                         1, "connecting");
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
                         0, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
-            public void connected(EXLs3Manager sender, String deviceName) {
+            public void connected(EXLs3ManagerD sender, String deviceName) {
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
                         1, "connected");
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
                         0, "connected to " + deviceName);
             }
 
-            public void connectionFailed(EXLs3Manager sender) {
+            public void disconnected(EXLs3ManagerD sender, Cause cause) {
                 sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "connectionFailed");
-            }
-
-            public void connectionLost(EXLs3Manager sender) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "connectionLost");
+                        1, "disconnected:" + cause.toString());
             }
         };
 
         private final long freq = 100;
-        private final long mpkc = 10000_000000L;
+        private final long mpc = 10000_000000L;
         
-        private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
+        private final EXLs3ManagerD.DataDelegate btsData = new EXLs3ManagerD.DataDelegate() {
             long st = -1;
             long lrc = -1;
-            long lpkc = -1;
+            long lpc = -1;
 
             @Override
-            public void receive(EXLs3Manager sender, EXLs3Manager.Packet p) {
-                lrc = ((IMonotonicTimestampReference)parent).getMonoTimestampNanos(p.receprionNanos);
+            public void receive(EXLs3ManagerD sender, EXLs3ManagerD.Packet p) {
+                lrc = ((IMonotonicTimestampReference)parent).getMonoTimestampNanos(p.receptionTime);
                 if (st < 0)
-                    st = lrc - p.counter / freq;
+                    st = lrc - p.counter * 1000_000000L / freq;
 
-                long ft = p.counter / freq + st;
+                long ft = p.counter / freq * 1000_000000L + st;
 
-                if (Math.abs(ft - lrc) > (0.05 * mpkc / freq)) {
-                    sensorEvent(lrc, 3, "Warning, packet time drift over 10% of packet counter cycle time, resetting reference.");
-                    Log.e("@@@", "resetting reference " + (Math.abs(ft - lrc) - (0.05 * mpkc / freq)));
-                    st = lrc - p.counter / freq;
+                if (Math.abs(ft - lrc) > (mpc / 10)) {
+                    sensorEvent(lrc, 3, "TimeDrift > 10%, ref reset");
+                    Log.e("@@@", "resetting reference " + ((ft - lrc) + " > " + (mpc / 10)));
+                    st = -25;
                 }
-
-                sensorValue(ft, new double[] { lpkc = p.counter, p.ax, p.ay, p.az, p.gx, p.gy, p.gz, p.mx, p.my, p.mz, p.q1, p.q2, p.q3, p.q4, p.vbatt } );
+                lpc = p.counter;
+                parent.er.sensorValue(ft, new double[] { p.ax, p.ay, p.az } );
+                parent.pe.sensorValue(ft, new double[] { p.gx, p.gy, p.gz } );
+                parent.ma.sensorValue(ft, new double[] { p.mx, p.my, p.mz } );
+                parent.on.sensorValue(ft, new double[] { p.q1, p.q2, p.q3, p.q4 } );
+                parent.ry.sensorValue(ft, new double[] { p.vbatt } );
             }
         };
+    }
+
+    public class EXLAccelerometer extends EXLs3Device.EXLSensor {
+
+        protected EXLAccelerometer(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
+    }
+
+    public class EXLGyroscope extends EXLs3Device.EXLSensor {
+
+        protected EXLGyroscope(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
+    }
+
+    public class EXLMagnetometer extends EXLs3Device.EXLSensor {
+
+        protected EXLMagnetometer(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
+    }
+
+    public class EXLQuaternion extends EXLs3Device.EXLSensor {
+
+        protected EXLQuaternion(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
+    }
+
+    public class EXLBattery extends EXLs3Device.EXLSensor {
+
+        protected EXLBattery(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+
     }
 }

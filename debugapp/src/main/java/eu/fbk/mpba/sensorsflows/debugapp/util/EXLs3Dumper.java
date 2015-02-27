@@ -4,8 +4,11 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.os.Environment;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,10 +22,10 @@ import java.util.UUID;
  * thread for performing data transmissions when connected.
  */
 @SuppressLint("NewApi")
-public class EXLs3Manager {
+public class EXLs3Dumper {
 
     // Debug
-    private static final String TAG = EXLs3Manager.class.getSimpleName();
+    private static final String TAG = EXLs3Dumper.class.getSimpleName();
 
     // UUID for rfcomm connection
     @SuppressWarnings("SpellCheckingInspection")
@@ -41,7 +44,7 @@ public class EXLs3Manager {
     protected OutputStream mOutput;
     protected Thread mDispatcher;
 
-    public EXLs3Manager(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
+    public EXLs3Dumper(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         mDataDelegate = dataDelegate;
         mStatusDelegate = statusDelegate;
         mDevice = device;
@@ -89,7 +92,13 @@ public class EXLs3Manager {
     }
 
     private void keepAlive() {
-        startStream();
+        if (mOutput != null) {
+            try {
+                mOutput.write(0);
+            } catch (IOException e) {
+                throw new UnsupportedOperationException("Strange error", e);
+            }
+        }
     }
 
     protected boolean startPending = false;
@@ -118,7 +127,7 @@ public class EXLs3Manager {
 
     private long last = 0;
     private int readByte() throws IOException {
-        if (last - System.nanoTime() > 5000_000000L) {
+        if (last - System.nanoTime() > 2000_000000L) {
             keepAlive();
             last = System.nanoTime();
         }
@@ -129,50 +138,32 @@ public class EXLs3Manager {
     public void dispatch() {
         int last = -1, wrong = 0, global = 0, ok = 0, idle = 0;
         boolean dispatch = true;
-        // Keep wrongPacketType to the InputStream while connected
-        Packet p;
+        FileOutputStream f = null;
         try {
-            while (dispatch && !Thread.currentThread().isInterrupted()) {
-                if (mInput.available() > 0) {
-                    while (readByte() != 0x20) {
-                        lostBytes++;
-                    }
-                    if (lostBytes > 0) {
-                        Log.v(TAG, lostBytes + " lostBytes");
-                        Log.i(TAG, idle + " idles");
-                        lostBytes = 0;
-                    }
-                    p = Packet.parsePacket(System.nanoTime(), mInput);
-                    if (p == null) {
-                        if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
-                            Log.i(TAG, "++Wrong packet type");
-                            // Closing connection and everything else
-                            setState(BTSrvState.DISCONNECTED);
-                            if (mStatusDelegate != null)
-                                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
-                            close();
-                            dispatch = false;
-                        }
-                    } else {
-                        if (((last + 10001) % 10000) != p.counter) // FIXME Only AGQMB
-                            Log.v(TAG, "lost:" + (p.counter - last + 10000) % 10000 + " c:" + (p.counter) + " s:" + p.isValid());
-                        last = p.counter;
-                        if (mDataDelegate != null)
-                            mDataDelegate.receive(this, p);
-                    }
-                }
-                else {
-                    idle++;
-                    Thread.sleep(0, 500000);
-                }
+            File x = new File(Environment.getExternalStorageDirectory().getPath()
+                    + "/eu.fbk.mpba.sensorsflows/");
+
+            x.mkdirs();
+
+            f = new FileOutputStream(new File(x, "stream_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));
+
+            while (!Thread.currentThread().isInterrupted()) {
+                f.write(mInput.read());
             }
-        } catch (InterruptedException ignore) {
         } catch (IOException e) {
             Log.e(TAG, "Forced disconnection", e);
             // Connection Lost
             setState(BTSrvState.DISCONNECTED);
             if (mStatusDelegate != null)
                 mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
+        }
+        finally {
+            if (f != null)
+                try {
+                    f.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
         }
     }
 
@@ -264,7 +255,7 @@ public class EXLs3Manager {
     // Subclasses
 
     public static interface DataDelegate {
-        void receive(EXLs3Manager sender, Packet p);
+        void receive(EXLs3Dumper sender, Packet p);
     }
 
     public static interface StatusDelegate {
@@ -275,9 +266,9 @@ public class EXLs3Manager {
                 CONNECTED = 2,
                 DISCONNECTED = 4;
 
-        void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode);
-        void connected(EXLs3Manager sender, String deviceName);
-        void disconnected(EXLs3Manager sender, DisconnectionCause cause);
+        void connecting(EXLs3Dumper sender, BluetoothDevice device, boolean secureMode);
+        void connected(EXLs3Dumper sender, String deviceName);
+        void disconnected(EXLs3Dumper sender, DisconnectionCause cause);
 
         public enum DisconnectionCause {
 
@@ -333,9 +324,7 @@ public class EXLs3Manager {
 
             if (b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
                 type = b[1] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
-                counter = (b[u++] = (s.read() & 0xFF));
-                if (b[1] == PacketType.AGMQB.id)
-                    counter += (b[u++] = (s.read() & 0xFF)) * 0x100;
+                counter = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                 ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                 ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                 az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;

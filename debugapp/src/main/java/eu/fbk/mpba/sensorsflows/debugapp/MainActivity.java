@@ -22,7 +22,9 @@ import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SQLiteOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.UserOutput;
+import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Dumper;
 import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
 
 
@@ -52,6 +54,7 @@ public class MainActivity extends Activity {
         m.addDevice(smartphoneDevice = new SmartphoneDevice(this, "Smartphone"));
 
         m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
+
         m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:af".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_176"));
 
 //        m.addOutput(new CsvOutput("CSV",
@@ -62,13 +65,16 @@ public class MainActivity extends Activity {
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"));
 
+        m.addOutput(new UserOutput());
+
         m.addOutput(new ProtobufferOutput("Protobuf", new File(
                 Environment.getExternalStorageDirectory().getPath()
                         + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
 
-        m.start();
+        m.start(CsvDataSaver.getHumanDateTimeString());
+
     }
 
     public void onMClose(View v) {
@@ -76,27 +82,16 @@ public class MainActivity extends Activity {
         m = new FlowsMan<>();
     }
 
-    EXLs3Manager s = new EXLs3Manager(null, null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
-    EXLs3Manager p = new EXLs3Manager(null, null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:af".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
+    EXLs3Dumper d = new EXLs3Dumper(null, null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b0:b9:11".toUpperCase()), BluetoothAdapter.getDefaultAdapter()); // 0128
 
-    public void onBTSTest(View v) {
-        s.connect();
-        p.connect();
+    public void onBTDStart(View v) {
+        d.connect();
+        d.startStream();
     }
 
-    public void onWriteTest(View v) {
-        s.startStream();
-        p.startStream();
-    }
-
-    public void onStopTest(View v) {
-        s.stopStream();
-        p.stopStream();
-    }
-
-    public void onBTCloseTest(View v) {
-        s.close();
-        p.close();
+    public void onBTDClose(View v) {
+        d.stopStream();
+        d.close();
     }
 
     public void onAddText(View v) {

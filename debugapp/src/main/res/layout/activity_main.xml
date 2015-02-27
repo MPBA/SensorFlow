@@ -30,13 +30,13 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Add Capraa"
+        android:text="Add Ugo"
         android:onClick="onAddText" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Add Mucca"
+        android:text="Add 646476$%&amp;"
         android:onClick="onAddText" />
 
     <Button
@@ -48,25 +48,13 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BTS Test"
-        android:onClick="onBTSTest" />
+        android:text="onBTDStart"
+        android:onClick="onBTDStart" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start"
-        android:onClick="onWriteTest" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop"
-        android:onClick="onStopTest" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="BTS Close"
-        android:onClick="onBTCloseTest" />
+        android:text="onBTDClose"
+        android:onClick="onBTDClose" />
 
 </LinearLayout>

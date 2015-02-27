@@ -16,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
 
     private String name;
-    private EXLSensor _sensor;
+    private EXLSensor monoSensor;
 
     EXLAccelerometer er;
     EXLBattery ry;
@@ -32,23 +32,23 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         pe = new EXLGyroscope(this);
         ma = new EXLMagnetometer(this);
         on = new EXLQuaternion(this);
-        _sensor = new EXLSensor(this, realDevice, adapter);
+        monoSensor = new EXLSensor(this, realDevice, adapter);
     }
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) _sensor).iterator());
+        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) er, pe, ma, on, ry).iterator());
     }
 
     @Override
     public void inputPluginInitialize() {
-        _sensor.connect();
-        _sensor.switchOnAsync();
+        monoSensor.connect();
+        monoSensor.switchDevOnAsync();
     }
 
     @Override
     public void inputPluginFinalize() {
-        _sensor.switchOffAsync();
+        monoSensor.switchDevOffAsync();
     }
 
     private long bootUTCNanos;
@@ -68,6 +68,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     public static class EXLSensor extends SensorComponent<Long, double[]> {
 
+        boolean streaming = true;
+
         EXLs3Manager manager;
         EXLs3Device parent;
         String name;
@@ -75,71 +77,70 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         BluetoothDevice dev;
         
         protected EXLSensor(EXLs3Device parent, BluetoothDevice device, BluetoothAdapter adapter) {
-            super(parent);
-            this.parent = parent;
-            manager = new EXLs3Manager(btsStatus, btsData, device, adapter);
-            name = device.getName();
-            address = device.getAddress();
+            this(parent);
             dev = device;
+            address = device.getAddress();
+            manager = new EXLs3Manager(null, null, device, adapter);
         }
 
-        protected EXLSensor(DevicePlugin<Long, double[]> parent) {
+        protected EXLSensor(EXLs3Device parent) {
             super(parent);
+            this.parent = parent;
+            name = parent.name;
+        }
+
+        @Override
+        public List<Object> getValuesDescriptors() {
+            throw new UnsupportedOperationException("Do not use this sensor.");
         }
 
         public void connect() {
             manager.connect();
         }
 
-        @Override
-        public void switchOnAsync() {
+        public void switchDevOnAsync() {
             manager.startStream();
         }
 
-        @Override
-        public void switchOffAsync() {
+        public void switchDevOffAsync() {
             manager.stopStream();
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
-            return manager.getValuesDescriptors();
+        public void switchOnAsync() {
+            streaming = true;
+        }
+
+        @Override
+        public void switchOffAsync() {
+            streaming = false;
         }
 
         @Override
         public String toString() {
-            return address.replace(":", "") + "_" + name;
+            return name + "/" + getClass().getSimpleName();
         }
 
         private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
 
             public void idle(EXLs3Manager sender) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "idle");
-            }
-
-            public void wrongPacketType(EXLs3Manager sender) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "wrongPacketType");
+                sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                        READY, "idle");
             }
 
             public void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "connecting");
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        0, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
+                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                        CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
             public void connected(EXLs3Manager sender, String deviceName) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "connected");
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        0, "connected to " + deviceName);
+                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                        CONNECTED, "connected to " + deviceName);
             }
 
-            public void disconnected(EXLs3Manager sender, Cause cause) {
-                sensorEvent(((IMonotonicTimestampReference)parent).getMonoTimestampNanos(System.nanoTime()),
-                        1, "disconnected:" + cause.toString());
+            public void disconnected(EXLs3Manager sender, DisconnectionCause cause) {
+                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                        DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
             }
         };
 
@@ -153,11 +154,11 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
             @Override
             public void receive(EXLs3Manager sender, EXLs3Manager.Packet p) {
-                lrc = ((IMonotonicTimestampReference)parent).getMonoTimestampNanos(p.receptionTime);
+                lrc = parent.getMonoTimestampNanos(p.receptionTime);
                 if (st < 0)
                     st = lrc - p.counter * 1000_000000L / freq;
 
-                long ft = p.counter / freq * 1000_000000L + st;
+                long ft = p.counter * 1000_000000L / freq + st;
 
                 if (Math.abs(ft - lrc) > (mpc / 10)) {
                     sensorEvent(lrc, 3, "TimeDrift > 10%, ref reset");
@@ -165,51 +166,76 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
                     st = -25;
                 }
                 lpc = p.counter;
-                parent.er.sensorValue(ft, new double[] { p.ax, p.ay, p.az } );
-                parent.pe.sensorValue(ft, new double[] { p.gx, p.gy, p.gz } );
-                parent.ma.sensorValue(ft, new double[] { p.mx, p.my, p.mz } );
-                parent.on.sensorValue(ft, new double[] { p.q1, p.q2, p.q3, p.q4 } );
-                parent.ry.sensorValue(ft, new double[] { p.vbatt } );
+                if (parent.er.streaming)
+                    parent.er.sensorValue(lrc, new double[] { p.counter, p.ay, p.az } );
+                if (parent.pe.streaming)
+                    parent.pe.sensorValue(lrc, new double[] { p.gx, p.gy, p.gz } );
+                if (parent.ma.streaming)
+                    parent.ma.sensorValue(lrc, new double[] { p.mx, p.my, p.mz } );
+                if (parent.on.streaming)
+                    parent.on.sensorValue(lrc, new double[] { p.q1, p.q2, p.q3, p.q4 } );
+                if (parent.ry.streaming)
+                    parent.ry.sensorValue(lrc, new double[] { p.vbatt } );
             }
         };
     }
 
-    public class EXLAccelerometer extends EXLs3Device.EXLSensor {
+    public static class EXLAccelerometer extends EXLs3Device.EXLSensor {
 
-        protected EXLAccelerometer(DevicePlugin<Long, double[]> parent) {
+        protected EXLAccelerometer(EXLs3Device parent) {
             super(parent);
+        }
+
+        public List<Object> getValuesDescriptors() {
+            return Arrays.asList((Object) "ax", "ay", "az");
         }
 
     }
 
-    public class EXLGyroscope extends EXLs3Device.EXLSensor {
+    public static class EXLGyroscope extends EXLs3Device.EXLSensor {
 
-        protected EXLGyroscope(DevicePlugin<Long, double[]> parent) {
+        protected EXLGyroscope(EXLs3Device parent) {
             super(parent);
+        }
+
+        public List<Object> getValuesDescriptors() {
+            return Arrays.asList((Object) "gx", "gy", "gz");
         }
 
     }
 
-    public class EXLMagnetometer extends EXLs3Device.EXLSensor {
+    public static class EXLMagnetometer extends EXLs3Device.EXLSensor {
 
-        protected EXLMagnetometer(DevicePlugin<Long, double[]> parent) {
+        protected EXLMagnetometer(EXLs3Device parent) {
             super(parent);
+        }
+
+        public List<Object> getValuesDescriptors() {
+            return Arrays.asList((Object) "mx", "my", "mz");
         }
 
     }
 
-    public class EXLQuaternion extends EXLs3Device.EXLSensor {
+    public static class EXLQuaternion extends EXLs3Device.EXLSensor {
 
-        protected EXLQuaternion(DevicePlugin<Long, double[]> parent) {
+        protected EXLQuaternion(EXLs3Device parent) {
             super(parent);
+        }
+
+        public List<Object> getValuesDescriptors() {
+            return Arrays.asList((Object) "q1", "q2", "q3", "q4");
         }
 
     }
 
-    public class EXLBattery extends EXLs3Device.EXLSensor {
+    public static class EXLBattery extends EXLs3Device.EXLSensor {
 
-        protected EXLBattery(DevicePlugin<Long, double[]> parent) {
+        protected EXLBattery(EXLs3Device parent) {
             super(parent);
+        }
+
+        public List<Object> getValuesDescriptors() {
+            return Arrays.asList((Object) "vbatt");
         }
 
     }

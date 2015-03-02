@@ -1,6 +1,5 @@
 package eu.fbk.mpba.sensorsflows.debugapp.util;
 
-import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -15,13 +14,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-/**
- * This class does all the work for setting up and managing Bluetooth
- * connections with other devices. It has a thread that listens for
- * incoming connections, a thread for connecting with a device, and a
- * thread for performing data transmissions when connected.
- */
-@SuppressLint("NewApi")
 public class EXLs3Dumper {
 
     // Debug
@@ -31,12 +23,10 @@ public class EXLs3Dumper {
     @SuppressWarnings("SpellCheckingInspection")
     private static final UUID UUID_INSECURE =
             UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-    public static final int MAX_WRONG_PACKETS = 10;
 
     // Member fields
     private BluetoothDevice mDevice;
     private final BluetoothAdapter mAdapter;
-    private final DataDelegate mDataDelegate;
     private final StatusDelegate mStatusDelegate;
     private BTSrvState mState = BTSrvState.IDLE;
     private BluetoothSocket mSocket;
@@ -44,8 +34,7 @@ public class EXLs3Dumper {
     protected OutputStream mOutput;
     protected Thread mDispatcher;
 
-    public EXLs3Dumper(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
-        mDataDelegate = dataDelegate;
+    public EXLs3Dumper(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         mStatusDelegate = statusDelegate;
         mDevice = device;
         mAdapter = adapter;
@@ -91,16 +80,6 @@ public class EXLs3Dumper {
         }
     }
 
-    private void keepAlive() {
-        if (mOutput != null) {
-            try {
-                mOutput.write(0);
-            } catch (IOException e) {
-                throw new UnsupportedOperationException("Strange error", e);
-            }
-        }
-    }
-
     protected boolean startPending = false;
 
     public void startStream() {
@@ -125,19 +104,7 @@ public class EXLs3Dumper {
             startPending = false;
     }
 
-    private long last = 0;
-    private int readByte() throws IOException {
-        if (last - System.nanoTime() > 2000_000000L) {
-            keepAlive();
-            last = System.nanoTime();
-        }
-        return mInput.read();
-    }
-
-    private long lostBytes = 0;
     public void dispatch() {
-        int last = -1, wrong = 0, global = 0, ok = 0, idle = 0;
-        boolean dispatch = true;
         FileOutputStream f = null;
         try {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
@@ -254,17 +221,7 @@ public class EXLs3Dumper {
 
     // Subclasses
 
-    public static interface DataDelegate {
-        void receive(EXLs3Dumper sender, Packet p);
-    }
-
     public static interface StatusDelegate {
-
-        public final int
-                READY = 0,
-                CONNECTING = 1,
-                CONNECTED = 2,
-                DISCONNECTED = 4;
 
         void connecting(EXLs3Dumper sender, BluetoothDevice device, boolean secureMode);
         void connected(EXLs3Dumper sender, String deviceName);
@@ -281,87 +238,6 @@ public class EXLs3Dumper {
             public final int flag;
 
             DisconnectionCause(int v) { flag = v; }
-        }
-    }
-
-    public static class Packet {
-        public final long receptionTime;
-        public final int counter;
-        public final PacketType type;
-        public final int ax,ay,az,gx,gy,gz,mx,my,mz,q1,q2,q3,q4,vbatt;
-        public final int checksum_received, checksum_actual;
-
-        public boolean isValid() {
-            return checksum_received == checksum_actual;
-        }
-
-        public Packet (long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
-            this.receptionTime = receptionTime;
-            this.counter = counter; this.type = type;
-            this.ax = ax; this.ay = ay; this.az = az;
-            this.gx = gx; this.gy = gy; this.gz = gz;
-            this.mx = mx; this.my = my; this.mz = mz;
-            this.q1 = q1; this.q2 = q2; this.q3 = q3; this.q4 = q4;
-            this.vbatt = vbatt;
-            this.checksum_received = checksum_received;
-            this.checksum_actual = checksum_actual;
-        }
-
-        public static Packet parsePacket(long receptionTime, InputStream s) throws IOException {
-            PacketType type; int counter;
-            int ax; int ay; int az;
-            int gx; int gy; int gz;
-            int mx; int my; int mz;
-            int q1; int q2; int q3; int q4;
-            int vbatt; int checksum_received; int checksum_actual;
-
-            int[] b = new int[40];
-            int u = 0, x;
-            b[u++] = 0x20;
-
-            if ((x = (byte) s.read()) != 0x20)
-                b[u++] = (byte) x;
-
-            if (b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
-                type = b[1] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
-                counter = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gy = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                mx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                my = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                mz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                if (b[1] == PacketType.AGMQB.id) {
-                    q1 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q2 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q3 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q4 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                } else
-                    q1 = q2 = q3 = q4 = vbatt = 0;
-                checksum_received = (b[u++] = (s.read() & 0xFF));
-                byte ck = 0;
-                for (int i = 0; i < u - 1; i++)
-                    ck ^= b[i];
-                checksum_actual = ck;
-
-                return new Packet(receptionTime, type, counter, ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt, checksum_received, checksum_actual);
-            } else
-                return null;
-        }
-    }
-
-    public enum PacketType {
-        AGMQB((byte)0x9f),
-        RAW((byte)0x0A);
-
-        byte id;
-
-        PacketType(byte id) {
-            this.id = id;
         }
     }
 

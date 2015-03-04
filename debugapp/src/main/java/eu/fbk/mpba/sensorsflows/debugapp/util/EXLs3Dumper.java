@@ -69,8 +69,7 @@ public class EXLs3Dumper {
                 if (mStatusDelegate != null)
                     mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
             }
-        }
-        else {
+        } else {
             // Connection Failed
             setState(BTSrvState.DISCONNECTED);
             if (mStatusDelegate != null)
@@ -85,27 +84,31 @@ public class EXLs3Dumper {
     public void startStream() {
         if (mOutput != null) {
             try {
-                mOutput.write("==".getBytes());
+                mOutput.write(new byte[] { 0x3D, 0x3D });
             } catch (IOException e) {
                 throw new UnsupportedOperationException("Strange error", e);
             }
-        }
-        else
+        } else
             startPending = true;
     }
 
     public void stopStream() {
         if (mOutput != null) {
             try {
-                mOutput.write("::".getBytes());
+                mOutput.write(new byte[] { 0x3A, 0x3A });
+                f.flush();
+                f.close();
             } catch (IOException ignored) { }
-        }
-        else
+        } else
             startPending = false;
     }
 
+    private int cnt = 0;
+    private int counter_file = 0;
+    private FileOutputStream f = null;
+
     public void dispatch() {
-        FileOutputStream f = null;
+
         try {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
                     + "/eu.fbk.mpba.sensorsflows/");
@@ -114,17 +117,55 @@ public class EXLs3Dumper {
 
             f = new FileOutputStream(new File(x, "stream_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));
 
-            while (!Thread.currentThread().isInterrupted()) {
-                f.write(mInput.read());
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Log.d(TAG, "+++++ Interrupted");
             }
-        } catch (IOException e) {
+
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    byte[] buffer = new byte[33];
+                    buffer[cnt++] = (byte) mInput.read();
+                    try {
+                        Thread.sleep(3);
+                    } catch (InterruptedException e) {
+                        Log.d(TAG, "+++++ Interrupted (in the loop)");
+                    }
+                    if (buffer[0] == 32) {
+                        buffer[cnt++] = (byte) mInput.read();
+//                      Log.d("NOW","1 - "+bytesToHex(buffer[0])+" / "+bytesToHex(buffer[1]));
+                        if (buffer[0] == 32 && buffer[1] == -97) {
+//                      Log.d("NOW","2");
+                            while (cnt < 33) {
+                                buffer[cnt++] = (byte) mInput.read();
+                            }
+//                      Log.d("NOW","3");
+
+                            f.write(buffer);
+//                            if(counter_file++>50) {
+//                                f.flush();
+//                                counter_file = 0;
+//                            }
+                        }
+//                      Log.d("NOW","4");
+                    }
+                } catch (IOException e1) {
+                    Log.d("Error", "Errore file = " + e1.getMessage());
+                }
+                cnt = 0;
+            }
+
+        } catch (IOException e)
+        {
             Log.e(TAG, "Forced disconnection", e);
             // Connection Lost
             setState(BTSrvState.DISCONNECTED);
             if (mStatusDelegate != null)
                 mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
-        }
-        finally {
+        } finally
+
+        {
             if (f != null)
                 try {
                     f.close();
@@ -136,28 +177,25 @@ public class EXLs3Dumper {
 
     public void close() {
         if (mDispatcher != null)
-            try {
-                while (mDispatcher.isAlive()) {
-                    mDispatcher.interrupt();
-                    mDispatcher.join(100);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (mDispatcher.isAlive()) {
+                mDispatcher.interrupt();
             }
         try {
-            if(mInput != null)
+            if (mInput != null)
                 mInput.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if(mOutput != null)
+            if (mOutput != null) {
+                mOutput.flush();
                 mOutput.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if(mSocket != null)
+            if (mSocket != null)
                 mSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -182,8 +220,7 @@ public class EXLs3Dumper {
                 Log.e(TAG, "+++++ connect() failed " + devInfo, e);
                 return false;
             }
-        }
-        else
+        } else
             return false;
     }
 
@@ -204,27 +241,27 @@ public class EXLs3Dumper {
         BluetoothSocket socket = null;
         try {
             Method m = device.getClass().getMethod("createRfcommSocket", int.class);
-            socket = (BluetoothSocket)m.invoke(device, 1);
-        }
-        catch (NoSuchMethodException ignore) {
+            socket = (BluetoothSocket) m.invoke(device, 1);
+        } catch (NoSuchMethodException ignore) {
             try {
                 socket = device.createRfcommSocketToServiceRecord(UUID_INSECURE);
             } catch (IOException e) {
                 Log.e(TAG, "IOException trying to create the socket", e);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Log.e(TAG, "Unable to create the socket", e);
         }
         return socket;
     }
 
-    // Subclasses
+// Subclasses
 
     public static interface StatusDelegate {
 
         void connecting(EXLs3Dumper sender, BluetoothDevice device, boolean secureMode);
+
         void connected(EXLs3Dumper sender, String deviceName);
+
         void disconnected(EXLs3Dumper sender, DisconnectionCause cause);
 
         public enum DisconnectionCause {
@@ -237,7 +274,9 @@ public class EXLs3Dumper {
 
             public final int flag;
 
-            DisconnectionCause(int v) { flag = v; }
+            DisconnectionCause(int v) {
+                flag = v;
+            }
         }
     }
 

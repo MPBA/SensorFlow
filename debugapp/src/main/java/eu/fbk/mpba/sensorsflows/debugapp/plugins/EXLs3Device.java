@@ -80,7 +80,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             this(parent);
             dev = device;
             address = device.getAddress();
-            manager = new EXLs3Manager(null, null, device, adapter);
+            manager = new EXLs3Manager(btsStatus, btsData, device, adapter);
         }
 
         protected EXLSensor(EXLs3Device parent) {
@@ -167,7 +167,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
                 }
                 lpc = p.counter;
                 if (parent.er.streaming)
-                    parent.er.sensorValue(lrc, new double[] { p.counter, p.ay, p.az } );
+                    parent.er.sensorValue(lrc, new double[] { p.ax, p.ay, p.az } );
                 if (parent.pe.streaming)
                     parent.pe.sensorValue(lrc, new double[] { p.gx, p.gy, p.gz } );
                 if (parent.ma.streaming)

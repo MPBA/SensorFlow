@@ -20,7 +20,7 @@ public class EXLs3Manager {
     @SuppressWarnings("SpellCheckingInspection")
     private static final UUID UUID_INSECURE =
             UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-    public static final int MAX_WRONG_PACKETS = 50;
+    public static final int MAX_WRONG_PACKETS = 10;
 
     // Member fields
     private BluetoothDevice mDevice;
@@ -43,6 +43,13 @@ public class EXLs3Manager {
     // Operation
 
     public void connect() {
+        if (!mAdapter.isEnabled()) {
+            try {
+                mAdapter.enable();
+            } catch (Exception e) {
+                Log.e(TAG, "BT may be disabled", e);
+            }
+        }
         setState(BTSrvState.CONNECTING);
         if (mStatusDelegate != null)
             mStatusDelegate.connecting(this, mDevice, false); // TODO 8 Not only insecure
@@ -69,7 +76,8 @@ public class EXLs3Manager {
                 if (mStatusDelegate != null)
                     mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
             }
-        } else {
+        }
+        else {
             // Connection Failed
             setState(BTSrvState.DISCONNECTED);
             if (mStatusDelegate != null)
@@ -88,26 +96,26 @@ public class EXLs3Manager {
     public void startStream() {
         if (mOutput != null) {
             try {
-                mOutput.write("==".getBytes());
+                mOutput.write(new byte[] { 0x3D, 0x3D });
             } catch (IOException e) {
                 throw new UnsupportedOperationException("Strange error", e);
             }
-        } else
+        }
+        else
             startPending = true;
     }
 
     public void stopStream() {
         if (mOutput != null) {
             try {
-                mOutput.write("::".getBytes());
-            } catch (IOException ignored) {
-            }
-        } else
+                mOutput.write(new byte[] { 0x3A, 0x3A });
+            } catch (IOException ignored) { }
+        }
+        else
             startPending = false;
     }
 
     private long last = 0;
-
     private int readByte() throws IOException {
         if (last - System.nanoTime() > 5000_000000L) {
             keepAlive();
@@ -117,119 +125,59 @@ public class EXLs3Manager {
     }
 
     private long lostBytes = 0;
-    private int cnt = 0;
-
     public void dispatch() {
-        int last = -1, wrong = 0, global = 0, ok = 0, idle = 0;
+        int last = -1, wrong = 0, lost = 0, ok = 0, idle = 0;
         boolean dispatch = true;
         // Keep wrongPacketType to the InputStream while connected
         Packet p;
-        while (dispatch && !Thread.currentThread().isInterrupted()) {
-
-            try {
-                byte[] buffer = new byte[32];
-                buffer[cnt++] = (byte) mInput.read();
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException ignored) {
-                }
-                if (buffer[0] == 32) {
-                    buffer[cnt++] = (byte) mInput.read();
-                    if (buffer[1] == -97) {
-                        p = Packet.parsePacket(System.nanoTime(), buffer[0], buffer[1], mInput);
-                        if (p == null) {
-                            if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
-                                Log.i(TAG, "++Wrong packet type");
-                                // Closing connection and everything else
-                                setState(EXLs3Manager.BTSrvState.DISCONNECTED);
-                                if (mStatusDelegate != null)
-                                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
-                                close();
-                                dispatch = false;
-                            }
-                        } else {
-                            if (((last + 10001) % 10000) != p.counter) // FIXME Only AGQMB
-                                Log.v(TAG, "lost:" + (p.counter - last + 10000) % 10000 + " c:" + (p.counter) + " s:" + p.isValid());
-                            last = p.counter;
-                            Log.v(TAG, "Punto:" + p.ax + " / " + p.ay + " / " + p.az);
-                            if (mDataDelegate != null)
-                                mDataDelegate.receive(this, p);
-                        }
+        try {
+            while (dispatch && !Thread.currentThread().isInterrupted()) {
+                if (mInput.available() > 0) {
+                    while (readByte() != 0x20) {
+                        lostBytes++;
                     }
-                } else {
-                    idle++;
-                    Thread.sleep(0, 500000);
+                    if (lostBytes > 0) {
+                        Log.v(TAG, lostBytes + " lostBytes");
+                        Log.i(TAG, idle + " idles");
+                        lostBytes = 0;
+                    }
+                    p = Packet.parsePacket(System.nanoTime(), mInput);
+                    if (p == null) {
+                        if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
+                            Log.i(TAG, "++ Wrong packet type");
+                            // Closing connection and everything else
+                            setState(BTSrvState.DISCONNECTED);
+                            if (mStatusDelegate != null)
+                                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
+                            close();
+                            dispatch = false;
+                        }
+                    } else {
+                        int nowLost = p.lostFromPreviousCounter(last);
+                        if (nowLost != 0) {
+                            lost += nowLost;
+                            Log.v(TAG, "lost:" + nowLost + " c:" + (p.counter) + " s:" + p.isValid());
+                        }
+                        last = p.counter;
+                        ok++;
+                        if (mDataDelegate != null)
+                            mDataDelegate.receive(this, p);
+                    }
                 }
-                cnt = 0;
-            } catch (IOException e) {
-                Log.e(TAG, "Error ", e);
-                break;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                else {
+                    idle++;
+                    Thread.sleep(2);
+                }
             }
+        } catch (InterruptedException ignore) {
+        } catch (IOException e) {
+            Log.e(TAG, "Forced disconnection", e);
+            // Connection Lost
+            setState(BTSrvState.DISCONNECTED);
+            if (mStatusDelegate != null)
+                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
         }
-
-
-        // Connection Lost
-        setState(BTSrvState.DISCONNECTED);
-        if (mStatusDelegate != null)
-            mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
     }
-
-//    public void dispatch() {
-//        int last = -1, wrong = 0, global = 0, ok = 0, idle = 0;
-//        boolean dispatch = true;
-//        // Keep wrongPacketType to the InputStream while connected
-//        Packet p;
-//        try {
-//            while (dispatch && !Thread.currentThread().isInterrupted()) {
-//                if (mInput.available() > 0) {
-//                    while (readByte() != 0x20) {
-//                        lostBytes++;
-//                    }
-//                    if (lostBytes > 0) {
-//                        Log.v(TAG, lostBytes + " lostBytes");
-//                        Log.i(TAG, idle + " idles");
-//                        lostBytes = 0;
-//                    }
-//
-//
-//
-//
-//
-//                    p = Packet.parsePacket(System.nanoTime(), mInput);
-//                    if (p == null) {
-//                        if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
-//                            Log.i(TAG, "++Wrong packet type");
-//                            // Closing connection and everything else
-//                            setState(BTSrvState.DISCONNECTED);
-//                            if (mStatusDelegate != null)
-//                                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
-//                            close();
-//                            dispatch = false;
-//                        }
-//                    } else {
-//                        if (((last + 10001) % 10000) != p.counter) // FIXME Only AGQMB
-//                            Log.v(TAG, "lost:" + (p.counter - last + 10000) % 10000 + " c:" + (p.counter) + " s:" + p.isValid());
-//                        last = p.counter;
-//                        if (mDataDelegate != null)
-//                            mDataDelegate.receive(this, p);
-//                    }
-//                }
-//                else {
-//                    idle++;
-//                    Thread.sleep(0, 500000);
-//                }
-//            }
-//        } catch (InterruptedException ignore) {
-//        } catch (IOException e) {
-//            Log.e(TAG, "Forced disconnection", e);
-//            // Connection Lost
-//            setState(BTSrvState.DISCONNECTED);
-//            if (mStatusDelegate != null)
-//                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
-//        }
-//    }
 
     public void close() {
         if (mDispatcher != null)
@@ -242,19 +190,19 @@ public class EXLs3Manager {
                 e.printStackTrace();
             }
         try {
-            if (mInput != null)
+            if(mInput != null)
                 mInput.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if (mOutput != null)
+            if(mOutput != null)
                 mOutput.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if (mSocket != null)
+            if(mSocket != null)
                 mSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -271,7 +219,7 @@ public class EXLs3Manager {
                 mSocket.connect();
                 Log.i(TAG, "+++ Connected " + devInfo);
                 if (startPending) {
-                    Log.i(TAG, "++ startPending, starting " + devInfo);
+                    Log.i(TAG, "+ startPending: starting streaming " + devInfo);
                     startStream();
                 }
                 return true;
@@ -279,7 +227,8 @@ public class EXLs3Manager {
                 Log.e(TAG, "+++++ connect() failed " + devInfo, e);
                 return false;
             }
-        } else
+        }
+        else
             return false;
     }
 
@@ -300,20 +249,22 @@ public class EXLs3Manager {
         BluetoothSocket socket = null;
         try {
             Method m = device.getClass().getMethod("createRfcommSocket", int.class);
-            socket = (BluetoothSocket) m.invoke(device, 1);
-        } catch (NoSuchMethodException ignore) {
+            socket = (BluetoothSocket)m.invoke(device, 1);
+        }
+        catch (NoSuchMethodException ignore) {
             try {
                 socket = device.createRfcommSocketToServiceRecord(UUID_INSECURE);
             } catch (IOException e) {
                 Log.e(TAG, "IOException trying to create the socket", e);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Log.e(TAG, "Unable to create the socket", e);
         }
         return socket;
     }
 
-// Subclasses
+    // Subclasses
 
     public static interface DataDelegate {
         void receive(EXLs3Manager sender, Packet p);
@@ -328,9 +279,7 @@ public class EXLs3Manager {
                 DISCONNECTED = 4;
 
         void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode);
-
         void connected(EXLs3Manager sender, String deviceName);
-
         void disconnected(EXLs3Manager sender, DisconnectionCause cause);
 
         public enum DisconnectionCause {
@@ -343,73 +292,57 @@ public class EXLs3Manager {
 
             public final int flag;
 
-            DisconnectionCause(int v) {
-                flag = v;
-            }
+            DisconnectionCause(int v) { flag = v; }
         }
     }
 
     public static class Packet {
+        private final int m;
         public final long receptionTime;
         public final int counter;
         public final PacketType type;
-        public final int ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt;
+        public final int ax,ay,az,gx,gy,gz,mx,my,mz,q1,q2,q3,q4,vbatt;
         public final int checksum_received, checksum_actual;
 
         public boolean isValid() {
             return checksum_received == checksum_actual;
         }
 
-        public Packet(long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
+        public int getMaxPacketCounter() {
+            return m;
+        }
+
+        public int lostFromPreviousCounter(int previousCounter) {
+            return counter - previousCounter + (counter > previousCounter ? 0 : m) - 1;
+        }
+
+        public Packet (long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
             this.receptionTime = receptionTime;
-            this.counter = counter;
-            this.type = type;
-            this.ax = ax;
-            this.ay = ay;
-            this.az = az;
-            this.gx = gx;
-            this.gy = gy;
-            this.gz = gz;
-            this.mx = mx;
-            this.my = my;
-            this.mz = mz;
-            this.q1 = q1;
-            this.q2 = q2;
-            this.q3 = q3;
-            this.q4 = q4;
+            this.counter = counter; this.type = type;
+            this.ax = ax; this.ay = ay; this.az = az;
+            this.gx = gx; this.gy = gy; this.gz = gz;
+            this.mx = mx; this.my = my; this.mz = mz;
+            this.q1 = q1; this.q2 = q2; this.q3 = q3; this.q4 = q4;
             this.vbatt = vbatt;
             this.checksum_received = checksum_received;
             this.checksum_actual = checksum_actual;
+            this.m = (type == PacketType.AGMQB ? 10000 : 0xFF);
         }
 
-        public static Packet parsePacket(long receptionTime, byte b0, byte b1, InputStream s) throws IOException {
-            PacketType type;
-            int counter;
-            int ax;
-            int ay;
-            int az;
-            int gx;
-            int gy;
-            int gz;
-            int mx;
-            int my;
-            int mz;
-            int q1;
-            int q2;
-            int q3;
-            int q4;
-            int vbatt;
-            int checksum_received;
-            int checksum_actual;
+        public static Packet parsePacket(long receptionTime, InputStream s) throws IOException {
+            PacketType type; int counter;
+            int ax; int ay; int az;
+            int gx; int gy; int gz;
+            int mx; int my; int mz;
+            int q1; int q2; int q3; int q4;
+            int vbatt; int checksum_received; int checksum_actual;
 
             int[] b = new int[40];
-            int u = 0;
-            b[u++] = b0;// 0x20;
+            int u = 0, x;
+            b[u++] = 0x20;
 
-//        if ((x = (byte) s.read()) != 0x20)
-//            b[u++] = (byte) x;
-            b[u++] = b1;
-
+            if ((x = (byte) s.read()) != 0x20)
+                b[u++] = (byte) x;
 
             if (b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
                 type = b[1] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
@@ -417,7 +350,6 @@ public class EXLs3Manager {
                 if (b[1] == PacketType.AGMQB.id)
                     counter += (b[u++] = (s.read() & 0xFF)) * 0x100;
                 ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                Log.d("NOW", "counter = " + counter + " / " + ax);
                 ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                 az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
                 gx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
@@ -447,8 +379,8 @@ public class EXLs3Manager {
     }
 
     public enum PacketType {
-        AGMQB((byte) 0x9f),
-        RAW((byte) 0x0A);
+        AGMQB((byte)0x9f),
+        RAW((byte)0x0A);
 
         byte id;
 

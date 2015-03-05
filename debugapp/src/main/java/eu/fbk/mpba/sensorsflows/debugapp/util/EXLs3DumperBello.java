@@ -77,25 +77,33 @@ public class EXLs3DumperBello {
                 // utilizzabile solo per controllare il packet counter
                 try {
                     Log.i(TAG, "Streaming to file...");
+                    // TODO 0 Test without
                     Thread.sleep(100);
                     int i;
                     byte[] pack = new byte[32];
                     while (!Thread.currentThread().isInterrupted()) {
-
                         i = 0;
                         pack[i++] = (byte) mStream.read();
+                        /*  TODO 0 Test changing
+                            t =
+                                - 100Hz -> 10ms/p
+                                - 200Hz ->  5ms/p
+                                - 300Hz -> 10ms/3p = 3_333333ns/p > 3ms/p
+
+                            Their impl: 5ms@100Hz -> t/2
+                         */
                         Thread.sleep(3);
                         if (pack[0] == 0x20) {
                             pack[i++] = (byte) mStream.read();
                             if (pack[1] == EXLs3Manager.PacketType.AGMQB.id) {
                                 while (i < 32)
                                     pack[i++] = (byte) mStream.read();
+                            } else if (pack[1] == EXLs3Manager.PacketType.AGMB.id) {
+                                while (i < 24)
+                                    pack[i++] = (byte) mStream.read();
                             } else if (pack[1] == EXLs3Manager.PacketType.RAW.id
                                     || pack[1] == EXLs3Manager.PacketType.calib.id) {
                                 while (i < 21)
-                                    pack[i++] = (byte) mStream.read();
-                            } else if (pack[1] == EXLs3Manager.PacketType.AGMB.id) {
-                                while (i < 24)
                                     pack[i++] = (byte) mStream.read();
                             }
                             f.write(pack, 0, i);
@@ -103,7 +111,14 @@ public class EXLs3DumperBello {
                     }
 
                 } catch (IOException e) {
-                    Log.e(TAG, "Forced disconnection", e);
+                    Log.e(TAG, "+++ Disconnection: " + e.getMessage());
+                    switch (e.getMessage()) {
+                        case "":
+                            break;
+                        default:
+                            Log.e(TAG, "Unmanageable disconnection", e);
+                            break;
+                    }
                 } catch (InterruptedException e) {
                     Log.i(TAG, "Dispatch thread interrupted");
                 } finally {

@@ -150,7 +150,16 @@ public class EXLs3Stream extends InputStream {
                 }
                 return true;
             } catch (IOException e) {
-                Log.e(TAG, "+++++ connect() failed " + devInfo, e);
+                Log.e(TAG, "+++++ connect() failed " + devInfo);
+                switch (e.getMessage()) {
+                    case "read failed, socket might closed or timeout, read ret: -1":
+                        break;
+                    case "Bluetooth is off":
+                        break;
+                    default:
+                        Log.e(TAG, "Unmanageable connect() failed", e);
+                        break;
+                }
                 return false;
             }
         }

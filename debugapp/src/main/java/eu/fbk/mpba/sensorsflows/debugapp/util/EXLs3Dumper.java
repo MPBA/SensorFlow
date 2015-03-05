@@ -58,6 +58,7 @@ public class EXLs3Dumper {
                 mDispatcher = new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d(TAG, "Run()");
                         dispatch();
                     }
                 });
@@ -108,7 +109,7 @@ public class EXLs3Dumper {
     private FileOutputStream f = null;
 
     public void dispatch() {
-
+        Log.d(TAG, "Dispatch()");
         try {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
                     + "/eu.fbk.mpba.sensorsflows/");
@@ -123,6 +124,8 @@ public class EXLs3Dumper {
                 Log.d(TAG, "+++++ Interrupted");
             }
 
+            // In uno dei percorsi scarta bytes,
+            // utilizzabile solo per controllare il packet counter
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     byte[] buffer = new byte[33];

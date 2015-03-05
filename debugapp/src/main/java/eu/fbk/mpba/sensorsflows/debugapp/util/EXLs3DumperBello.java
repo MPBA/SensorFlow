@@ -73,17 +73,39 @@ public class EXLs3DumperBello {
             try {
                 f = new FileOutputStream(new File(x, "stream_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));
 
+                // In uno dei percorsi scarta bytes,
+                // utilizzabile solo per controllare il packet counter
                 try {
                     Log.i(TAG, "Streaming to file...");
                     Thread.sleep(100);
+                    int i;
+                    byte[] pack = new byte[32];
                     while (!Thread.currentThread().isInterrupted()) {
-                        f.write(mStream.read());
+
+                        i = 0;
+                        pack[i++] = (byte) mStream.read();
                         Thread.sleep(3);
+                        if (pack[0] == 0x20) {
+                            pack[i++] = (byte) mStream.read();
+                            if (pack[1] == EXLs3Manager.PacketType.AGMQB.id) {
+                                while (i < 32)
+                                    pack[i++] = (byte) mStream.read();
+                            } else if (pack[1] == EXLs3Manager.PacketType.RAW.id
+                                    || pack[1] == EXLs3Manager.PacketType.calib.id) {
+                                while (i < 21)
+                                    pack[i++] = (byte) mStream.read();
+                            } else if (pack[1] == EXLs3Manager.PacketType.AGMB.id) {
+                                while (i < 24)
+                                    pack[i++] = (byte) mStream.read();
+                            }
+                            f.write(pack, 0, i);
+                        }
                     }
+
                 } catch (IOException e) {
                     Log.e(TAG, "Forced disconnection", e);
                 } catch (InterruptedException e) {
-                    Log.e(TAG, "Interrupted");
+                    Log.i(TAG, "Dispatch thread interrupted");
                 } finally {
                     try {
                         f.close();

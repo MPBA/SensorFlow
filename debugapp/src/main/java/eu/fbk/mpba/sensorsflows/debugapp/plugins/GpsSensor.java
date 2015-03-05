@@ -4,6 +4,7 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -44,7 +45,11 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void onLocationChanged(Location location) {
-        sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos()),
+        long suppNTime =
+        (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) ?
+                location.getElapsedRealtimeNanos():
+                location.getTime() * 1000_000;
+        sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(suppNTime),
                 new double[]{
                         location.getLongitude(),
                         location.getLatitude(),

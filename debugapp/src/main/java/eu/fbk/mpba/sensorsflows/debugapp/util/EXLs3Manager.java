@@ -301,7 +301,7 @@ public class EXLs3Manager {
         public final long receptionTime;
         public final int counter;
         public final PacketType type;
-        public final int ax,ay,az,gx,gy,gz,mx,my,mz,q1,q2,q3,q4,vbatt;
+        public final int ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt;
         public final int checksum_received, checksum_actual;
 
         public boolean isValid() {
@@ -316,13 +316,23 @@ public class EXLs3Manager {
             return counter - previousCounter + (counter > previousCounter ? 0 : m) - 1;
         }
 
-        public Packet (long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
+        public Packet(long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
             this.receptionTime = receptionTime;
-            this.counter = counter; this.type = type;
-            this.ax = ax; this.ay = ay; this.az = az;
-            this.gx = gx; this.gy = gy; this.gz = gz;
-            this.mx = mx; this.my = my; this.mz = mz;
-            this.q1 = q1; this.q2 = q2; this.q3 = q3; this.q4 = q4;
+            this.counter = counter;
+            this.type = type;
+            this.ax = ax;
+            this.ay = ay;
+            this.az = az;
+            this.gx = gx;
+            this.gy = gy;
+            this.gz = gz;
+            this.mx = mx;
+            this.my = my;
+            this.mz = mz;
+            this.q1 = q1;
+            this.q2 = q2;
+            this.q3 = q3;
+            this.q4 = q4;
             this.vbatt = vbatt;
             this.checksum_received = checksum_received;
             this.checksum_actual = checksum_actual;
@@ -330,12 +340,24 @@ public class EXLs3Manager {
         }
 
         public static Packet parsePacket(long receptionTime, InputStream s) throws IOException {
-            PacketType type; int counter;
-            int ax; int ay; int az;
-            int gx; int gy; int gz;
-            int mx; int my; int mz;
-            int q1; int q2; int q3; int q4;
-            int vbatt; int checksum_received; int checksum_actual;
+            PacketType type;
+            int counter;
+            int ax;
+            int ay;
+            int az;
+            int gx;
+            int gy;
+            int gz;
+            int mx;
+            int my;
+            int mz;
+            int q1;
+            int q2;
+            int q3;
+            int q4;
+            int vbatt;
+            int checksum_received;
+            int checksum_actual;
 
             int[] b = new int[40];
             int u = 0, x;
@@ -344,45 +366,56 @@ public class EXLs3Manager {
             if ((x = (byte) s.read()) != 0x20)
                 b[u++] = (byte) x;
 
-            if (b[1] == PacketType.RAW.id || b[1] == PacketType.AGMQB.id) {
-                type = b[1] == PacketType.RAW.id ? PacketType.RAW : PacketType.AGMQB;
-                counter = (b[u++] = (s.read() & 0xFF));
-                if (b[1] == PacketType.AGMQB.id)
-                    counter += (b[u++] = (s.read() & 0xFF)) * 0x100;
-                ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gy = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                gz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                mx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                my = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                mz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                if (b[1] == PacketType.AGMQB.id) {
-                    q1 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q2 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q3 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    q4 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                    vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                } else
-                    q1 = q2 = q3 = q4 = vbatt = 0;
-                checksum_received = (b[u++] = (s.read() & 0xFF));
-                byte ck = 0;
-                for (int i = 0; i < u - 1; i++)
-                    ck ^= b[i];
-                checksum_actual = ck;
-
-                return new Packet(receptionTime, type, counter, ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt, checksum_received, checksum_actual);
-            } else
+            if (b[1] == PacketType.RAW.id)
+                type = PacketType.RAW;
+            else if (b[1] == PacketType.calib.id)
+                type = PacketType.calib;
+            else if (b[1] == PacketType.AGMB.id)
+                type = PacketType.AGMB;
+            else if (b[1] == PacketType.AGMQB.id)
+                type = PacketType.AGMQB;
+            else
                 return null;
+
+            counter = (b[u++] = (s.read() & 0xFF));
+            if (b[1] == PacketType.AGMQB.id)
+                counter += (b[u++] = (s.read() & 0xFF)) * 0x100;
+            ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            gx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            gy = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            gz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            mx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            my = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            mz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            q1 = q2 = q3 = q4 = vbatt = 0;
+            if (b[1] == PacketType.AGMQB.id) {
+                q1 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+                q2 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+                q3 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+                q4 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+                vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            }
+            else if (b[1] == PacketType.AGMB.id)
+                vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            checksum_received = (b[u++] = (s.read() & 0xFF));
+            byte ck = 0;
+            for (int i = 0; i < u - 1; i++)
+                ck ^= b[i];
+            checksum_actual = ck;
+
+            return new Packet(receptionTime, type, counter, ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt, checksum_received, checksum_actual);
         }
     }
 
     public enum PacketType {
         AGMQB((byte)0x9f),
-        RAW((byte)0x0A);
+        AGMB((byte)0x97),
+        RAW((byte)0x0A),
+        calib((byte)0x0B);
 
-        byte id;
+        final byte id;
 
         PacketType(byte id) {
             this.id = id;

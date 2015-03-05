@@ -14,7 +14,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
 /**
  * This class adds internal support for the library data-paths.
- * Polls but has a fixed sleep time in the case that each queue is empty.
+ * Polls but has a fixed sleep timestamp in the case that each queue is empty.
  */
 class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
 //    final String LOG_TAG = "ALE SFW";
@@ -64,7 +64,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
                 outputPlugIn.newSensorEvent(event);
             else if (data == null)
                 try {
-                    long sleepInterval = 25; // POI polling time here
+                    long sleepInterval = 25; // POI polling timestamp here
                     Thread.sleep(sleepInterval);
                 } catch (InterruptedException e) {
 //                    Log.w(LOG_TAG, "InterruptedException in OutputImpl.run() find-me:fnh294he97");

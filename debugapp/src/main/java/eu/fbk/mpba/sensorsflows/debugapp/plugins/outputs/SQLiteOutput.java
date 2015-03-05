@@ -72,7 +72,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
         ArrayList<Object> h = new ArrayList<>();
 
-        h.add(data.time);
+        h.add(data.timestamp);
         for (double i : data.value)
             h.add(i);
 

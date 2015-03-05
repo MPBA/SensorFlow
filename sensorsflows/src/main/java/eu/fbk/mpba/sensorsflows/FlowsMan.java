@@ -20,7 +20,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * FlowsMan is the class that represents the engine of the library.
  * This is the only interface that the user should use.
  * Implementation of the IUserInterface
- * @param <TimeT> The type of the time returned by the outputs (must be the same for every item).
+ * @param <TimeT> The type of the timestamp returned by the outputs (must be the same for every item).
  * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
 public class FlowsMan<TimeT, ValueT> implements
@@ -50,7 +50,7 @@ public class FlowsMan<TimeT, ValueT> implements
                 }
             }
             if (_outputsToInit == null)
-                // FIXME WARN User-code time dependency in the output thread or son
+                // FIXME WARN User-code timestamp dependency in the output thread or son
                 changeState(EngineStatus.STREAMING);
         }
         // TODO 7 Manage the other states
@@ -75,7 +75,7 @@ public class FlowsMan<TimeT, ValueT> implements
                 }
             }
             if (_devicesToInit == null)
-                // FIXME WARN User-code time dependency in the output thread or son
+                // FIXME WARN User-code timestamp dependency in the output thread or son
                 changeState(EngineStatus.STREAMING);
         }
         // TODO 7 Manage the other states
@@ -429,10 +429,10 @@ public class FlowsMan<TimeT, ValueT> implements
      * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
      * <p/>
      * If a device/output was initialized before this call and it is not already INITIALIZED the
-     * engine will wait for it for an indefinite time. In this period the engine status will stay
+     * engine will wait for it for an indefinite timestamp. In this period the engine status will stay
      * {@code EngineStatus.PREPARING}.
      *
-     * The session name is the date-time string {@code Long.toString(System.currentTimeMillis())}
+     * The session name is the date-timestamp string {@code Long.toString(System.currentTimeMillis())}
      */
     @SuppressWarnings("JavaDoc")
     @Override
@@ -444,7 +444,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
      * <p/>
      * If a device/output was initialized before this call and it is not already INITIALIZED the
-     * engine will wait for it for an indefinite time. In this period the engine status will stay
+     * engine will wait for it for an indefinite timestamp. In this period the engine status will stay
      * {@code EngineStatus.PREPARING}.
      *
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.

@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -29,9 +31,9 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     /**
      * Constructs the Listener and prepares it to be registered.
      * @param context       :   the context where to get the system service {@code Context.LOCATION_SERVICE}
-     * @param minTime       :   the minimum time interval for notifications,
+     * @param minTime       :   the minimum timestamp interval for notifications,
      *                          in milliseconds. This field is only used as a hint
-     *                          to conserve power, and actual time between location.
+     *                          to conserve power, and actual timestamp between location.
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
     public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, String name, long minTime, float minDistance) {
@@ -43,7 +45,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
-    @Override
+    @Override @SuppressLint("NewApi")
     public void onLocationChanged(Location location) {
         long suppNTime =
         (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) ?

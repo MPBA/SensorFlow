@@ -151,7 +151,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                         .setId(dataInc++)
                         .setSensorIdFk(mSensors.indexOf(data.sensor))
                         .addAllValue(v)
-                        .setTimestamp(data.time / 1000000000.)
+                        .setTimestamp(data.timestamp / 1000000000.)
                         .build()
         );
         if (mSensorData.size() >= mFlushSize) {

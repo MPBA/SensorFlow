@@ -87,7 +87,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
         List<Object> line = new ArrayList<>();
-        line.add(data.time.toString());
+        line.add(data.timestamp.toString());
         for (int i = 0; i < data.value.length; i++)
             line.add(data.value[i]);
         _savData.save(_linkedSensors.indexOf(data.sensor), line);

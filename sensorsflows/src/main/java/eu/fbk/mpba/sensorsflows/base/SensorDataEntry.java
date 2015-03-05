@@ -1,13 +1,13 @@
 package eu.fbk.mpba.sensorsflows.base;
 
 public class SensorDataEntry<TimeT, ValueT> {
-    public SensorDataEntry(ISensor sensor, TimeT time, ValueT value) {
+    public SensorDataEntry(ISensor sensor, TimeT timestamp, ValueT value) {
         this.sensor = sensor;
-        this.time = time;
+        this.timestamp = timestamp;
         this.value = value;
     }
 
     public ISensor sensor;
-    public TimeT time;
+    public TimeT timestamp;
     public ValueT value;
 }

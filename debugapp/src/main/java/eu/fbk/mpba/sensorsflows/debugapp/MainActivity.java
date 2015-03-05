@@ -10,9 +10,14 @@ import android.view.View;
 import android.widget.Button;
 
 import java.util.Hashtable;
+import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
+import eu.fbk.mpba.sensorsflows.OutputPlugin;
+import eu.fbk.mpba.sensorsflows.base.ISensor;
+import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
+import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
@@ -57,12 +62,44 @@ public class MainActivity extends Activity {
 //        m.addOutput(new SQLiteOutput("DB",
 //                Environment.getExternalStorageDirectory().getPath()
 //                        + "/eu.fbk.mpba.sensorsflows/"));
-//
-//        m.addOutput(new UserOutput());
 
 //        m.addOutput(new ProtobufferOutput("Protobuf", new File(
 //                Environment.getExternalStorageDirectory().getPath()
 //                        + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
+
+        // TODO Paolo This can be done
+        m.addOutput(new OutputPlugin<Long, double[]>() {
+            @Override
+            public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+                // Executed ion the last part of the start
+                // sessionTag       : the name of the session (.toString())
+                // streamingSensors : List with every sensor of the session
+            }
+
+            @Override
+            public void outputPluginFinalize() {
+                // When close is called
+            }
+
+            @Override
+            public void newSensorEvent(SensorEventEntry<Long> event) {
+                // Events like I said
+                // event
+                //     .sensor      : sender sensor, useful with the instanceof to filter the events
+                //     .timestamp   : event's
+                //     .code        : numeric or flags, see the sensor's code
+                //     .message     : descriptive string
+            }
+
+            @Override
+            public void newSensorData(SensorDataEntry<Long, double[]> data) {
+                // Data linke I said
+                // data
+                //     .sensor      : sender sensor, useful with the instanceof to filter the events
+                //     .timestamp   : data's
+                //     .value       : value of double[] type, see the sensor's code
+            }
+        });
 
         m.setAutoLinkMode(AutoLinkMode.PRODUCT);
         m.start(CsvDataSaver.getHumanDateTimeString());

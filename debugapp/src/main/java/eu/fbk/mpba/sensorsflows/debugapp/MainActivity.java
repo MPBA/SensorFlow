@@ -21,7 +21,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SQLiteOutput;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
 import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3ToFile;
 
@@ -56,13 +56,12 @@ public class MainActivity extends Activity {
 
     //        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:E0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
             m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:B3".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_174"));
-//            m.addOutput(new CsvOutput("CSV",
-//                    Environment.getExternalStorageDirectory().getPath()
-//                            + "/eu.fbk.mpba.sensorsflows/"));
-
-            m.addOutput(new SQLiteOutput("DB",
+            m.addOutput(new CsvOutput("CSV",
                     Environment.getExternalStorageDirectory().getPath()
                             + "/eu.fbk.mpba.sensorsflows/"));
+//            m.addOutput(new SQLiteOutput("DB",
+//                    Environment.getExternalStorageDirectory().getPath()
+//                            + "/eu.fbk.mpba.sensorsflows/"));
     //        m.addOutput(new ProtobufferOutput("Protobuf", new File(
     //                Environment.getExternalStorageDirectory().getPath()
     //                        + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));

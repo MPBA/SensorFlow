@@ -154,6 +154,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
             @Override
             public void received(EXLs3Manager sender, EXLs3Manager.Packet p) {
+                // TODO check timestamp calc
                 now = parent.getMonoTimestampNanos(p.receptionTime);
                 if (ref < 0)
                     ref = now -     p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis

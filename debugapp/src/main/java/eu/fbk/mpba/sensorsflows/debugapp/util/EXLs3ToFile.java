@@ -46,9 +46,11 @@ public class EXLs3ToFile extends EXLs3Receiver {
     public void stop() {
         close();
         try {
-            mOut.flush();
-            mOut.close();
-        } catch (IOException | NullPointerException e) {
+            if (mOut != null) {
+                mOut.flush();
+                mOut.close();
+            }
+        } catch (IOException  e) {
             Log.e(TAG, "+++ On close file", e);
         }
     }

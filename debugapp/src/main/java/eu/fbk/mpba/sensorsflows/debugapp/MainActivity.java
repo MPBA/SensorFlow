@@ -22,7 +22,7 @@ import eu.fbk.mpba.sensorsflows.debugapp.plugins.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
-import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3DumperBello;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3ToFile;
 import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
 
 
@@ -111,21 +111,19 @@ public class MainActivity extends Activity {
         m = new FlowsMan<>();
     }
 
-    EXLs3DumperBello d;
+    EXLs3ToFile d;
 
     public void onBTDStart(View v) {
         if (d == null) {
-            d = new EXLs3DumperBello(null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:b3".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
+            d = new EXLs3ToFile(null, BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:b3".toUpperCase()), BluetoothAdapter.getDefaultAdapter());
         }
         else {
-            d.connect();
-            d.startStream();
+            d.start();
         }
     }
 
     public void onBTDClose(View v) {
-        d.stopStream();
-        d.close();
+        d.stop();
     }
 
     public void onAddText(View v) {

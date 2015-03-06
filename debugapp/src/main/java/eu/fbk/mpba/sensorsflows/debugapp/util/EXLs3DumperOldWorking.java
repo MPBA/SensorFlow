@@ -14,10 +14,10 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-public class EXLs3Dumper {
+public class EXLs3DumperOldWorking {
 
     // Debug
-    private static final String TAG = EXLs3Dumper.class.getSimpleName();
+    private static final String TAG = EXLs3DumperOldWorking.class.getSimpleName();
 
     // UUID for rfcomm connection
     @SuppressWarnings("SpellCheckingInspection")
@@ -34,7 +34,7 @@ public class EXLs3Dumper {
     protected OutputStream mOutput;
     protected Thread mDispatcher;
 
-    public EXLs3Dumper(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
+    public EXLs3DumperOldWorking(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         mStatusDelegate = statusDelegate;
         mDevice = device;
         mAdapter = adapter;
@@ -261,11 +261,11 @@ public class EXLs3Dumper {
 
     public static interface StatusDelegate {
 
-        void connecting(EXLs3Dumper sender, BluetoothDevice device, boolean secureMode);
+        void connecting(EXLs3DumperOldWorking sender, BluetoothDevice device, boolean secureMode);
 
-        void connected(EXLs3Dumper sender, String deviceName);
+        void connected(EXLs3DumperOldWorking sender, String deviceName);
 
-        void disconnected(EXLs3Dumper sender, DisconnectionCause cause);
+        void disconnected(EXLs3DumperOldWorking sender, DisconnectionCause cause);
 
         public enum DisconnectionCause {
 

@@ -11,10 +11,10 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-public class EXLs3Stream extends InputStream {
+public abstract class EXLs3Receiver {
 
     // Debug
-    private static final String TAG = EXLs3Stream.class.getSimpleName();
+    private static final String TAG = EXLs3Receiver.class.getSimpleName();
 
     // UUID for rfcomm connection
     @SuppressWarnings("SpellCheckingInspection")
@@ -22,23 +22,32 @@ public class EXLs3Stream extends InputStream {
             UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 
     // Member fields
-    private BluetoothDevice mDevice;
-    private final BluetoothAdapter mAdapter;
-    private final StatusDelegate mStatusDelegate;
     private BTSrvState mState = BTSrvState.IDLE;
     private BluetoothSocket mSocket;
-    protected InputStream mInput;
-    protected OutputStream mOutput;
+    private InputStream mInput;
+    private OutputStream mOutput;
+    private Thread mDispatcher;
+    protected final BluetoothAdapter mAdapter;
+    protected final StatusDelegate mStatusDelegate;
+    protected final BluetoothDevice mDevice;
 
-    public EXLs3Stream(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
+    public EXLs3Receiver(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         mStatusDelegate = statusDelegate;
         mDevice = device;
         mAdapter = adapter;
+        mDispatcher = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                dispatch();
+            }
+        });
     }
 
     // Operation
 
-    public void connect() {
+    private boolean startPending = false;
+
+    protected void connect() {
         if (!mAdapter.isEnabled()) {
             try {
                 mAdapter.enable();
@@ -58,12 +67,22 @@ public class EXLs3Stream extends InputStream {
             try {
                 mInput = mSocket.getInputStream();
                 mOutput = mSocket.getOutputStream();
+
+                mDispatcher = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dispatch();
+                    }
+                });
+                mDispatcher.start();
+
             } catch (IOException e) {
                 Log.e(TAG, "Trying to get the I/O bluetooth streams", e);
                 // Connection Failed
                 setState(BTSrvState.DISCONNECTED);
                 if (mStatusDelegate != null)
                     mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
+                close();
             }
         }
         else {
@@ -73,10 +92,9 @@ public class EXLs3Stream extends InputStream {
                 mStatusDelegate.disconnected(this, mSocket == null
                         ? StatusDelegate.DisconnectionCause.IO_SOCKET_ERROR
                         : StatusDelegate.DisconnectionCause.DEVICE_NOT_FOUND);
+            close();
         }
     }
-
-    protected boolean startPending = false;
 
     public void startStream() {
         if (mOutput != null) {
@@ -100,8 +118,10 @@ public class EXLs3Stream extends InputStream {
             startPending = false;
     }
 
-    public void close() {
+    protected void close() {
         stopStream();
+        setState(BTSrvState.DISCONNECTED); // Need this to handle the IOException
+        mDispatcher.interrupt();
         try {
             if(mInput != null)
                 mInput.close();
@@ -122,17 +142,50 @@ public class EXLs3Stream extends InputStream {
         }
     }
 
-    /**
-     * Reads a single byte from this stream and returns it as an integer in the
-     * range from 0 to 255. Returns -1 if the end of the stream has been
-     * reached. Blocks until one byte has been read, the end of the source
-     * stream is detected or an exception is thrown.
-     *
-     * @throws java.io.IOException if the stream is closed or another IOException occurs.
-     */
-    @Override
-    public int read() throws IOException {
-        return mInput.read();
+    private void dispatch() {
+        // In uno dei percorsi scarta bytes,
+        // utilizzabile solo per controllare il packet counter
+        try {
+            Log.i(TAG, "Streaming to file...");
+            int i;
+            byte[] pack = new byte[33];
+            while (!Thread.currentThread().isInterrupted()) {
+                i = 0;
+                pack[i++] = (byte) mInput.read();
+                if (pack[0] == 0x20) {
+                    pack[i++] = (byte) mInput.read();
+                    if (pack[1] == EXLs3Manager.PacketType.AGMQB.id) {
+                        // TODO Try this i += mInput.read(pack, i, 31);
+                        while (i < 33)
+                            pack[i++] = (byte) mInput.read();
+                    } else if (pack[1] == EXLs3Manager.PacketType.AGMB.id) {
+                        // TODO Try this i += mInput.read(pack, i, 23);
+                        while (i < 25)
+                            pack[i++] = (byte) mInput.read();
+                    } else if (pack[1] == EXLs3Manager.PacketType.RAW.id
+                            || pack[1] == EXLs3Manager.PacketType.calib.id) {
+                        // TODO Try this i += mInput.read(pack, i, 19);
+                        while (i < 22)
+                            pack[i++] = (byte) mInput.read();
+                    }
+                    received(pack, i);
+                }
+            }
+        } catch (IOException e) {
+            Log.i(TAG, "+++ Disconnection: " + e.getMessage());
+            switch (e.getMessage()) {
+                case "bt socket closed, read return: -1":
+                    if (getState() == BTSrvState.DISCONNECTED) {
+                        Log.d(TAG, "Regular bt socket closed");
+                    } else
+                        Log.e(TAG, "Unexpected bt socket close", e);
+                    break;
+                default:
+                    Log.e(TAG, "Unmanageable disconnection", e);
+                    break;
+            }
+        }
+        Log.d(TAG, "Dispatch thread end");
     }
 
     private boolean tryConnect() {
@@ -180,7 +233,7 @@ public class EXLs3Stream extends InputStream {
 
     // Util
 
-    protected static BluetoothSocket createSocket(final BluetoothDevice device) {
+    private static BluetoothSocket createSocket(final BluetoothDevice device) {
         BluetoothSocket socket = null;
         try {
             Method m = device.getClass().getMethod("createRfcommSocket", int.class);
@@ -199,6 +252,10 @@ public class EXLs3Stream extends InputStream {
         return socket;
     }
 
+    // To implement
+
+    protected abstract void received(byte[] buffer, int bytes);
+
     // Subclasses
 
     public static interface StatusDelegate {
@@ -209,9 +266,9 @@ public class EXLs3Stream extends InputStream {
                 CONNECTED = 2,
                 DISCONNECTED = 4;
 
-        void connecting(EXLs3Stream sender, BluetoothDevice device, boolean secureMode);
-        void connected(EXLs3Stream sender, String deviceName);
-        void disconnected(EXLs3Stream sender, DisconnectionCause cause);
+        void connecting(EXLs3Receiver sender, BluetoothDevice device, boolean secureMode);
+        void connected(EXLs3Receiver sender, String deviceName);
+        void disconnected(EXLs3Receiver sender, DisconnectionCause cause);
 
         public enum DisconnectionCause {
 
@@ -219,7 +276,8 @@ public class EXLs3Stream extends InputStream {
             IO_STREAMS_ERROR(16),
             IO_SOCKET_ERROR(24),
             CONNECTION_LOST(32),
-            WRONG_PACKET_TYPE(40);
+            WRONG_PACKET_TYPE(40),
+            OTHER(48);
 
             public final int flag;
 

@@ -30,6 +30,7 @@ public abstract class EXLs3Receiver {
     protected final BluetoothAdapter mAdapter;
     protected final StatusDelegate mStatusDelegate;
     protected final BluetoothDevice mDevice;
+    private boolean dispatch = true;
 
     public EXLs3Receiver(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         mStatusDelegate = statusDelegate;
@@ -48,6 +49,7 @@ public abstract class EXLs3Receiver {
     private boolean startPending = false;
 
     protected void connect() {
+        dispatch = true;
         if (!mAdapter.isEnabled()) {
             try {
                 mAdapter.enable();
@@ -97,9 +99,10 @@ public abstract class EXLs3Receiver {
     }
 
     public void startStream() {
-        if (mOutput != null) {
+        if (mOutput != null && mSocket.isConnected()) {
             try {
                 mOutput.write(new byte[] { 0x3D, 0x3D });
+                Log.v("", "== <--- sent");
             } catch (IOException e) {
                 throw new UnsupportedOperationException("Unexpected error!", e);
             }
@@ -112,6 +115,7 @@ public abstract class EXLs3Receiver {
         if (mOutput != null) {
             try {
                 mOutput.write(new byte[] { 0x3A, 0x3A });
+                Log.v("", ":: <--- sent");
             } catch (IOException ignored) { }
         }
         else
@@ -121,35 +125,47 @@ public abstract class EXLs3Receiver {
     protected void close() {
         stopStream();
         setState(BTSrvState.DISCONNECTED); // Need this to handle the IOException
-        mDispatcher.interrupt();
+        dispatch = false;
         try {
-            if(mInput != null)
+            if(mInput != null) {
                 mInput.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if(mOutput != null)
+            if(mOutput != null) {
                 mOutput.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            if(mSocket != null)
+            if(mSocket != null) {
                 mSocket.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        mInput = null;
+        mOutput = null;
+        mSocket = null;
     }
 
     private void dispatch() {
         // In uno dei percorsi scarta bytes,
         // utilizzabile solo per controllare il packet counter
+        Log.i(TAG, "Started dispatching...");
         try {
-            Log.i(TAG, "Streaming to file...");
             int i;
             byte[] pack = new byte[33];
-            while (!Thread.currentThread().isInterrupted()) {
+            try {
+                // Should solve the ignored start stream command issue.
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Log.d(TAG, "Dispatch interrupted on anti-ignore sleep.");
+            }
+            while (dispatch) {
                 i = 0;
                 pack[i++] = (byte) mInput.read();
                 if (pack[0] == 0x20) {
@@ -175,10 +191,14 @@ public abstract class EXLs3Receiver {
             Log.i(TAG, "+++ Disconnection: " + e.getMessage());
             switch (e.getMessage()) {
                 case "bt socket closed, read return: -1":
-                    if (getState() == BTSrvState.DISCONNECTED) {
+                    if (!dispatch) {
                         Log.d(TAG, "Regular bt socket closed");
-                    } else
-                        Log.e(TAG, "Unexpected bt socket close", e);
+                    } else {
+                        Log.e(TAG, "Connection lost", e);
+                        setState(BTSrvState.DISCONNECTED);
+                        if (mStatusDelegate != null)
+                            mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
+                    }
                     break;
                 default:
                     Log.e(TAG, "Unmanageable disconnection", e);
@@ -206,8 +226,10 @@ public abstract class EXLs3Receiver {
                 Log.e(TAG, "+++++ connect() failed " + devInfo);
                 switch (e.getMessage()) {
                     case "read failed, socket might closed or timeout, read ret: -1":
+                        Log.e(TAG, "closed" );
                         break;
                     case "Bluetooth is off":
+                        Log.e(TAG, "BT off" );
                         break;
                     default:
                         Log.e(TAG, "Unmanageable connect() failed", e);

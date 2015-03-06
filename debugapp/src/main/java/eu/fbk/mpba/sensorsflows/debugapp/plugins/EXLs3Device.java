@@ -11,6 +11,7 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Manager;
+import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3Receiver;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
@@ -123,59 +124,64 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
         private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
 
-            public void idle(EXLs3Manager sender) {
+            public void idle(EXLs3Receiver sender) {
                 sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
                         READY, "idle");
             }
 
-            public void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode) {
+            public void connecting(EXLs3Receiver sender, BluetoothDevice device, boolean secureMode) {
                 parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
                         CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
-            public void connected(EXLs3Manager sender, String deviceName) {
+            public void connected(EXLs3Receiver sender, String deviceName) {
                 parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
                         CONNECTED, "connected to " + deviceName);
             }
 
-            public void disconnected(EXLs3Manager sender, DisconnectionCause cause) {
+            public void disconnected(EXLs3Receiver sender, DisconnectionCause cause) {
                 parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
                         DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
             }
         };
 
         private final long freq = 100;
-        private final long mpc = 10000_000000L;
+        private final long cycle = 10000_000000L;
         
         private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
-            long st = -1;
-            long lrc = -1;
-            long lpc = -1;
+            long ref = -1;
+            long now = -1;
 
             @Override
-            public void receive(EXLs3Manager sender, EXLs3Manager.Packet p) {
-                lrc = parent.getMonoTimestampNanos(p.receptionTime);
-                if (st < 0)
-                    st = lrc - p.counter * 1000_000000L / freq;
+            public void received(EXLs3Manager sender, EXLs3Manager.Packet p) {
+                now = parent.getMonoTimestampNanos(p.receptionTime);
+                if (ref < 0)
+                    ref = now -     p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
 
-                long ft = p.counter * 1000_000000L / freq + st;
+                long calc = ref +   p.counter * 1000_000000L / freq; // this packet's cTime = pk0 time + time from pk0 to pkThis
 
-                if (Math.abs(ft - lrc) > (mpc / 10)) {
-                    sensorEvent(lrc, 3, "TimeDrift > 10%, ref reset");
-                    Log.e("@@@", "resetting reference " + ((ft - lrc) + " > " + (mpc / 10)));
-                    st = -25;
+                if (Math.abs(calc - now) > (cycle /*  10% */ / 10)) {
+                    sensorEvent(now, 3, "TimeDrift > 10%, ref reset");
+                    Log.e("@@@", "resetting reference " + ((calc - now) + " > " + (cycle / 10)));
+                    ref = -2;
                 }
-                lpc = p.counter;
+
+                // TODO manage downSampling
                 if (parent.er.streaming)
-                    parent.er.sensorValue(lrc, new double[] { p.ax, p.ay, p.az } );
+                    parent.er.sensorValue(now, new double[] { p.ax, p.ay, p.az } );
                 if (parent.pe.streaming)
-                    parent.pe.sensorValue(lrc, new double[] { p.gx, p.gy, p.gz } );
+                    parent.pe.sensorValue(now, new double[] { p.gx, p.gy, p.gz } );
                 if (parent.ma.streaming)
-                    parent.ma.sensorValue(lrc, new double[] { p.mx, p.my, p.mz } );
+                    parent.ma.sensorValue(now, new double[] { p.mx, p.my, p.mz } );
                 if (parent.on.streaming)
-                    parent.on.sensorValue(lrc, new double[] { p.q1, p.q2, p.q3, p.q4 } );
+                    parent.on.sensorValue(now, new double[] { p.q1, p.q2, p.q3, p.q4 } );
                 if (parent.ry.streaming)
-                    parent.ry.sensorValue(lrc, new double[] { p.vbatt } );
+                    parent.ry.sensorValue(now, new double[] { p.vbatt } );
+            }
+
+            @Override
+            public void lost(EXLs3Manager sender, int from, int to, int howMany) {
+                Log.v(this.getClass().getName(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
     }

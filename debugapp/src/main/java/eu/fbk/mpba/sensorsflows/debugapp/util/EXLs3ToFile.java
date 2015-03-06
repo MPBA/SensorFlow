@@ -35,7 +35,8 @@ public class EXLs3ToFile extends EXLs3Receiver {
                     startStream();
                     return;
                 } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    //noinspection SpellCheckingInspection
+                    Log.wtf("Perché?", e);
                 }
             Log.e(TAG, "File system error for " + x.getAbsolutePath());
             close();

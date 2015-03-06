@@ -2,298 +2,69 @@ package eu.fbk.mpba.sensorsflows.debugapp.util;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Method;
-import java.util.UUID;
-
-public class EXLs3Manager {
+public class EXLs3Manager extends EXLs3Receiver {
 
     // Debug
     private static final String TAG = EXLs3Manager.class.getSimpleName();
 
-    // UUID for rfcomm connection
-    @SuppressWarnings("SpellCheckingInspection")
-    private static final UUID UUID_INSECURE =
-            UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+    // Constants
     public static final int MAX_WRONG_PACKETS = 10;
 
     // Member fields
-    private BluetoothDevice mDevice;
-    private final BluetoothAdapter mAdapter;
     private final DataDelegate mDataDelegate;
-    private final StatusDelegate mStatusDelegate;
-    private BTSrvState mState = BTSrvState.IDLE;
-    private BluetoothSocket mSocket;
-    protected InputStream mInput;
-    protected OutputStream mOutput;
-    protected Thread mDispatcher;
 
     public EXLs3Manager(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
+        super(statusDelegate, device, adapter);
         mDataDelegate = dataDelegate;
-        mStatusDelegate = statusDelegate;
-        mDevice = device;
-        mAdapter = adapter;
     }
 
     // Operation
 
-    public void connect() {
-        if (!mAdapter.isEnabled()) {
-            try {
-                mAdapter.enable();
-            } catch (Exception e) {
-                Log.e(TAG, "BT may be disabled", e);
-            }
-        }
-        setState(BTSrvState.CONNECTING);
-        if (mStatusDelegate != null)
-            mStatusDelegate.connecting(this, mDevice, false); // TODO 8 Not only insecure
-        if (tryConnect()) {     // Acts as a reset
-            // Connection Established
-            setState(BTSrvState.CONNECTED);
-            if (mStatusDelegate != null)
-                mStatusDelegate.connected(this, mDevice.getAddress() + "-" + mDevice.getName());
-            // Get io streams
-            try {
-                mInput = mSocket.getInputStream();
-                mOutput = mSocket.getOutputStream();
-                mDispatcher = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        dispatch();
-                    }
-                });
-                mDispatcher.start();
-            } catch (IOException e) {
-                Log.e(TAG, "Trying to get the I/O bluetooth streams", e);
-                // Connection Failed
-                setState(BTSrvState.DISCONNECTED);
-                if (mStatusDelegate != null)
-                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
-            }
-        }
-        else {
-            // Connection Failed
-            setState(BTSrvState.DISCONNECTED);
-            if (mStatusDelegate != null)
-                mStatusDelegate.disconnected(this, mSocket == null
-                        ? StatusDelegate.DisconnectionCause.IO_SOCKET_ERROR
-                        : StatusDelegate.DisconnectionCause.DEVICE_NOT_FOUND);
-        }
-    }
+    int last = -1, wrong = 0, lost = 0, ok = 0, invalidChecksum = 0;
 
-    private void keepAlive() {
-        startStream();
-    }
-
-    protected boolean startPending = false;
-
-    public void startStream() {
-        if (mOutput != null) {
-            try {
-                mOutput.write(new byte[] { 0x3D, 0x3D });
-            } catch (IOException e) {
-                throw new UnsupportedOperationException("Strange error", e);
-            }
-        }
-        else
-            startPending = true;
-    }
-
-    public void stopStream() {
-        if (mOutput != null) {
-            try {
-                mOutput.write(new byte[] { 0x3A, 0x3A });
-            } catch (IOException ignored) { }
-        }
-        else
-            startPending = false;
-    }
-
-    private long last = 0;
-    private int readByte() throws IOException {
-        if (last - System.nanoTime() > 5000_000000L) {
-            keepAlive();
-            last = System.nanoTime();
-        }
-        return mInput.read();
-    }
-
-    private long lostBytes = 0;
-    public void dispatch() {
-        int last = -1, wrong = 0, lost = 0, ok = 0, idle = 0;
-        boolean dispatch = true;
+    @Override
+    protected void received(final byte[] buffer, final int bytes) {
         // Keep wrongPacketType to the InputStream while connected
         Packet p;
-        try {
-            while (dispatch && !Thread.currentThread().isInterrupted()) {
-                if (mInput.available() > 0) {
-                    while (readByte() != 0x20) {
-                        lostBytes++;
-                    }
-                    if (lostBytes > 0) {
-                        Log.v(TAG, lostBytes + " lostBytes");
-                        Log.i(TAG, idle + " idles");
-                        lostBytes = 0;
-                    }
-                    p = Packet.parsePacket(System.nanoTime(), mInput);
-                    if (p == null) {
-                        if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
-                            Log.i(TAG, "++ Wrong packet type");
-                            // Closing connection and everything else
-                            setState(BTSrvState.DISCONNECTED);
-                            if (mStatusDelegate != null)
-                                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
-                            close();
-                            dispatch = false;
-                        }
-                    } else {
-                        int nowLost = p.lostFromPreviousCounter(last);
-                        if (nowLost != 0) {
-                            lost += nowLost;
-                            Log.v(TAG, "lost:" + nowLost + " c:" + (p.counter) + " s:" + p.isValid());
-                        }
-                        last = p.counter;
-                        ok++;
-                        if (mDataDelegate != null)
-                            mDataDelegate.receive(this, p);
-                    }
-                }
-                else {
-                    idle++;
-                    Thread.sleep(2);
-                }
+        p = Packet.parsePacket(System.nanoTime(), buffer);
+        if (p == null) {
+            if (wrong++ > MAX_WRONG_PACKETS && ok < 9 * MAX_WRONG_PACKETS) {
+                Log.i(TAG, "++ Wrong packet type");
+                // Closing connection and everything else
+                setState(BTSrvState.DISCONNECTED);
+                if (mStatusDelegate != null)
+                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.WRONG_PACKET_TYPE);
+                close();
             }
-        } catch (InterruptedException ignore) {
-        } catch (IOException e) {
-            Log.e(TAG, "Forced disconnection", e);
-            // Connection Lost
-            setState(BTSrvState.DISCONNECTED);
-            if (mStatusDelegate != null)
-                mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
-        }
-    }
-
-    public void close() {
-        if (mDispatcher != null)
-            try {
-                while (mDispatcher.isAlive()) {
-                    mDispatcher.interrupt();
-                    mDispatcher.join(100);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        } else {
+            int nowLost = p.lostFromPreviousCounter(last);
+            if (nowLost != 0) {
+                lost += nowLost;
+                if (mDataDelegate != null)
+                    mDataDelegate.lost(this, last, p.counter, nowLost);
             }
-        try {
-            if(mInput != null)
-                mInput.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if(mOutput != null)
-                mOutput.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            if(mSocket != null)
-                mSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private boolean tryConnect() {
-        if (mDevice != null) {
-            String devInfo = mDevice.getAddress() + "-" + mDevice.getName();
-            Log.d(TAG, "++ TryConnect " + devInfo);
-            mSocket = createSocket(mDevice);
-            mAdapter.cancelDiscovery();
-            try {
-                mSocket.connect();
-                Log.i(TAG, "+++ Connected " + devInfo);
-                if (startPending) {
-                    Log.i(TAG, "+ startPending: starting streaming " + devInfo);
-                    startStream();
-                }
-                return true;
-            } catch (IOException e) {
-                Log.e(TAG, "+++++ connect() failed " + devInfo, e);
-                return false;
+            if (p.isValid()) {
+                if (mDataDelegate != null)
+                    mDataDelegate.received(this, p);
+                last = p.counter;
+                ok++;
             }
+            else
+                invalidChecksum++;
         }
-        else
-            return false;
     }
 
-    // Status
-
-    public BTSrvState getState() {
-        return mState;
-    }
-
-    private void setState(BTSrvState state) {
-        Log.v(TAG, "+Status " + mState + " -> " + state);
-        mState = state;
-    }
-
-    // Util
-
-    protected static BluetoothSocket createSocket(final BluetoothDevice device) {
-        BluetoothSocket socket = null;
-        try {
-            Method m = device.getClass().getMethod("createRfcommSocket", int.class);
-            socket = (BluetoothSocket)m.invoke(device, 1);
-        }
-        catch (NoSuchMethodException ignore) {
-            try {
-                socket = device.createRfcommSocketToServiceRecord(UUID_INSECURE);
-            } catch (IOException e) {
-                Log.e(TAG, "IOException trying to create the socket", e);
-            }
-        }
-        catch (Exception e) {
-            Log.e(TAG, "Unable to create the socket", e);
-        }
-        return socket;
+    public void connect() {
+        super.connect();
     }
 
     // Subclasses
 
     public static interface DataDelegate {
-        void receive(EXLs3Manager sender, Packet p);
-    }
-
-    public static interface StatusDelegate {
-
-        public final int
-                READY = 0,
-                CONNECTING = 1,
-                CONNECTED = 2,
-                DISCONNECTED = 4;
-
-        void connecting(EXLs3Manager sender, BluetoothDevice device, boolean secureMode);
-        void connected(EXLs3Manager sender, String deviceName);
-        void disconnected(EXLs3Manager sender, DisconnectionCause cause);
-
-        public enum DisconnectionCause {
-
-            DEVICE_NOT_FOUND(8),
-            IO_STREAMS_ERROR(16),
-            IO_SOCKET_ERROR(24),
-            CONNECTION_LOST(32),
-            WRONG_PACKET_TYPE(40);
-
-            public final int flag;
-
-            DisconnectionCause(int v) { flag = v; }
-        }
+        void received(EXLs3Manager sender, Packet p);
+        void lost(EXLs3Manager sender, int from, int to, int howMany);
     }
 
     public static class Packet {
@@ -316,7 +87,7 @@ public class EXLs3Manager {
             return counter - previousCounter + (counter > previousCounter ? 0 : m) - 1;
         }
 
-        public Packet(long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, int checksum_received, int checksum_actual) {
+        public Packet(long receptionTime, PacketType type, int counter, int ax, int ay, int az, int gx, int gy, int gz, int mx, int my, int mz, int q1, int q2, int q3, int q4, int vbatt, byte checksum_received, byte checksum_actual) {
             this.receptionTime = receptionTime;
             this.counter = counter;
             this.type = type;
@@ -339,7 +110,7 @@ public class EXLs3Manager {
             this.m = (type == PacketType.AGMQB ? 10000 : 0xFF);
         }
 
-        public static Packet parsePacket(long receptionTime, InputStream s) throws IOException {
+        public static Packet parsePacket(long receptionTime, byte[] bytes)  {
             PacketType type;
             int counter;
             int ax;
@@ -356,53 +127,50 @@ public class EXLs3Manager {
             int q3;
             int q4;
             int vbatt;
-            int checksum_received;
-            int checksum_actual;
+            byte checksum_received;
+            byte checksum_actual;
 
-            int[] b = new int[40];
-            int u = 0, x;
-            b[u++] = 0x20;
+            if (bytes[0] != 0x20)
+                return null;
 
-            if ((x = (byte) s.read()) != 0x20)
-                b[u++] = (byte) x;
-
-            if (b[1] == PacketType.RAW.id)
+            if (bytes[1] == PacketType.RAW.id)
                 type = PacketType.RAW;
-            else if (b[1] == PacketType.calib.id)
+            else if (bytes[1] == PacketType.calib.id)
                 type = PacketType.calib;
-            else if (b[1] == PacketType.AGMB.id)
+            else if (bytes[1] == PacketType.AGMB.id)
                 type = PacketType.AGMB;
-            else if (b[1] == PacketType.AGMQB.id)
+            else if (bytes[1] == PacketType.AGMQB.id)
                 type = PacketType.AGMQB;
             else
                 return null;
 
-            counter = (b[u++] = (s.read() & 0xFF));
-            if (b[1] == PacketType.AGMQB.id)
-                counter += (b[u++] = (s.read() & 0xFF)) * 0x100;
-            ax = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            ay = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            az = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            gx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            gy = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            gz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            mx = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            my = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            mz = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
+            int u = 2;
+
+            counter = (bytes[u++]);
+            if (bytes[1] == PacketType.AGMQB.id)
+                counter += (bytes[u++]) * 0x100;
+            ax = (bytes[u++]) + (bytes[u++]) * 0x100;
+            ay = (bytes[u++]) + (bytes[u++]) * 0x100;
+            az = (bytes[u++]) + (bytes[u++]) * 0x100;
+            gx = (bytes[u++]) + (bytes[u++]) * 0x100;
+            gy = (bytes[u++]) + (bytes[u++]) * 0x100;
+            gz = (bytes[u++]) + (bytes[u++]) * 0x100;
+            mx = (bytes[u++]) + (bytes[u++]) * 0x100;
+            my = (bytes[u++]) + (bytes[u++]) * 0x100;
+            mz = (bytes[u++]) + (bytes[u++]) * 0x100;
             q1 = q2 = q3 = q4 = vbatt = 0;
-            if (b[1] == PacketType.AGMQB.id) {
-                q1 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                q2 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                q3 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                q4 = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-                vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            }
-            else if (b[1] == PacketType.AGMB.id)
-                vbatt = (b[u++] = (s.read() & 0xFF)) + (b[u++] = (s.read() & 0xFF)) * 0x100;
-            checksum_received = (b[u++] = (s.read() & 0xFF));
+            if (bytes[1] == PacketType.AGMQB.id) {
+                q1 = (bytes[u++]) + (bytes[u++]) * 0x100;
+                q2 = (bytes[u++]) + (bytes[u++]) * 0x100;
+                q3 = (bytes[u++]) + (bytes[u++]) * 0x100;
+                q4 = (bytes[u++]) + (bytes[u++]) * 0x100;
+                vbatt = (bytes[u++]) + (bytes[u++]) * 0x100;
+            } else if (bytes[1] == PacketType.AGMB.id)
+                vbatt = (bytes[u++]) + (bytes[u++]) * 0x100;
+            checksum_received = (bytes[u++]);
             byte ck = 0;
             for (int i = 0; i < u - 1; i++)
-                ck ^= b[i];
+                ck +=  bytes[i];
             checksum_actual = ck;
 
             return new Packet(receptionTime, type, counter, ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt, checksum_received, checksum_actual);
@@ -420,12 +188,5 @@ public class EXLs3Manager {
         PacketType(byte id) {
             this.id = id;
         }
-    }
-
-    public enum BTSrvState {
-        IDLE,          // we're doing nothing
-        CONNECTING,    // now initiating an outgoing connection
-        CONNECTED,     // now connected to a remote device
-        DISCONNECTED   // disconnected from device, error or
     }
 }

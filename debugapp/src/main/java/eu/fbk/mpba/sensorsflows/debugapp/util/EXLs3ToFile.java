@@ -24,6 +24,7 @@ public class EXLs3ToFile extends EXLs3Receiver {
 
     // Operation
 
+    @SuppressWarnings("SpellCheckingInspection")
     public void start() {
         connect();
         if (getState() == EXLs3Receiver.BTSrvState.CONNECTED) {

@@ -25,7 +25,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
     EXLMagnetometer ma;
     EXLQuaternion on;
 
-    public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
+    protected final int qDS, bDS;
+
+    public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
         this.name = name;
         resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
         er = new EXLAccelerometer(this);
@@ -34,6 +36,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         ma = new EXLMagnetometer(this);
         on = new EXLQuaternion(this);
         monoSensor = new EXLSensor(this, realDevice, adapter);
+        qDS = quaternionDecimation;
+        bDS = batteryDecimation;
     }
 
     @Override
@@ -146,38 +150,39 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         };
 
         private final long freq = 100;
-        private final long cycle = 10000_000000L;
+        private final long max = 10000;
+        private final long cycle = max * 1_000000L / freq;
         
         private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
             long ref = -1;
             long now = -1;
+            long pre = -1;
+            int last = -1;
+            int qd = 0, bd = 0;
 
             @Override
             public void received(EXLs3Manager sender, EXLs3Manager.Packet p) {
                 // TODO check timestamp calc
                 now = parent.getMonoTimestampNanos(p.receptionTime);
-                if (ref < 0)
-                    ref = now -     p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
-
-                long calc = ref +   p.counter * 1000_000000L / freq; // this packet's cTime = pk0 time + time from pk0 to pkThis
-
-                if (Math.abs(calc - now) > (cycle /*  10% */ / 10)) {
-                    sensorEvent(now, 3, "TimeDrift > 10%, ref reset");
-                    Log.e("@@@", "resetting reference " + ((calc - now) + " > " + (cycle / 10)));
-                    ref = -2;
+                if (ref < 0) {
+                    last = p.counter;
+                    pre = ref = now - last * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
                 }
 
-                // TODO manage downSampling
+                long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;
+
                 if (parent.er.streaming)
                     parent.er.sensorValue(now, new double[] { p.ax, p.ay, p.az } );
                 if (parent.pe.streaming)
                     parent.pe.sensorValue(now, new double[] { p.gx, p.gy, p.gz } );
                 if (parent.ma.streaming)
                     parent.ma.sensorValue(now, new double[] { p.mx, p.my, p.mz } );
-                if (parent.on.streaming)
+                if (parent.on.streaming && (qd++ % parent.qDS) == 0)
                     parent.on.sensorValue(now, new double[] { p.q1, p.q2, p.q3, p.q4 } );
-                if (parent.ry.streaming)
+                if (parent.ry.streaming && (bd++ % parent.bDS) == 0)
                     parent.ry.sensorValue(now, new double[] { p.vbatt } );
+
+                last = p.counter;
             }
 
             @Override

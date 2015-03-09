@@ -55,7 +55,7 @@ public class CsvDataSaver {
         for (int i = 0; i < _paths.length; i++)
             try {
                 _files[i] = new File(_paths[i]);
-                Log.d("ALE DATA", "Creating " + _paths[i] + " mkdirs:" + _files[i].getParentFile().mkdirs());
+                Log.d("ALE DATA", "mkdirs:" + _files[i].getParentFile().mkdirs());
                 boolean header = !_files[i].exists();
                 _writs[i] = new FileWriter(_files[i], true);
                 _csvCard[i] = headers.get(i).size();

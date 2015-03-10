@@ -156,6 +156,7 @@ public abstract class EXLs3Receiver {
         // In uno dei percorsi scarta bytes,
         // utilizzabile solo per controllare il packet counter
         Log.i(TAG, "Started dispatching...");
+        int lostBytes = 0;
         try {
             int i;
             byte[] pack = new byte[33];
@@ -169,27 +170,35 @@ public abstract class EXLs3Receiver {
                 i = 0;
                 pack[i++] = (byte) mInput.read();
                 if (pack[0] == 0x20) {
+                    if (lostBytes != 0) {
+                        Log.d(TAG, "LostBytes:" + lostBytes);
+                        lostBytes = 0;
+                    }
                     pack[i++] = (byte) mInput.read();
                     if (pack[1] == EXLs3Manager.PacketType.AGMQB.id) {
                         // TODO Try this i += mInput.read(pack, i, 31);
-                        while (i < 33)
+                        while (i < EXLs3Manager.PacketType.AGMQB.bytes)
                             pack[i++] = (byte) mInput.read();
                     } else if (pack[1] == EXLs3Manager.PacketType.AGMB.id) {
                         // TODO Try this i += mInput.read(pack, i, 23);
-                        while (i < 25)
+                        while (i < EXLs3Manager.PacketType.AGMB.bytes)
                             pack[i++] = (byte) mInput.read();
                     } else if (pack[1] == EXLs3Manager.PacketType.RAW.id
                             || pack[1] == EXLs3Manager.PacketType.calib.id) {
-                        // TODO Try this i += mInput.read(pack, i, 19);
-                        while (i < 22)
+                        // TODO Try this i += mInput.read(pack, i, 20);
+                        while (i < EXLs3Manager.PacketType.RAW.bytes)
                             pack[i++] = (byte) mInput.read();
                     }
                     received(pack, i);
                 }
+                else {
+                    lostBytes++;
+                }
             }
         } catch (IOException e) {
-            Log.i(TAG, "+++ Disconnection: " + e.getMessage());
+            Log.i(TAG, "+++ Disconnection: " + e.getMessage() + " <- " + e.getClass().getName());
             switch (e.getMessage()) {
+                case "Operation Canceled":
                 case "bt socket closed, read return: -1":
                     if (!dispatch) {
                         Log.d(TAG, "Regular bt socket closed");
@@ -199,6 +208,9 @@ public abstract class EXLs3Receiver {
                         if (mStatusDelegate != null)
                             mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
                     }
+                    break;
+                case "Software caused connection abort":
+                    Log.e(TAG, "Software caused connection abort", e);
                     break;
                 default:
                     Log.e(TAG, "Unmanageable disconnection", e);
@@ -230,6 +242,12 @@ public abstract class EXLs3Receiver {
                         break;
                     case "Bluetooth is off":
                         Log.e(TAG, "BT off" );
+                        break;
+                    case "Device or resource busy":
+                        Log.e(TAG, "Busy" );
+                        break;
+                    case "Host is down":
+                        Log.e(TAG, "Host is down" );
                         break;
                     default:
                         Log.e(TAG, "Unmanageable connect() failed", e);

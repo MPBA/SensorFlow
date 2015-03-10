@@ -51,13 +51,19 @@ public class EXLs3Manager extends EXLs3Receiver {
                 last = p.counter;
                 ok++;
             }
-            else
+            else {
                 invalidChecksum++;
+                Log.d(TAG, "invalidChecksum" + invalidChecksum);
+            }
         }
     }
 
     public void connect() {
         super.connect();
+    }
+
+    public void stop() {
+        close();
     }
 
     // Subclasses
@@ -146,31 +152,31 @@ public class EXLs3Manager extends EXLs3Receiver {
 
             int u = 2;
 
-            counter = (bytes[u++]);
+            counter = (bytes[u++] & 0xFF);
             if (bytes[1] == PacketType.AGMQB.id)
-                counter += (bytes[u++]) * 0x100;
-            ax = (bytes[u++]) + (bytes[u++]) * 0x100;
-            ay = (bytes[u++]) + (bytes[u++]) * 0x100;
-            az = (bytes[u++]) + (bytes[u++]) * 0x100;
-            gx = (bytes[u++]) + (bytes[u++]) * 0x100;
-            gy = (bytes[u++]) + (bytes[u++]) * 0x100;
-            gz = (bytes[u++]) + (bytes[u++]) * 0x100;
-            mx = (bytes[u++]) + (bytes[u++]) * 0x100;
-            my = (bytes[u++]) + (bytes[u++]) * 0x100;
-            mz = (bytes[u++]) + (bytes[u++]) * 0x100;
+                counter += (bytes[u++]& 0xFF) * 0x100;
+            ax = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            ay = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            az = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            gx = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            gy = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            gz = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            mx = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            my = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            mz = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
             q1 = q2 = q3 = q4 = vbatt = 0;
             if (bytes[1] == PacketType.AGMQB.id) {
-                q1 = (bytes[u++]) + (bytes[u++]) * 0x100;
-                q2 = (bytes[u++]) + (bytes[u++]) * 0x100;
-                q3 = (bytes[u++]) + (bytes[u++]) * 0x100;
-                q4 = (bytes[u++]) + (bytes[u++]) * 0x100;
-                vbatt = (bytes[u++]) + (bytes[u++]) * 0x100;
-            } else if (bytes[1] == PacketType.AGMB.id)
-                vbatt = (bytes[u++]) + (bytes[u++]) * 0x100;
-            checksum_received = (bytes[u++]);
+                q1 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+                q2 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+                q3 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+                q4 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+             vbatt = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+           } else if (bytes[1] == PacketType.AGMB.id)
+             vbatt = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            checksum_received = bytes[u++];
             byte ck = 0;
             for (int i = 0; i < u - 1; i++)
-                ck +=  bytes[i];
+                ck += bytes[i];
             checksum_actual = ck;
 
             return new Packet(receptionTime, type, counter, ax, ay, az, gx, gy, gz, mx, my, mz, q1, q2, q3, q4, vbatt, checksum_received, checksum_actual);
@@ -178,15 +184,17 @@ public class EXLs3Manager extends EXLs3Receiver {
     }
 
     public enum PacketType {
-        AGMQB((byte)0x9f),
-        AGMB((byte)0x97),
-        RAW((byte)0x0A),
-        calib((byte)0x0B);
+        AGMQB((byte)0x9f, 33),
+        AGMB((byte)0x97, 25),
+        RAW((byte)0x0A, 22),
+        calib((byte)0x0B, 22);
 
         final byte id;
+        final int bytes;
 
-        PacketType(byte id) {
+        PacketType(byte id, int bytes) {
             this.id = id;
+            this.bytes = bytes;
         }
     }
 }

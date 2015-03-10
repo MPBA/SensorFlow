@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
                 //m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
 
     //        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:E0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
-            m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:B3".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_174", 0, 300));
+            m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:B3".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_174", 1, 300));
             m.addOutput(new CsvOutput("CSV",
                     Environment.getExternalStorageDirectory().getPath()
                             + "/eu.fbk.mpba.sensorsflows/"));

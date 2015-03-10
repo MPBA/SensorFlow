@@ -53,7 +53,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     @Override
     public void inputPluginFinalize() {
-        monoSensor.switchDevOffAsync();
+        monoSensor.close();
     }
 
     private long bootUTCNanos;
@@ -101,6 +101,10 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
         public void connect() {
             manager.connect();
+        }
+
+        public void close() {
+            manager.stop();
         }
 
         public void switchDevOnAsync() {
@@ -156,8 +160,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         private final EXLs3Manager.DataDelegate btsData = new EXLs3Manager.DataDelegate() {
             long ref = -1;
             long now = -1;
-            long pre = -1;
-            int last = -1;
+            long pre = 0;
+            int last = -1; // val ok
             int qd = 0, bd = 0;
 
             @Override
@@ -165,8 +169,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
                 // TODO check timestamp calc
                 now = parent.getMonoTimestampNanos(p.receptionTime);
                 if (ref < 0) {
-                    last = p.counter;
-                    pre = ref = now - last * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
+                    pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
                 }
 
                 long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;

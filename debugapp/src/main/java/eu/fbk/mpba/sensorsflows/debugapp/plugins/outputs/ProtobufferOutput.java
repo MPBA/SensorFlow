@@ -103,17 +103,17 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         //noinspection ResultOfMethodCallIgnored
         mFolder.mkdirs();
         for (int s = 0; s < mSensors.size(); s++) {
+            SensorInfo.TYPESENSOR type = mTypesMap.get(mSensors.get(s).getClass());
             mSensorInfo.add(SensorInfo.newBuilder()
                     .setSensorId(s)
                     .setDesc("data_" + mSensors.get(s).toString())
-                    .setType(SensorInfo.TYPESENSOR.OTHER)
+                    .setType(type == null ? SensorInfo.TYPESENSOR.OTHER : type)
                     .setMeta(join(mSensors.get(s).getValuesDescriptors()))
                     .build());
-            SensorInfo.TYPESENSOR type = mTypesMap.get(mSensors.get(s).getClass());
             mSensorInfo.add(SensorInfo.newBuilder()
                     .setSensorId(mSensors.size() + s)
                     .setDesc("events_" + mSensors.get(s).toString())
-                    .setType(type == null ? SensorInfo.TYPESENSOR.OTHER : type)
+                    .setType(SensorInfo.TYPESENSOR.OTHER)
                     .setMeta("timestamp;code;message")
                     .build());
         }

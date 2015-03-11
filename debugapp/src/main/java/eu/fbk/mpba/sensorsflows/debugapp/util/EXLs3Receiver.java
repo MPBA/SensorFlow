@@ -147,7 +147,6 @@ public abstract class EXLs3Receiver {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mInput = null;
         mOutput = null;
         mSocket = null;
     }

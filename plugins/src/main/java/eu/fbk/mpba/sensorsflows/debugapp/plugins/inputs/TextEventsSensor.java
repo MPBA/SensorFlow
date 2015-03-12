@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs;
 
 import java.util.Arrays;
 import java.util.List;
@@ -11,7 +11,7 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     private final String name;
 
-    protected TextEventsSensor(DevicePlugin<Long, ValueT> parent, String name) {
+    public TextEventsSensor(DevicePlugin<Long, ValueT> parent, String name) {
         super(parent);
         this.name = name;
     }

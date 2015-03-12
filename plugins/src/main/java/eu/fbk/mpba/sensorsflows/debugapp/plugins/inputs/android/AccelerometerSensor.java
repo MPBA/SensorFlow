@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android;
 
 import android.content.Context;
 import android.hardware.Sensor;

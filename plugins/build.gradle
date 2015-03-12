@@ -1,10 +1,10 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 21
     buildToolsVersion '21.1.2'
+
     defaultConfig {
-        applicationId 'eu.fbk.mpba.sensorflows.debugapp'
         minSdkVersion 15
         targetSdkVersion 21
         versionCode 1
@@ -12,8 +12,7 @@ android {
     }
     buildTypes {
         release {
-            // runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled false
         }
     }
     productFlavors {
@@ -21,6 +20,6 @@ android {
 }
 
 dependencies {
-    compile project(':sensorsflows')
     compile 'com.google.protobuf:protobuf-java:2.6.0'
+    compile project(':sensorsflows')
 }

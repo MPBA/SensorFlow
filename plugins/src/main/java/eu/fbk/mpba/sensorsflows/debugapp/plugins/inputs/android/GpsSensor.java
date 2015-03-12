@@ -1,7 +1,6 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;

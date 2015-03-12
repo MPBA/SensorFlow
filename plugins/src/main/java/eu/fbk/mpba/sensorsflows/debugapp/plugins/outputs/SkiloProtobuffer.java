@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.util;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs;
 
 @SuppressWarnings("ALL")
 public final class SkiloProtobuffer {

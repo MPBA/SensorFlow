@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.plugins;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android;
 
 import android.content.Context;
 import android.hardware.SensorManager;
@@ -9,6 +9,7 @@ import java.util.List;
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {

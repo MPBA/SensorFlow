@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp.util;
+package eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs;
 
 import android.os.Environment;
 import android.util.Log;

@@ -9,7 +9,6 @@ import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
-import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
 
 /**
  * Comma Separated Values Output Plug-In

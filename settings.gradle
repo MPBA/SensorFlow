@@ -1,1 +1,1 @@
-include ':sensorsflows', ':debugapp'
+include ':sensorsflows', ':plugins', ':testapp'

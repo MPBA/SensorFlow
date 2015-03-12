@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.debugapp;
+package eu.fbk.mpba.sensorsflows.testapp;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -22,13 +22,13 @@ import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.EXLs3Device;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.SmartphoneDevice;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3Device;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android.SmartphoneDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.util.CsvDataSaver;
-import eu.fbk.mpba.sensorsflows.debugapp.util.EXLs3ToFile;
-import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvDataSaver;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3ToFile;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SkiloProtobuffer;
 
 
 public class MainActivity extends Activity {
@@ -46,9 +46,9 @@ public class MainActivity extends Activity {
     public void onMStart(View v) {
         if (m.getStatus() == EngineStatus.STANDBY) {
             Hashtable<Class, SkiloProtobuffer.SensorInfo.TYPESENSOR> types = new Hashtable<>();
-    //        types.put(GpsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GPS);
-    //        types.put(AccelerometerSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
-    //        types.put(TextEventsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MARKER);
+            //        types.put(GpsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GPS);
+            //        types.put(AccelerometerSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
+            //        types.put(TextEventsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MARKER);
             types.put(EXLs3Device.EXLAccelerometer.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
             types.put(EXLs3Device.EXLGyroscope.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GYRO);
             types.put(EXLs3Device.EXLMagnetometer.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MAGNE);
@@ -57,9 +57,9 @@ public class MainActivity extends Activity {
 
 //           m.addDevice(smartphoneDevice = new SmartphoneDevice(this, "Smartphone"));
 
-                //m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
+            //m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:e0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
 
-    //        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:E0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
+            //        m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:E0".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_175"));
             m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:B3".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_174", 1, 300));
             //m.addDevice(new EXLs3Device(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:80:e1:b3:4e:B3".toUpperCase()), BluetoothAdapter.getDefaultAdapter(), "EXL_174", 0, 300));
             m.addOutput(new CsvOutput("CSV",

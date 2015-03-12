@@ -15,8 +15,7 @@ import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
-import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer;
-import eu.fbk.mpba.sensorsflows.debugapp.util.SkiloProtobuffer.SensorInfo;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SkiloProtobuffer.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 

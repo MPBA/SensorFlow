@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -73,14 +72,12 @@ public class MainActivity extends Activity {
                     Environment.getExternalStorageDirectory().getPath()
                             + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
 
-            // TODO Paolo This can be done
             m.addOutput(new OutputPlugin<Long, double[]>() {
                 @Override
                 public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
                     // Executed on the last part of the start
                     // sessionTag       : the name of the session (.toString())
                     // streamingSensors : List with every sensor of the session
-                    Log.d("NOW", "INIT = " + sessionTag.toString());
                 }
 
                 @Override
@@ -105,7 +102,6 @@ public class MainActivity extends Activity {
                     //     .sensor      : sender sensor, useful with the instanceof to filter the events
                     //     .timestamp   : data's
                     //     .value       : value of double[] type, see the sensor's code
-                    Log.d("NOW", "Data = " + data.sensor);
                 }
             });
 

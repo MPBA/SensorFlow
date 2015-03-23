@@ -48,8 +48,8 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     public void onLocationChanged(Location location) {
         long suppNTime =
         (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) ?
-                location.getElapsedRealtimeNanos():
-                location.getTime() * 1000_000;
+                    location.getElapsedRealtimeNanos()
+                :   location.getTime() * 1000_000;
         sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(suppNTime),
                 new double[]{
                         location.getLongitude(),

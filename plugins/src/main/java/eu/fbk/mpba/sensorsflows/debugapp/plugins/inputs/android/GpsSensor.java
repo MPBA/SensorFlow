@@ -26,6 +26,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     private long minTime;
     private float minDistance;
     private String name;
+    private boolean timeFallback = Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1;
 
     /**
      * Constructs the Listener and prepares it to be registered.
@@ -46,11 +47,10 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override @SuppressLint("NewApi")
     public void onLocationChanged(Location location) {
-        long suppNTime =
-        (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) ?
-                    location.getElapsedRealtimeNanos()
+        long suppNTime = timeFallback ?
+                    ((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos())
                 :   location.getTime() * 1000_000;
-        sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(suppNTime),
+        sensorValue(suppNTime,
                 new double[]{
                         location.getLongitude(),
                         location.getLatitude(),
@@ -62,14 +62,14 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     @Override
     public void onProviderDisabled(String provider) {
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -2, provider + "\\\\" + "provider disabled");
+                102, provider + "\\\\" + "provider disabled");
         Toast.makeText(context, "Switch on the gps please", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
         sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -1, provider + "\\\\" + "provider enabled");
+                101, provider + "\\\\" + "provider enabled");
     }
 
     @Override
@@ -82,7 +82,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
              .append(extras.get(i))
              .append(']');
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                status, provider + "\\\\" + x);
+                status + 200, provider + "\\\\" + x);
     }
 
     @Override
@@ -96,6 +96,9 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void switchOnAsync() {
+        if (timeFallback)
+            sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+                    404, "NO_MONO_TS Could not have monotonic timestamp on the gps fixes.");
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
         changeStatus(SensorStatus.ON);
     }

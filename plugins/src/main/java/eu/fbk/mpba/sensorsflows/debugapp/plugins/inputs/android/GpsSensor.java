@@ -26,7 +26,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     private long minTime;
     private float minDistance;
     private String name;
-    private boolean timeFallback = Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1;
+    private boolean timeFallback = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
 
     /**
      * Constructs the Listener and prepares it to be registered.

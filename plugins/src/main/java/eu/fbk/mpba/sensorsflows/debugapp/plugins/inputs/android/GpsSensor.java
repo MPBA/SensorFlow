@@ -67,27 +67,27 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     @Override
     public void onProviderDisabled(String provider) {
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                102, provider + "\\\\" + "provider disabled");
+                102, "disabled provider=" + provider);
         Toast.makeText(context, "Switch on the gps please", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
         sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                101, provider + "\\\\" + "provider enabled");
+                101, "enabled provider=" + provider);
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
         StringBuilder x = new StringBuilder(60);
         for (String i : extras.keySet())
-            x.append('[')
+            x.append(',')
              .append(i)
-             .append(", ")
+             .append("=")
              .append(extras.get(i))
              .append(']');
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                status + 200, provider + "\\\\" + x);
+                status + 200, "provider=" + provider +  x);
     }
 
     @Override

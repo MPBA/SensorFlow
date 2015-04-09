@@ -7,6 +7,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.widget.Toast;
 
 import java.util.Arrays;
@@ -26,6 +27,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     private long minTime;
     private float minDistance;
     private String name;
+    private long sysToSysClockNanoOffset = 0;
     private boolean timeFallback = Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1;
 
     /**
@@ -36,12 +38,15 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
      *                          to conserve power, and actual timestamp between location.
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
+    @SuppressLint("NewApi")
     public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, String name, long minTime, float minDistance) {
         super(parent);
         this.minTime = minTime;
         this.minDistance = minDistance;
         this.context = context;
         this.name = name;
+        if (!timeFallback)
+            this.sysToSysClockNanoOffset = SystemClock.elapsedRealtimeNanos() - System.nanoTime();
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
@@ -49,7 +54,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     public void onLocationChanged(Location location) {
         long suppNTime = timeFallback ?
                 location.getTime() * 1000_000
-            :   ((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos());
+            :   ((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos() - sysToSysClockNanoOffset);
         sensorValue(suppNTime,
                 new double[]{
                         location.getLongitude(),

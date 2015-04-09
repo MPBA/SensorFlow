@@ -52,8 +52,8 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     private long bootUTCNanos;
 
-    public void resetMonoTimestamp(long timestamp, long realTimeNanos) {
-        bootUTCNanos = timestamp * 1000000 - realTimeNanos;
+    public void resetMonoTimestamp(long timestampMillis, long realTimeNanos) {
+        bootUTCNanos = timestampMillis * 1000000 - realTimeNanos;
     }
 
     public long getMonoTimestampNanos(long realTimeNanos) {

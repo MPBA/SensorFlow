@@ -16,29 +16,38 @@
         android:layout_height="wrap_content"
         android:id="@+id/textView" />
 
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusableInTouchMode="true"
+        android:id="@+id/pluginSelection">
+
+    </LinearLayout>
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="m.start()"
         android:onClick="onMStart" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Ciao"
-        android:onClick="onAddText" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Ugo"
-        android:onClick="onAddText" />
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/editText"
+            android:layout_weight="1" />
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add 646476$%&amp;"
-        android:onClick="onAddText" />
+        <Button
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:text="+"
+            android:onClick="onAddText" />
+    </LinearLayout>
 
     <Button
         android:layout_width="wrap_content"
@@ -47,17 +56,17 @@
         android:onClick="onMClose" />
 
     <Button
-        android:layout_width="188dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="onBTDStart"
         android:onClick="onBTDStart"
-        android:layout_weight="0.20" />
+        android:enabled="false" />
 
     <Button
-        android:layout_width="188dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="onBTDClose"
         android:onClick="onBTDClose"
-        android:layout_weight="0.20" />
+        android:enabled="false" />
 
 </LinearLayout>

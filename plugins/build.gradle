@@ -1,12 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 22
     buildToolsVersion '21.1.2'
 
     defaultConfig {
-        minSdkVersion 0
-        targetSdkVersion 21
+        minSdkVersion 5
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
     }
@@ -22,4 +22,5 @@ android {
 dependencies {
     compile 'com.google.protobuf:protobuf-java:2.6.0'
     compile project(':sensorsflows')
+    compile project(':empalink-2.0')
 }

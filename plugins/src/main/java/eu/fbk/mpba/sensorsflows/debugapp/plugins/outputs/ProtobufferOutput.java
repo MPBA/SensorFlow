@@ -15,7 +15,7 @@ import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SkiloProtobuffer.SensorInfo;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SensorsProtobuffer.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
@@ -24,7 +24,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected Object mSessionTag = "undefined";
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
     protected List<ISensor> mSensors = new ArrayList<>();
-    protected List<SkiloProtobuffer.SensorData> mSensorData = new ArrayList<>();
+    protected List<SensorsProtobuffer.SensorData> mSensorData = new ArrayList<>();
     protected final String uuid;
     private String mName;
     private UUID uid;
@@ -45,7 +45,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     private int seqNumber = 0;
 
-    public void flushTrackSplit(List<SkiloProtobuffer.SensorData> x, String fileName, boolean last) {
+    public void flushTrackSplit(List<SensorsProtobuffer.SensorData> x, String fileName, boolean last) {
         Log.d("ProtoOut", "Flushing " + x.size() + " SensorData");
         FileOutputStream output = null;
         try {
@@ -54,7 +54,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             Log.e("ProtoOut", "Flush can't open the file");
             e.printStackTrace();
         }
-        SkiloProtobuffer.TrackSplit s = SkiloProtobuffer.TrackSplit.newBuilder()
+        SensorsProtobuffer.TrackSplit s = SensorsProtobuffer.TrackSplit.newBuilder()
                 .addAllInfo(mSensorInfo)
                 .addAllDatas(x)
                 .setTrackUid(uid.toString())
@@ -125,7 +125,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void newSensorEvent(SensorEventEntry<Long> event) {
-        mSensorData.add(SkiloProtobuffer.SensorData.newBuilder()
+        mSensorData.add(SensorsProtobuffer.SensorData.newBuilder()
                         .setId(dataInc++)
                         .setSensorIdFk(mSensors.indexOf(event.sensor) + mSensors.size())
                         .setTimestamp(event.timestamp / 1000000000.)
@@ -146,7 +146,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         for (int i = 0; i < data.value.length; i++)    // double conversion to Float
             v.add(data.value[i]);                      // double conversion to Float
 
-        mSensorData.add(SkiloProtobuffer.SensorData.newBuilder()
+        mSensorData.add(SensorsProtobuffer.SensorData.newBuilder()
                         .setId(dataInc++)
                         .setSensorIdFk(mSensors.indexOf(data.sensor))
                         .addAllValue(v)
@@ -159,7 +159,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     private void flushAsync() {
-        final List<SkiloProtobuffer.SensorData> x = mSensorData;
+        final List<SensorsProtobuffer.SensorData> x = mSensorData;
         mSensorData = new ArrayList<>();
         new Thread(new Runnable() {
             @Override

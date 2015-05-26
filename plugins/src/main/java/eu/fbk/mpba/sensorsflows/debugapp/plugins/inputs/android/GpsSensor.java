@@ -7,6 +7,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.widget.Toast;
 
 import java.util.Arrays;
@@ -26,6 +27,8 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     private long minTime;
     private float minDistance;
     private String name;
+    private long sysToSysClockNanoOffset = 0;
+    private boolean timeFallback = Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1;
 
     /**
      * Constructs the Listener and prepares it to be registered.
@@ -35,22 +38,24 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
      *                          to conserve power, and actual timestamp between location.
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
+    @SuppressLint("NewApi")
     public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, String name, long minTime, float minDistance) {
         super(parent);
         this.minTime = minTime;
         this.minDistance = minDistance;
         this.context = context;
         this.name = name;
+        if (!timeFallback)
+            this.sysToSysClockNanoOffset = SystemClock.elapsedRealtimeNanos() - System.nanoTime();
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
     @Override @SuppressLint("NewApi")
     public void onLocationChanged(Location location) {
-        long suppNTime =
-        (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR1) ?
-                    location.getElapsedRealtimeNanos()
-                :   location.getTime() * 1000_000;
-        sensorValue(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(suppNTime),
+        long suppNTime = timeFallback ?
+                location.getTime() * 1000_000
+            :   ((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(location.getElapsedRealtimeNanos() - sysToSysClockNanoOffset);
+        sensorValue(suppNTime,
                 new double[]{
                         location.getLongitude(),
                         location.getLatitude(),
@@ -62,27 +67,27 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     @Override
     public void onProviderDisabled(String provider) {
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -2, provider + "\\\\" + "provider disabled");
+                102, "disabled provider=" + provider);
         Toast.makeText(context, "Switch on the gps please", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
         sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                -1, provider + "\\\\" + "provider enabled");
+                101, "enabled provider=" + provider);
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
         StringBuilder x = new StringBuilder(60);
         for (String i : extras.keySet())
-            x.append('[')
+            x.append(',')
              .append(i)
-             .append(", ")
+             .append("=")
              .append(extras.get(i))
              .append(']');
         sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
-                status, provider + "\\\\" + x);
+                status + 200, "provider=" + provider +  x);
     }
 
     @Override
@@ -96,6 +101,9 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void switchOnAsync() {
+        if (timeFallback)
+            sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+                    404, "NO_MONO_TS Could not have monotonic timestamp on the gps fixes.");
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
         changeStatus(SensorStatus.ON);
     }

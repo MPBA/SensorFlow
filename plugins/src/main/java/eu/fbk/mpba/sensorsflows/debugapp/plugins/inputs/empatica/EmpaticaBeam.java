@@ -4,9 +4,6 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.util.Log;
 
-import java.io.File;
-import java.util.ArrayList;
-
 import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
 import com.empatica.empalink.config.EmpaSensorStatus;
@@ -15,7 +12,10 @@ import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
 
-public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
+import java.io.File;
+import java.util.ArrayList;
+
+public class EmpaticaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
     protected final EmpaDeviceManager _device;
     protected final String _address;
     private final String[] ES_NAMES = {
@@ -38,6 +38,7 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
     protected String _code;
     protected Runnable _enableBluetooth;
     protected ConnectEventHandler _onConnectionChanged;
+    protected DataCallback _onData;
     protected int __e3_streamed_messages = 0;
     private boolean _recording;
     private boolean _connected;
@@ -55,11 +56,12 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
         return _recording;
     }
 
-    public EmpaticaaBeam(String key, Context context, String address, String code, ConnectEventHandler onConnectionChanged, Runnable enableBluetooth) {
+    public EmpaticaBeam(String key, Context context, String address, String code, DataCallback onData, ConnectEventHandler onConnectionChanged, Runnable enableBluetooth) {
         clearLogs(context);
         _foundE3s = new ArrayList<String>();
         _address = address;
         _code = code;
+        _onData = onData;
         _enableBluetooth = enableBluetooth;
         _onConnectionChanged = onConnectionChanged;
         _device = new EmpaDeviceManager(context, this, this);
@@ -95,16 +97,16 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
             Log.e(LOG_TAG, "Alredy NOT connected");
     }
 
-    private void received(int type, Object[] v) {
+    private void received(int type, double[] v) {
         __e3_streamed_messages++;
         if (isRecording())
-            _dataSaver.writeCSV(type, v);
+            _onData.handle(type, v);
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof EmpaticaaBeam &&
-                this.getAddress().equals(((EmpaticaaBeam) o).getAddress());
+        return o instanceof EmpaticaBeam &&
+                this.getAddress().equals(((EmpaticaBeam) o).getAddress());
     }
 
     @Override
@@ -196,33 +198,33 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
 
     @Override
     public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
-        received(E3Sensor.ACCELEROMETER.id, new Object[]{timestamp, x, y, z});
+        received(E3Sensor.ACCELEROMETER.id, new double[]{timestamp, x, y, z});
     }
 
     @Override
     public void didReceiveBVP(float bvp, double timestamp) {
-        received(E3Sensor.BVP.id, new Object[]{timestamp, bvp});
+        received(E3Sensor.BVP.id, new double[]{timestamp, bvp});
     }
 
     @Override
     public void didReceiveBatteryLevel(float battery, double timestamp) {
         Log.v(LOG_TAG, _code + ":didReceiveBatteryLevel = " + battery);
-        received(E3Sensor.BATTERY.id, new Object[]{timestamp, battery});
+        received(E3Sensor.BATTERY.id, new double[]{timestamp, battery});
     }
 
     @Override
     public void didReceiveGSR(float gsr, double timestamp) {
-        received(E3Sensor.GSR.id, new Object[]{timestamp, gsr});
+        received(E3Sensor.GSR.id, new double[]{timestamp, gsr});
     }
 
     @Override
     public void didReceiveIBI(float ibi, double timestamp) {
-        received(E3Sensor.IBI.id, new Object[]{timestamp, ibi});
+        received(E3Sensor.IBI.id, new double[]{timestamp, ibi});
     }
 
     @Override
     public void didReceiveTemperature(float temp, double timestamp) {
-        received(E3Sensor.TEMPERATURE.id, new Object[]{timestamp, temp});
+        received(E3Sensor.TEMPERATURE.id, new double[]{timestamp, temp});
     }
 
     // FS
@@ -270,7 +272,7 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
     }
 
     public interface ConnectEventHandler {
-        void end(EmpaticaaBeam sender, Result result);
+        void end(EmpaticaBeam sender, Result result);
 
         public enum Result {
             /**
@@ -307,5 +309,9 @@ public class EmpaticaaBeam implements EmpaStatusDelegate, EmpaDataDelegate {
              */
             LOST
         }
+    }
+
+    public interface DataCallback {
+        void handle(int type, double[] data);
     }
 }

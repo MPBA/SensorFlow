@@ -5,7 +5,7 @@ android {
     buildToolsVersion '21.1.2'
 
     defaultConfig {
-        minSdkVersion 5
+        minSdkVersion 19
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -23,4 +23,7 @@ dependencies {
     compile 'com.google.protobuf:protobuf-java:2.6.0'
     compile project(':sensorsflows')
     compile project(':empalink-2.0')
+    compile 'com.loopj.android:android-async-http:1.4.6'
+    compile 'com.google.code.gson:gson:2.3'
+    compile 'com.android.support:appcompat-v7:22.2.0'
 }

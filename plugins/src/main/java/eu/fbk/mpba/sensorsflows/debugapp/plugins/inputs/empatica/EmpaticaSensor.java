@@ -11,14 +11,16 @@ public class EmpaticaSensor extends SensorComponent<Long, double[]> {
         super(p);
     }
 
+    private boolean _enabled = true;
+
     @Override
     public void switchOnAsync() {
-
+        _enabled = true;
     }
 
     @Override
     public void switchOffAsync() {
-
+        _enabled = false;
     }
 
     @Override

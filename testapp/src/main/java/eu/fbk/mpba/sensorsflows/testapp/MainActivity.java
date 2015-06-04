@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
@@ -26,6 +27,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3ToFile;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android.SmartphoneDevice;
+import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.empatica.EmpaticaDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvDataSaver;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
@@ -77,7 +79,17 @@ public class MainActivity extends Activity {
         addPluginChoice(true, "Empatica", new Runnable() {
             @Override
             public void run() {
-
+                m.addDevice(new EmpaticaDevice("e250d5fdb4644d7bbd8cbbcd4acfb860", _this, "", new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(_this, "ENABLE BT in 5 sec!!!", Toast.LENGTH_LONG).show();
+                        try {
+                            Thread.sleep(5000, 0);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }));
             }
         });
         addPluginChoice(false, "CSV", new Runnable() {
@@ -123,11 +135,13 @@ public class MainActivity extends Activity {
                         // Executed on the last part of the start
                         // sessionTag       : the name of the session (.toString())
                         // streamingSensors : List with every sensor of the session
+                        Log.v("UD PLUGIN", String.format("INIT %s - %d sensors", sessionTag, streamingSensors.size()));
                     }
 
                     @Override
                     public void outputPluginFinalize() {
                         // When close is called
+                        Log.v("UD PLUGIN", "FINAL");
                     }
 
                     @Override
@@ -138,6 +152,7 @@ public class MainActivity extends Activity {
                         //     .timestamp   : event's
                         //     .code        : numeric or flags, see the sensor's code
                         //     .message     : descriptive string
+                        Log.v("UD PLUGIN", String.format("%d %s: %d: %s", event.timestamp, event.sensor, event.code, event.message));
                     }
 
                     @Override

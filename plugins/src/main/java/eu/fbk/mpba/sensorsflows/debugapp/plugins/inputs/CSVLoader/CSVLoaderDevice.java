@@ -37,7 +37,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      */
     void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws IOException
     {
-        _sensors.add(new CSVLoaderSensor(";", "nomeFILEhahaNONsoBOHperche'COSI'vabe'COSAfaiVIENIqua'MAperche'CHIloSA'qualunqueCOSAfaiSIAMOsempreNEIguai", this));
+        /*_sensors.add(new CSVLoaderSensor(";", "nomeFILEhahaNONsoBOHperche'COSI'vabe'COSAfaiVIENIqua'MAperche'CHIloSA'qualunqueCOSAfaiSIAMOsempreNEIguai", this));*/
     }
     /**
      * @param is stream di input
@@ -47,7 +47,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    void addFile(InputStreamReader is, String fieldSeparator){addFile(is, fieldSeparator, "\n");}
+    void addFile(InputStreamReader is, String fieldSeparator) throws IOException {addFile(is, fieldSeparator, "\n");}
     /**
      * @param is stream di input
      *
@@ -56,7 +56,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    void addFile(InputStreamReader is){addFile(is, ";", "\n");}
+    void addFile(InputStreamReader is) throws IOException {addFile(is, ";", "\n");}
 
 
     /**

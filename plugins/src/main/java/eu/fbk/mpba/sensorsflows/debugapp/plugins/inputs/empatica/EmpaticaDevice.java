@@ -22,13 +22,13 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     final EmpaticaSensor.Termometer mTem;
 
     public EmpaticaDevice(String key, Context context, String address, Runnable enableBluetooth) throws EmpaticaBeam.UnreachableWebException {
+        beam = new EmpaticaBeam(context, address, data, conn, enableBluetooth);
         mAcc = new EmpaticaSensor.Accelerometer(this);
         mBat = new EmpaticaSensor.Battery(this);
         mBvp = new EmpaticaSensor.BVP(this);
         mGsr = new EmpaticaSensor.GSR(this);
         mIbi = new EmpaticaSensor.IBI(this);
         mTem = new EmpaticaSensor.Termometer(this);
-        beam = new EmpaticaBeam(context, address, data, conn, enableBluetooth);
         beam.authenticate(key);
     }
 

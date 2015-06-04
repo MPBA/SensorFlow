@@ -177,7 +177,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
             default:
                 break;
         }
-        Log.d(LOG_TAG, "didUpdateStatus " + _address.substring(_address.length() - 6, _address.length() - 1) + ".. " + status.toString());
+        Log.d(LOG_TAG, "didUpdateStatus " /*+ _address.substring(_address.length() - 6, _address.length() - 1)*/ + ".. " + status.toString());
         Log.d(LOG_TAG, "didUpdateStatus with msgs: " + __e3_streamed_messages);
     }
 

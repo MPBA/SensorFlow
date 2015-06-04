@@ -2,6 +2,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.empatica;
 
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 
@@ -21,8 +22,19 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     final EmpaticaSensor.IBI mIbi;
     final EmpaticaSensor.Termometer mTem;
 
-    public EmpaticaDevice(String key, Context context, String address, Runnable enableBluetooth) throws EmpaticaBeam.UnreachableWebException {
+    public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth) {
         beam = new EmpaticaBeam(context, address, data, conn, enableBluetooth);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    beam.assert_connection();
+                } catch (EmpaticaBeam.UnreachableWebException e) {
+                    e.printStackTrace();
+                    Toast.makeText(context, "Get an internet connection and restart the app!", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
         mAcc = new EmpaticaSensor.Accelerometer(this);
         mBat = new EmpaticaSensor.Battery(this);
         mBvp = new EmpaticaSensor.BVP(this);

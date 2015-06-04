@@ -27,7 +27,6 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3ToFile;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android.SmartphoneDevice;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.empatica.EmpaticaBeam;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.empatica.EmpaticaDevice;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvDataSaver;
 import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
@@ -80,23 +79,17 @@ public class MainActivity extends Activity {
         addPluginChoice(true, "Empatica", new Runnable() {
             @Override
             public void run() {
-                new Thread(new Runnable() { @Override public void run() {
-                try {
-                    m.addDevice(new EmpaticaDevice("e250d5fdb4644d7bbd8cbbcd4acfb860", _this, "", new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(_this, "ENABLE BT in 5 sec!!!", Toast.LENGTH_LONG).show();
-                            try {
-                                Thread.sleep(5000, 0);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                m.addDevice(new EmpaticaDevice("e250d5fdb4644d7bbd8cbbcd4acfb860", _this, "", new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(_this, "ENABLE BT in 5 sec!!!", Toast.LENGTH_LONG).show();
+                        try {
+                            Thread.sleep(5000, 0);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
-                    }));
-                } catch (EmpaticaBeam.UnreachableWebException e) {
-                    e.printStackTrace();
-                    Toast.makeText(_this, "Get an internet connection and restart the app!", Toast.LENGTH_LONG).show();
-                } } }, "Starting Empatica").start();
+                    }
+                }));
             }
         });
         addPluginChoice(false, "CSV", new Runnable() {

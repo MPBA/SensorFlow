@@ -51,13 +51,16 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         _device = new EmpaDeviceManager(_context = context, onData, this);
     }
 
-    public void authenticate(String key) throws UnreachableWebException {
+    public void assert_connection() throws UnreachableWebException {
         if (!PingMan.isNetworkAvailable(_context)) {
             throw new UnreachableWebException("No network available! No manifest permission or no active network available.");
         }
         else if (!PingMan.isHttpColonSlashSlashWwwDotEmpaticaDotComReachable(_context)) {
             throw new UnreachableWebException("Empatica is not reachable via http!");
         }
+    }
+
+    public void authenticate(String key) {
         _device.authenticateWithAPIKey(key);
     }
 

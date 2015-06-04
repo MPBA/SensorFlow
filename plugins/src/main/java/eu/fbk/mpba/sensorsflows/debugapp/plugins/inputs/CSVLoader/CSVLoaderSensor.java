@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,6 +15,11 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
+
+/**
+ * GESTIONE ERRORI: Se dovesse esserci qualsivoglia errore lo stato del sensore verra' settato a ERROR
+ * E verra' inviato un evento di errore con il testo dell'eccezione.
+ */
 public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 {
     class ValidDouble
@@ -23,11 +29,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     }
 
     boolean isrunning;
-    FileReader fr;
-    BufferedReader br;
-    String separator;
-    String filename;
-    Object descriptors[] = null;
+
 
 
 
@@ -39,7 +41,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     //TODO Dee) se trovo una o piu' colonne non valide le ignoro o esco fuori un errore e mi chiudo?
     ValidDouble[] EstraiDatiDaStringa(String s)
     {
-        String parts[] = s.split(separator);
+        String parts[] = {""};//s.split(separator);
         ValidDouble vd[] = new ValidDouble[parts.length];
 
         for(int i = 0; i < parts.length; i++)
@@ -60,7 +62,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     {
         @Override public void run()
         {
-            changeStatus(SensorStatus.ON);
+            /*changeStatus(SensorStatus.ON);
 
             String s;
             try
@@ -91,54 +93,38 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
             {
                 changeStatus(SensorStatus.ERROR);
                 sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 0, "IOException: " + e.getMessage());
-            }
+            }*/
         }
     });
 
 
-    public CSVLoaderSensor(String separator, String filename, DevicePlugin<Long, double[]> d)// throws FileNotFoundException
+
+
+    /**
+     * @param isr
+     * @param fieldSeparator
+     * @param rowSeparator
+     * @param d
+     * @throws IOException
+     *
+     * ASSUNZIONI: assumo che il csv contiene un'intestazione
+     */
+    public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, DevicePlugin<Long, double[]> d) throws IOException
     {
         super(d);
 
-        this.separator = separator;
-        this.filename = filename;
         isrunning = false;
-        fr = null;
 
-        //TODO Dee) qui invio un errormessage e setto lo status su error con try-catch anziche' exception a caso! chiedere a Bat
-        try
-        {
-            fr = new FileReader(filename);
-        }
-        catch (FileNotFoundException e)
-        {
-            changeStatus(SensorStatus.ERROR);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 0, "FileNotFoundException: " + e.getMessage());
-        }
 
-        if(fr != null)
-            br = new BufferedReader(fr);
 
-        String s;
-        //TODO Dee) Leggo la prima riga di intestazione... ?
-        try
-        {
-            if((s = br.readLine()) != null)
-            {
-                descriptors = s.split(separator);
-            }
-        } catch (IOException e)
-        {
-            changeStatus(SensorStatus.ERROR);
-            sensorEvent(((IMonotonicTimestampReference) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 0, "IOException: " + e.getMessage());
-        }
+
     }
 
 
     @Override public void switchOnAsync()
     {
         //Faccio partire il thread!!!! (la prima volta!! lo richiamo dal mio device all'inizialization)
-        if(getState() != SensorStatus.ERROR && !isrunning && fr != null && br != null)
+        if(getState() != SensorStatus.ERROR && !isrunning)
         {
             thr.start();
             isrunning = true;
@@ -152,9 +138,10 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 
     @Override public List<Object> getValuesDescriptors()
     {
-        if(descriptors == null)
+        /*if(descriptors == null)
             return null;
-        return Arrays.asList(descriptors);
+        return Arrays.asList(descriptors);*/
+        return null;
     }
 
     @Override public String toString()

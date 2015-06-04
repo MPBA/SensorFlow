@@ -24,7 +24,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     protected Runnable _enableBluetooth;
     protected ConnectEventHandler _onConnectionChanged;
     protected int __e3_streamed_messages = 0;
-    private boolean _recording;
+    private boolean _recording = false;
     private boolean _connected;
     private ArrayList<String> _foundE3s;
     private Context _context;
@@ -51,7 +51,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         _device = new EmpaDeviceManager(_context = context, onData, this);
     }
 
-    public void assert_connection() throws UnreachableWebException {
+    public void assert_web_reachable() throws UnreachableWebException {
         if (!PingMan.isNetworkAvailable(_context)) {
             throw new UnreachableWebException("No network available! No manifest permission or no active network available.");
         }
@@ -64,7 +64,8 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         _device.authenticateWithAPIKey(key);
     }
 
-    public boolean startRecording() {
+    public boolean startStreaming() {
+        Log.e(LOG_TAG, "StartStreaming()");
         if (_connected) {
             if (!_recording) {
                 _recording = true;
@@ -77,14 +78,16 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
             return false;
     }
 
-    public void stopRecording() {
+    public void stopStreaming() {
+        Log.e(LOG_TAG, "StopStreaming()");
         if (_recording)
             _recording = false;
         else
             Log.e(LOG_TAG, "Alredy NOT recording");
     }
 
-    public void disconnect() {
+    public void destroy() {
+        Log.e(LOG_TAG, "Destroy()");
         if (_connected) {
             _connected = false;
             _device.disconnect();
@@ -108,20 +111,20 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
 
     @Override
     public void didDiscoverDevice(BluetoothDevice device, String label, int rssi, boolean allowed) {
-        if (_address == null || device.getAddress().equals(_address)) {
+        if (_address == null || _address.length() == 0 || device.getAddress().equals(_address)) {
             if (allowed) {
                 _device.stopScanning();
                 try {
                     _device.connectDevice(device);
-                    // Allok
+                    // Here no exception
                     _code = device.getName();
-                    Log.d(LOG_TAG, "Device name: " + _code + "secondo empalink: " + label);
+                    Log.d(LOG_TAG, "Device name: " + _code + ", label: " + label);
                 } catch (ConnectionNotAllowedException e) {
                     // Bisogna aver pazienza con loro...
                     allowed = false;
                 }
             }
-            if (!allowed) {
+    /*      else {          */ if (!allowed) {
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_ALLOWED);
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
             }
@@ -152,8 +155,8 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                 // TODO 5 Find a way to give advice on when the signal is missing too many times. (Need E3 for test)
                 if (_connected) {
                     _onConnectionChanged.end(this, ConnectEventHandler.Result.LOST);
-                    _connected = false;
-                    stopRecording();
+                    stopStreaming();
+                    destroy();
                 }
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
                 break;
@@ -180,7 +183,9 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
             default:
                 break;
         }
-        Log.d(LOG_TAG, "didUpdateStatus " /*+ _address.substring(_address.length() - 6, _address.length() - 1)*/ + ".. " + status.toString());
+        String sc = _address;
+        sc = sc.length() > 6 ? sc.substring(sc.length() - 6, sc.length() - 1) : sc;
+        Log.d(LOG_TAG, "didUpdateStatus " + sc + ".. " + status.toString());
         Log.d(LOG_TAG, "didUpdateStatus with msgs: " + __e3_streamed_messages);
     }
 

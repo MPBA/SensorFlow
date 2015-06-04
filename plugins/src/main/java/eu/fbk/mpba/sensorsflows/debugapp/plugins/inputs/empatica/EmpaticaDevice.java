@@ -14,6 +14,8 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
+    final String LOG_TAG = "ALE EMPA DEV";
+
     final EmpaticaBeam beam;
     final EmpaticaSensor.Accelerometer mAcc;
     final EmpaticaSensor.Battery mBat;
@@ -28,7 +30,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
             @Override
             public void run() {
                 try {
-                    beam.assert_connection();
+                    beam.assert_web_reachable();
                 } catch (EmpaticaBeam.UnreachableWebException e) {
                     e.printStackTrace();
                     Toast.makeText(context, "Get an internet connection and restart the app!", Toast.LENGTH_LONG).show();
@@ -50,12 +52,13 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public void inputPluginInitialize() {
-
+        beam.startStreaming();
     }
 
     @Override
     public void inputPluginFinalize() {
-
+        beam.stopStreaming();
+        beam.destroy();
     }
 
     @Override
@@ -66,7 +69,25 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     EmpaticaBeam.ConnectEventHandler conn = new EmpaticaBeam.ConnectEventHandler() {
         @Override
         public void end(EmpaticaBeam sender, Result result) {
-
+            switch (result) {
+                case JUST_INITIALIZED:
+                    break;
+                case NOT_CONNECTED:
+                    break;
+                case NOT_FOUND:
+                    break;
+                case NOT_ALLOWED:
+                    break;
+                case DISCOVERING:
+                    break;
+                case CONNECTING:
+                    break;
+                case CONNECTED:
+                    break;
+                case LOST:
+                    break;
+            }
+            Log.d(LOG_TAG, sender.getAddress() + " " + sender.getCode() + " -> " + result.toString());
         }
     };
 

@@ -11,9 +11,12 @@ public class CSVHandler
     BufferedReader br;
     Object descriptors[] = null;
 
-    void readDescriptors()
+    void getDescriptors()
     {
+        if(descriptors == null)
+        {
 
+        }
     }
 
     public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator)
@@ -33,30 +36,35 @@ public class CSVHandler
      */
     public String getNextField() throws IOException
     {
-        int i, indCharSep = 1;
-        boolean primoCharSep = false;
-        String str = "";
+        int i;
         StringBuilder sb = new StringBuilder();
 
         while((i = br.read()) != -1)
         {
             char c = (char)i;
 
-            if(c == fs.charAt(0)) { str = fs; primoCharSep = true;}
-            if(c == rs.charAt(0)) { str = rs; primoCharSep = true;}
-
-            if(primoCharSep)//sono in un punto in cui potrebbe esserci il separatore
+            if(c == fs.charAt(0) || c == rs.charAt(0))
             {
-                if(c != str.charAt(indCharSep))
-                {
-                    primoCharSep = false;
-                    indCharSep = 1;
-                }
+                int ind = 0;
+                StringBuilder sb2 = new StringBuilder();
+                boolean bsrow = true;
+                boolean bsfield = true;
 
-                if(++indCharSep >= str.length())
+                do
                 {
-                    //ok c'e' il separatore, l'ho appena passato
+                    c = (char)i;
+                    if(c!=fs.charAt(ind))
+                        bsfield = false;
+                    if(c!=rs.charAt(ind))
+                        bsrow = false;
+
+                    sb2.append(c);
+                    ind++;
                 }
+                while((bsrow || bsfield) && (i = br.read()) != -1);
+
+                /*if(i == -1 || (!bsfield && !bsrow))
+                    sb.append(sb2);*/
             }
             else
                 sb.append(c);

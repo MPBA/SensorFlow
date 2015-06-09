@@ -1,24 +1,19 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.CSVLoader;
 
-import android.hardware.SensorEventListener;
-
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
-
 /**
- * GESTIONE ERRORI: Se dovesse esserci qualsivoglia errore lo stato del sensore verra' settato a ERROR
- * E verra' inviato un evento di errore con il testo dell'eccezione.
+ * ASSUNZIONI CSV:  - assumo che il csv contenga un'intestazione
+ *                  - [meno restringente] tutti i campi sono numerici (colonne non numeriche verranno ignorate)
+ *
+ * GESTIONE ERRORI: - Se dovesse esserci un qualsivoglia errore lo stato del sensore verra' settato a 'ERROR'
+ *                      e verra' inviato un evento di errore con il testo dell'eccezione.
  */
 public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 {
@@ -29,7 +24,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     }
 
     boolean isrunning;
-
+    CSVHandler ch;
 
 
 
@@ -98,25 +93,13 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     });
 
 
-
-
-    /**
-     * @param isr
-     * @param fieldSeparator
-     * @param rowSeparator
-     * @param d
-     * @throws IOException
-     *
-     * ASSUNZIONI: assumo che il csv contiene un'intestazione
-     */
     public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, DevicePlugin<Long, double[]> d) throws IOException
     {
         super(d);
 
         isrunning = false;
 
-
-
+        ch = new CSVHandler(isr,fieldSeparator, rowSeparator);
 
     }
 

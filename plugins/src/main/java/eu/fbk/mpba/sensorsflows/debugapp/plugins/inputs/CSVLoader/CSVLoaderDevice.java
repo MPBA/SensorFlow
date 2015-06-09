@@ -1,9 +1,6 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.CSVLoader;
 
 import android.content.Context;
-import android.util.Pair;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -13,6 +10,9 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 
+/**
+ * [IMPORTANTE] Per non creare ridondanza vai a vedere il javadoc di CSVLoaderSensor
+*/
 public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference
 {
     private List<SensorComponent<Long, double[]>> _sensors;

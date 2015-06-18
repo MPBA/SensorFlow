@@ -24,13 +24,27 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      * @param name nome del Device
      *     I vari file vanno aggiunti con addFile.
      */
-    public CSVLoaderDevice(String name)
-    {
+    public CSVLoaderDevice(String name) {
         _name = name;
         _sensors = new LinkedList<>();
     }
 
+    /**
+     * Thread con cui i sensori a turno caricano i loro dati.
+     */
+    private Thread thr = new Thread(new Runnable(){@Override public void run()
+    {
+        _sensors.forEach(SensorComponent::switchOnAsync);
 
+        boolean ceAncoraSperanza = false;
+        do
+        {
+            System.out.println("Haha");
+
+            for(SensorComponent s:_sensors)
+                ceAncoraSperanza = ((CSVLoaderSensor)s).sendRow();
+        } while(ceAncoraSperanza);
+    }});
 
     /**
      * @param is stream di input
@@ -39,7 +53,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws IOException {
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws Exception {
         _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, this));
     }
     /**
@@ -50,7 +64,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    public void addFile(InputStreamReader is, String fieldSeparator) throws IOException {addFile(is, fieldSeparator, "\n");}
+    public void addFile(InputStreamReader is, String fieldSeparator) throws Exception {addFile(is, fieldSeparator, "\n");}
     /**
      * @param is stream di input
      *
@@ -59,28 +73,23 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    public void addFile(InputStreamReader is) throws IOException {addFile(is, ";", "\n");}
-
-
+    public void addFile(InputStreamReader is) throws Exception {addFile(is, ";", "\n");}
 
     /**
      * Qui faccio partire i sensori
      * Chiamato almeno una volta
      */
-    @Override public void inputPluginInitialize()
-    {
+    @Override public void inputPluginInitialize() {
         //Devo far partire un thread per non bloccare il tutto.
-        _sensors.forEach(SensorComponent::switchOnAsync);
+        thr.start();
     }
     @Override public void inputPluginFinalize() {
         // Finalizzo
     }
-
     @Override public Iterable<SensorComponent<Long, double[]>> getSensors()
     {
         return _sensors;
     }
-
     @Override public String toString() {
         return _name;
     }

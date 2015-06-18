@@ -9,11 +9,13 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
 /**
- * ASSUNZIONI CSV:  - assumo che il csv contenga un'intestazione
- *                  - [meno restringente] tutti i campi sono numerici (colonne non numeriche verranno ignorate)
+ * ASSUNZIONI CSV: assumo che...
+ *                  - Il csv contenga un'intestazione
+ *                  - Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'
+ *                  - Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore)
  *
  * GESTIONE ERRORI: - Se dovesse esserci un qualsivoglia errore lo stato del sensore verra' settato a 'ERROR'
- *                      e verra' inviato un evento di errore con il testo dell'eccezione.
+ *                      e verra' inviato un evento di errore con il testo dell'eccezione/errore.
  */
 public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 {
@@ -25,8 +27,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 
     boolean isrunning;
     CSVHandler ch;
-
-
 
     boolean tryParseDouble(String value)
     {

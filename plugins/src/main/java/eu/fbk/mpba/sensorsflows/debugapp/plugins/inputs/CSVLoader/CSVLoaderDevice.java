@@ -1,32 +1,36 @@
 package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.CSVLoader;
 
-import android.content.Context;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.LinkedList;
+import java.util.List;
+
+
+
 /**
- * [IMPORTANTE] Per non creare ridondanza vai a vedere il javadoc di CSVLoaderSensor
+ * [IMPORTANTE] Vai a vedere il javadoc di CSVLoaderSensor,
+ * non lo riporto qui per non creare ridondanza ovviamente.
 */
 public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference
 {
     private List<SensorComponent<Long, double[]>> _sensors;
-    private String name;
+    private String _name;
 
-    //Accetta la lista di ( streamIN, (separatoreCampo, separatoreColonna) )
-    public CSVLoaderDevice(Context context, String name)
+    /**
+     * @param name nome del Device
+     *     I vari file vanno aggiunti con addFile.
+     */
+    public CSVLoaderDevice(String name)
     {
-        this.name = name;
-        _sensors = new ArrayList<>();
-        //Un solo file per sensore!
-        //TODO Dee) il file me lo danno in input attraverso un inputStreamReader
-
+        _name = name;
+        _sensors = new LinkedList<>();
     }
+
+
 
     /**
      * @param is stream di input
@@ -35,9 +39,8 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws IOException
-    {
-        /*_sensors.add(new CSVLoaderSensor(";", "nomeFILEhahaNONsoBOHperche'COSI'vabe'COSAfaiVIENIqua'MAperche'CHIloSA'qualunqueCOSAfaiSIAMOsempreNEIguai", this));*/
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws IOException {
+        _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, this));
     }
     /**
      * @param is stream di input
@@ -47,7 +50,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    void addFile(InputStreamReader is, String fieldSeparator) throws IOException {addFile(is, fieldSeparator, "\n");}
+    public void addFile(InputStreamReader is, String fieldSeparator) throws IOException {addFile(is, fieldSeparator, "\n");}
     /**
      * @param is stream di input
      *
@@ -56,20 +59,20 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
      */
-    void addFile(InputStreamReader is) throws IOException {addFile(is, ";", "\n");}
+    public void addFile(InputStreamReader is) throws IOException {addFile(is, ";", "\n");}
+
 
 
     /**
-     * Qui faccio partire i sensori!
-     * Chiamato automaticamente da quanto ne so
+     * Qui faccio partire i sensori
+     * Chiamato almeno una volta
      */
     @Override public void inputPluginInitialize()
     {
-        _sensors.get(0).switchOnAsync();
+        //Devo far partire un thread per non bloccare il tutto.
+        _sensors.forEach(SensorComponent::switchOnAsync);
     }
-
-    @Override public void inputPluginFinalize()
-    {
+    @Override public void inputPluginFinalize() {
         // Finalizzo
     }
 
@@ -78,9 +81,13 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
         return _sensors;
     }
 
-    //Tutto per il timestamp, non metodi miei quindi non saprei documentarli
+    @Override public String toString() {
+        return _name;
+    }
+
+
+    //Questi metodi sono per il timestamp, non sono metodi miei quindi non saprei documentarli
     private long refUTCNanos;
     public void resetMonoTimestamp(long timestampMillis, long realTimeNanos) {refUTCNanos = timestampMillis * 1000000 - realTimeNanos;}
     public long getMonoTimestampNanos(long realTimeNanos) {return realTimeNanos + refUTCNanos;}
-
 }

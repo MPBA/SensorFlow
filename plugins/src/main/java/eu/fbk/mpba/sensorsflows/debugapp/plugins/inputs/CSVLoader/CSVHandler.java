@@ -7,13 +7,40 @@ import java.util.LinkedList;
 
 /**
  * ASSUNZIONI: assumo che...
- *              - I due separatori non siano l'uno conenuto nell'altro.
+ *
+ *        INTESTAZIONE
+ *              1) Il file CSV contenga un'intestazione.
+ *              2) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
+ *
+ *        RIGHE
+ *              3) Il timestamp sia in nanosecondi (il campo 'timestampScale quindi' e' 1), se cosi' non fosse si dovra'
+ *                      settare opportunamente il campo 'timestampScale' per convertire il timestamp fornito in nanosecondi,
+ *                      ovviamente nelle vestigia dell'affermazione suddetta e' implicitamente celata l'informazione
+ *                      che ratifica il fatto di poter mettere valori decimali nel timestamp.
+ *                      Ricordarsi che con un double si perde precisione rispetto ad un long, letto da qui:
+ *                          http://ubuntuforums.org/showthread.php?t=1520796
+ *              4) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
+ *              5) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
+ *              6) [ovvia] I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
+ *                      e verra' riportato un errore.
+ *              7) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
+ *
+ *        SEPARATORI
+ *              8) I due separatori non siano l'uno conenuto nell'altro.
  *                      Mettiamo che Gino abbia settato i separatori ";" e ";@",
  *                      cosi' facendo toglie pero' a Gesualdo (che costruisce il file csv)
-*                       l'opportunita' di scrivere un campo in questo modo: @campo
- *                      perche' verrebbe interpretato in maniera errata come una fine di riga.
+ *                      l'opportunita' di scrivere un campo in questo modo: @campo
+ *                      perche' verrebbe interpretato in maniera errata come una fine di riga;
+ *                      stessa cosa per "@;@" oppure "@;".
+ *              9) I due separatori non inizino o finiscano con cifre numeriche o punti [0 1 2 3 4 5 6 7 8 9 .].
+ *                      Creerebbero infatti confusione con i numeri all'interno della riga.
  *
- * GESTIONE ERRORI: - Lancio un'eccezione se si verifica un errore.
+ *
+ * GESTIONE ERRORI:
+ *              - Lancio un'eccezione se si verifica un errore nel Costruttore, altrimenti ritorno una classe CSVRow
+ *                      contenente il campo 'error' settato a 'true' nel metodo getNextRow.
+ *
+ * NOTE: Se avviene un errore grave le successive azioni saranno come se file fosse finito.
  */
 public class CSVHandler
 {
@@ -47,6 +74,7 @@ public class CSVHandler
     private boolean endoffile = false;
     private int tsIndex = -1;
     private int dID, rowIndex = 2;
+    private long tsScale;
 
     public LinkedList<Object> getDescriptors() {
         return descriptors;
@@ -56,6 +84,7 @@ public class CSVHandler
      * @return Row class che contiene i campi double.
      * @throws IOException nel caso non riesca a leggere un campo correttamente dal file
      * Nel caso in cui il file sia finito ritorna null.
+     * Se una riga è invalida la ignora e ritorna errore.
      */
     public CSVRow getNextRow() throws IOException {
         if(endoffile)
@@ -73,34 +102,49 @@ public class CSVHandler
             if(f.type == FieldType.NORMAL) { sb.append(fs); sb.append(" "); }
 
             if(i++ == tsIndex)
-                try {r.timestamp = Long.parseLong(f.value);}catch(Exception e){r.error = true;}
+            {
+                try{r.timestamp = Long.parseLong(f.value);}
+                catch (Exception e2)
+                {
+                    try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}catch (Exception e){r.error = true;}
+                }
+            }
             else
                 try {r.fields[j++] = Double.parseDouble(f.value);}catch(Exception e){r.error = true;}
         }
-        while(!r.error && f.type == FieldType.NORMAL);
+        while(f.type == FieldType.NORMAL);
 
         if(j != descriptors.size())
             r.error = true;
 
         if(r.error)
-            r.errorMsg = "["+dID+"] Errore nella linea numero "+rowIndex+"; linea: '" + sb.toString() + "'";
+            r.errorMsg = "[SID"+dID+"] Errore nella linea numero "+rowIndex+"; linea: '" + sb.toString() + "'";
 
         rowIndex++;
 
         return r;
     }
 
-    public CSVHandler(int debugID, InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception
+    public CSVHandler(int debugID, InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception{this(debugID, isr, fieldSeparator, rowSeparator, 1);}
+    public CSVHandler(int debugID, InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception
     {
         is = isr;
         fs = fieldSeparator;
         rs = rowSeparator;
         descriptors = new LinkedList<>();
         dID = debugID;
+        tsScale = timestampScale;
 
-        if(fs.contains(rs) || rs.contains(fs)) {
+        if(fs.contains(rs) || rs.contains(fs))
+        {
             endoffile = true;
             throw new Exception("[SID"+dID+"] Un separatore e' contenuto nell'altro, questo causa errori di formattazione nel file CSV.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
+        }
+
+        if(isCifraOpunto(fs.charAt(0)) || isCifraOpunto(fs.charAt(fs.length()-1)) || isCifraOpunto(rs.charAt(0)) || isCifraOpunto(rs.charAt(fs.length()-1)))
+        {
+            endoffile = true;
+            throw new Exception("[SID"+dID+"] Un o piu' separatori iniziano o finiscono con cifre o punti.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
         }
 
 
@@ -127,6 +171,11 @@ public class CSVHandler
         }
     }
 
+
+    private boolean isCifraOpunto(char c)
+    {
+        return c >= '0' && c <= '9' || c == '.';
+    }
 
     /**
      * @return [next field]

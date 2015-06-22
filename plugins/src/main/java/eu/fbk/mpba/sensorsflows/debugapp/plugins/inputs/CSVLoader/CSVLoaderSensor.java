@@ -2,6 +2,7 @@ package eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.CSVLoader;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
@@ -20,21 +21,24 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
 {
     CSVHandler ch;
     static int globalDebugID = 0;
-    int debugID = 0;
+    protected int debugID = 0;
 
     public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, DevicePlugin<Long, double[]> d) throws Exception {
+        this(isr, fieldSeparator, rowSeparator, 1, d);
+    }
+    public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, long tsScale, DevicePlugin<Long, double[]> d) throws Exception {
         super(d);
         debugID = globalDebugID++;
-        ch = new CSVHandler(debugID,isr,fieldSeparator, rowSeparator);
-
+        ch = new CSVHandler(isr,fieldSeparator, rowSeparator, tsScale);
+        _status = SensorStatus.ON;
     }
 
     /**
      * @return true se devo ancora leggere, false se ho finito oppure c'e' stato un errore.
      */
-    public boolean sendRow() {
-
-        if(getState() == SensorStatus.ERROR)
+    public boolean sendRow()
+    {
+        if(getState() != SensorStatus.ON)
             return false;
 
         CSVHandler.CSVRow r = null;
@@ -43,42 +47,45 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
             _status = SensorStatus.ERROR;
         }
 
-        if(getState() != SensorStatus.ERROR && r == null)
-            _status = SensorStatus.OFF;
+        if(r!= null)
+        {
+            if(r.type != CSVHandler.RowType.ERROR)
+            {
+                sensorValue(r.timestamp, r.fields);
 
-        if(getState() == SensorStatus.ON)
-            sensorValue(r.timestamp, r.fields);
+                if(r.type == CSVHandler.RowType.ENDFILE)
+                    _status = SensorStatus.OFF;
+            }
+            else
+            {
+                sensorEvent(r.timestamp, 101, r.errorMsg);
+                _status = SensorStatus.ERROR;
+            }
+        }
+
 
         return getState() == SensorStatus.ON;
     }
 
-    public void sensorValue(long time, double[] value)
-    {
-        System.out.println("[SID"+ debugID + "] ts:"+time);
+    public void sensorValue(long time, double[] value) {
+        super.sensorValue(time, value);
     }
 
-    public void sensorEvent(long time, int type, String message)
-    {
-        System.out.println("[SID"+ debugID + "]"+message);
+    public void sensorEvent(long time, int type, String message) {
+        super.sensorEvent(time, type, message);
     }
 
-    @Override public void switchOnAsync()
-    {
+    @Override public void switchOnAsync() {
         //Boh qui devo far qualcosa?
     }
-
-    @Override public void switchOffAsync()
-    {
+    @Override public void switchOffAsync() {
         //Jajajajaja dovrei fermarmi? MAI!
     }
 
-    @Override public List<Object> getValuesDescriptors()
-    {
+    @Override public List<Object> getValuesDescriptors() {
         return ch.getDescriptors();
     }
-
-    @Override public String toString()
-    {
+    @Override public String toString() {
         return "CSVLoader sensor";
     }
 }

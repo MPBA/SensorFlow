@@ -54,15 +54,16 @@ public class CSVHandler
             type = t;
         }
     }
+    public enum RowType {NORMAL, ERROR, ENDFILE}
     public class CSVRow{
         public long timestamp;
-        public boolean error;
+        public RowType type;
         public String errorMsg;
         public double[] fields;
         public CSVRow(int numFields)
         {
             fields = new double[numFields];
-            error = false;
+            type = RowType.NORMAL;
             errorMsg = "";
         }
     }
@@ -73,7 +74,7 @@ public class CSVHandler
     private LinkedList<Object> descriptors;
     private boolean endoffile = false;
     private int tsIndex = -1;
-    private int dID, rowIndex = 2;
+    private int rowIndex = 2;
     private long tsScale;
 
     public LinkedList<Object> getDescriptors() {
@@ -83,17 +84,22 @@ public class CSVHandler
     /**
      * @return Row class che contiene i campi double.
      * @throws IOException nel caso non riesca a leggere un campo correttamente dal file
-     * Nel caso in cui il file sia finito ritorna null.
-     * Se una riga è invalida la ignora e ritorna errore.
+     * Nel caso in cui il file sia finito ritorna una riga nulla con il tipo: ENDFILE.
+     * Se una riga è invalida setta il tipo: ERROR e imposta il messaggio.
      */
     public CSVRow getNextRow() throws IOException {
-        if(endoffile)
-            return null;
 
         CSVRow r = new CSVRow(descriptors.size());
         int i = 0, j=0;
         Field f;
         StringBuilder sb = new StringBuilder();
+
+        if(endoffile)
+        {
+            r.type = RowType.ENDFILE;
+            return r;
+        }
+
         do
         {
             f = getNextField();
@@ -106,45 +112,46 @@ public class CSVHandler
                 try{r.timestamp = Long.parseLong(f.value);}
                 catch (Exception e2)
                 {
-                    try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}catch (Exception e){r.error = true;}
+                    try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}
+                    catch (Exception e){r.type = RowType.ERROR;}
                 }
             }
             else
-                try {r.fields[j++] = Double.parseDouble(f.value);}catch(Exception e){r.error = true;}
+                try {r.fields[j++] = Double.parseDouble(f.value);}
+                catch(Exception e){r.type = RowType.ERROR;}
         }
         while(f.type == FieldType.NORMAL);
 
         if(j != descriptors.size())
-            r.error = true;
+            r.type = RowType.ERROR;
 
-        if(r.error)
-            r.errorMsg = "[SID"+dID+"] Errore nella linea numero "+rowIndex+"; linea: '" + sb.toString() + "'";
+        if(r.type == RowType.ERROR)
+            r.errorMsg = "Errore nella linea numero "+rowIndex+"; linea: '" + sb.toString() + "'";
 
         rowIndex++;
 
         return r;
     }
 
-    public CSVHandler(int debugID, InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception{this(debugID, isr, fieldSeparator, rowSeparator, 1);}
-    public CSVHandler(int debugID, InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception
+    public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception{this(isr, fieldSeparator, rowSeparator, 1);}
+    public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception
     {
         is = isr;
         fs = fieldSeparator;
         rs = rowSeparator;
         descriptors = new LinkedList<>();
-        dID = debugID;
         tsScale = timestampScale;
 
         if(fs.contains(rs) || rs.contains(fs))
         {
             endoffile = true;
-            throw new Exception("[SID"+dID+"] Un separatore e' contenuto nell'altro, questo causa errori di formattazione nel file CSV.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
+            throw new Exception("Un separatore e' contenuto nell'altro, questo causa errori di formattazione nel file CSV.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
         }
 
         if(isCifraOpunto(fs.charAt(0)) || isCifraOpunto(fs.charAt(fs.length()-1)) || isCifraOpunto(rs.charAt(0)) || isCifraOpunto(rs.charAt(fs.length()-1)))
         {
             endoffile = true;
-            throw new Exception("[SID"+dID+"] Un o piu' separatori iniziano o finiscono con cifre o punti.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
+            throw new Exception("Un o piu' separatori iniziano o finiscono con cifre o punti.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
         }
 
 
@@ -167,7 +174,7 @@ public class CSVHandler
 
         if(tsIndex == -1) {
             endoffile = true;
-            throw new Exception("[SID"+dID+"] Non e' presente un campo che [toLower] corrisponda alla stringa 'ts' oppure 'timestamp'.\nLeggere le assunzioni di CSVLoaderSensor per piu' informazioni.");
+            throw new Exception("Non e' presente un campo che [toLower] corrisponda alla stringa 'ts' oppure 'timestamp'.\nLeggere le assunzioni di CSVLoaderSensor per piu' informazioni.");
         }
     }
 

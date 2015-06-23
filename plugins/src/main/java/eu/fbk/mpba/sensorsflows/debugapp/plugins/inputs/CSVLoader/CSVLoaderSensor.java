@@ -22,6 +22,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     CSVHandler ch;
     static int globalDebugID = 0;
     protected int debugID = 0;
+    protected boolean fileFinito = false;
 
     public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, DevicePlugin<Long, double[]> d) throws Exception {
         this(isr, fieldSeparator, rowSeparator, 1, d);
@@ -38,33 +39,31 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
      */
     public boolean sendRow()
     {
-        if(getState() != SensorStatus.ON)
+        if(fileFinito)
             return false;
 
         CSVHandler.CSVRow r = null;
         try { r = ch.getNextRow(); } catch (IOException e) {
             sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 101, "[SID"+ debugID + "] Error reading row: " + e.getMessage());
             _status = SensorStatus.ERROR;
+            fileFinito = true;
         }
 
         if(r!= null)
         {
-            if(r.type != CSVHandler.RowType.ERROR)
-            {
+            if(!r.getError())
                 sensorValue(r.timestamp, r.fields);
-
-                if(r.type == CSVHandler.RowType.ENDFILE)
-                    _status = SensorStatus.OFF;
-            }
             else
             {
-                sensorEvent(r.timestamp, 101, r.errorMsg);
+                sensorEvent(r.timestamp, 101, r.getErrorMsg());
                 _status = SensorStatus.ERROR;
             }
+
+            if(r.endfile)
+                fileFinito = true;
         }
 
-
-        return getState() == SensorStatus.ON;
+        return !fileFinito;
     }
 
     public void sensorValue(long time, double[] value) {

@@ -5,42 +5,54 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
 
+
 /**
  * ASSUNZIONI: assumo che...
  *
  *        INTESTAZIONE
  *              1) Il file CSV contenga un'intestazione.
- *              2) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
+ *              2) Il file non contenga solo l'intestazione ma anche i dati.
+ *              3) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
  *
  *        RIGHE
- *              3) Il timestamp sia in nanosecondi (il campo 'timestampScale quindi' e' 1), se cosi' non fosse si dovra'
- *                      settare opportunamente il campo 'timestampScale' per convertire il timestamp fornito in nanosecondi,
- *                      ovviamente nelle vestigia dell'affermazione suddetta e' implicitamente celata l'informazione
- *                      che ratifica il fatto di poter mettere valori decimali nel timestamp.
- *                      Ricordarsi che con un double si perde precisione rispetto ad un long, letto da qui:
+ *              4) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
+ *                      se cosi' non fosse si dovra' settare opportunamente il campo 'timestampScale'
+ *                      per rendere il timestamp fornito in nanosecondi,
+ *                      ovviamente si puo' inserire valori decimali nel timestamp che saranno poi convertite in non decimali
+ *                      attraverso la scala.
+ *                      Cifre al di sotto del nanosecondo verranno prettamente ignorate.
+ *                      Ricordarsi che con un double si perde un po' di precisione rispetto ad un long, letto da qui:
  *                          http://ubuntuforums.org/showthread.php?t=1520796
- *              4) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
- *              5) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
- *              6) [ovvia] I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
+ *              5) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
+ *              6) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
+ *              7) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
  *                      e verra' riportato un errore.
- *              7) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
+ *              8) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
+ *              9) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
+ *                      fieldSep = ".0"; rowSep = "5.";
+ *                      Se provate a scrivere questi dati con quei separatori:
+ *                                                                  ts  x    y  z
+ *                                                                  5   5.0  5  5.0
+ *                      ne esce una cosa incomprensibile:
+ *                                                                  ts.0x.0y.0z5.5.05.0.05.05.0
+ *                      Questi controlli sono difficili da fare, chi non ha testa ha gambe.
  *
  *        SEPARATORI
- *              8) I due separatori non siano l'uno conenuto nell'altro.
+ *              10) I due separatori non siano l'uno conenuto nell'altro.
  *                      Mettiamo che Gino abbia settato i separatori ";" e ";@",
  *                      cosi' facendo toglie pero' a Gesualdo (che costruisce il file csv)
  *                      l'opportunita' di scrivere un campo in questo modo: @campo
  *                      perche' verrebbe interpretato in maniera errata come una fine di riga;
  *                      stessa cosa per "@;@" oppure "@;".
- *              9) I due separatori non inizino o finiscano con cifre numeriche o punti [0 1 2 3 4 5 6 7 8 9 .].
- *                      Creerebbero infatti confusione con i numeri all'interno della riga.
  *
  *
  * GESTIONE ERRORI:
  *              - Lancio un'eccezione se si verifica un errore nel Costruttore, altrimenti ritorno una classe CSVRow
  *                      contenente il campo 'error' settato a 'true' nel metodo getNextRow.
  *
- * NOTE: Se avviene un errore grave le successive azioni saranno come se file fosse finito.
+ *
+ * NOTE:
+ *              - Se avviene un errore grave le successive azioni saranno come se file fosse finito.
  */
 public class CSVHandler
 {
@@ -54,17 +66,35 @@ public class CSVHandler
             type = t;
         }
     }
-    public enum RowType {NORMAL, ERROR, ENDFILE}
     public class CSVRow{
         public long timestamp;
-        public RowType type;
-        public String errorMsg;
+        private boolean error2;
+        private String errorMsg2;
+        public boolean endfile;
+
+        public void setError(String errorMessage) {
+            error2 = true;
+            errorMsg2 = errorMessage;
+        }
+        public boolean getError()
+        {
+            return error2;
+        }
+        public String getErrorMsg()
+        {
+            return errorMsg2;
+        }
+        public void addErrorInfo(String str)
+        {
+            errorMsg2 += str;
+        }
+
         public double[] fields;
         public CSVRow(int numFields)
         {
             fields = new double[numFields];
-            type = RowType.NORMAL;
-            errorMsg = "";
+            error2 = endfile = false;
+            errorMsg2 = "";
         }
     }
 
@@ -96,7 +126,8 @@ public class CSVHandler
 
         if(endoffile)
         {
-            r.type = RowType.ENDFILE;
+            r.endfile = true;
+            r.setError("WARNING: si sta' cercando di leggere un file gia' finito o chiuso (puo' voler dire che nel file e' presente solo l'intestazione)");
             return r;
         }
 
@@ -113,20 +144,29 @@ public class CSVHandler
                 catch (Exception e2)
                 {
                     try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}
-                    catch (Exception e){r.type = RowType.ERROR;}
+                    catch (Exception e)
+                    {
+                        r.setError("Errore linea "+rowIndex+": Timestamp non valido.");
+                    }
                 }
             }
             else
                 try {r.fields[j++] = Double.parseDouble(f.value);}
-                catch(Exception e){r.type = RowType.ERROR;}
+                catch(Exception e)
+                {
+                    r.setError("Errore linea "+rowIndex+": campi non validi (caratteri non validi || virgola anziche' il punto).");
+                }
         }
         while(f.type == FieldType.NORMAL);
 
         if(j != descriptors.size())
-            r.type = RowType.ERROR;
+            r.setError("Errore linea "+rowIndex+": Il numero dei campi non è conforme all'intestazione");
 
-        if(r.type == RowType.ERROR)
-            r.errorMsg = "Errore nella linea numero "+rowIndex+"; linea: '" + sb.toString() + "'";
+        if(r.getError())
+            r.addErrorInfo(" [linea: '" + sb.toString() + "']");
+
+        if(f.type == FieldType.ENDFILE)
+            r.endfile = true;
 
         rowIndex++;
 
@@ -146,12 +186,6 @@ public class CSVHandler
         {
             endoffile = true;
             throw new Exception("Un separatore e' contenuto nell'altro, questo causa errori di formattazione nel file CSV.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
-        }
-
-        if(isCifraOpunto(fs.charAt(0)) || isCifraOpunto(fs.charAt(fs.length()-1)) || isCifraOpunto(rs.charAt(0)) || isCifraOpunto(rs.charAt(fs.length()-1)))
-        {
-            endoffile = true;
-            throw new Exception("Un o piu' separatori iniziano o finiscono con cifre o punti.\nLeggere le assunzioni di CSVHandler per piu' informazioni.");
         }
 
 
@@ -214,7 +248,7 @@ public class CSVHandler
                     {
                         if(c != fs.charAt(0))
                             bsfield = false;
-                        else
+                        else if(!bsrow)
                         {
                             sb.append(sb2.toString());
                             sb2.setLength(0);
@@ -225,7 +259,7 @@ public class CSVHandler
                     {
                         if(c != rs.charAt(0))
                             bsrow = false;
-                        else
+                        else if(!bsfield)
                         {
                             sb.append(sb2.toString());
                             sb2.setLength(0);

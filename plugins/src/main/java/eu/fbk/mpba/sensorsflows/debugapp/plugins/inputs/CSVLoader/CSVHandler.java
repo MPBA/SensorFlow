@@ -115,7 +115,7 @@ public class CSVHandler
      * @return Row class che contiene i campi double.
      * @throws IOException nel caso non riesca a leggere un campo correttamente dal file
      * Nel caso in cui il file sia finito ritorna una riga nulla con il tipo: ENDFILE.
-     * Se una riga è invalida setta il tipo: ERROR e imposta il messaggio.
+     * Se una riga Ã¨ invalida setta il tipo: ERROR e imposta il messaggio.
      */
     public CSVRow getNextRow() throws IOException {
 
@@ -160,7 +160,7 @@ public class CSVHandler
         while(f.type == FieldType.NORMAL);
 
         if(j != descriptors.size())
-            r.setError("Errore linea "+rowIndex+": Il numero dei campi non è conforme all'intestazione");
+            r.setError("Errore linea "+rowIndex+": Il numero dei campi non Ã¨ conforme all'intestazione");
 
         if(r.getError())
             r.addErrorInfo(" [linea: '" + sb.toString() + "']");

@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
@@ -24,15 +25,16 @@ import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3Device;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.EXLs3.EXLs3ToFile;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.android.SmartphoneDevice;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.inputs.empatica.EmpaticaDevice;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvDataSaver;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.CsvOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.ProtobufferOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SQLiteOutput;
-import eu.fbk.mpba.sensorsflows.debugapp.plugins.outputs.SensorsProtobuffer;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3Device;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3ToFile;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.android.SmartphoneDevice;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.empatica.EmpaticaDevice;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.CsvDataSaver;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.CsvOutput;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.ProtobufferOutput;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SQLiteOutput;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SensorsProtobuffer;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.TCPServerOutput;
 
 
 public class MainActivity extends Activity {
@@ -124,6 +126,17 @@ public class MainActivity extends Activity {
                 m.addOutput(new ProtobufferOutput("Protobuf", new File(
                         Environment.getExternalStorageDirectory().getPath()
                                 + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
+            }
+        });
+        addPluginChoice(false, "TCPServer", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TCPServerOutput x = new TCPServerOutput(2000);
+                    m.addOutput(x);
+                } catch (IOException e) {
+                    Toast.makeText(_this, e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
         });
         addPluginChoice(false, "User", new Runnable() {

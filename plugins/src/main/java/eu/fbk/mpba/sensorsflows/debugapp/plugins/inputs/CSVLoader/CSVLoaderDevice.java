@@ -34,13 +34,12 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      */
     private Thread thr = new Thread(new Runnable(){@Override public void run()
     {
-        _sensors.forEach(SensorComponent::switchOnAsync);
+        for(SensorComponent s : _sensors)
+            s.switchOnAsync();
 
         boolean ceAncoraSperanza = false;
         do
         {
-            System.out.println("Haha");
-
             for(SensorComponent s:_sensors)
                 ceAncoraSperanza = ((CSVLoaderSensor)s).sendRow();
         } while(ceAncoraSperanza);

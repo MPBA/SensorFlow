@@ -20,7 +20,6 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     private final Thread mSTh;
-    private Semaphore mSem;
     protected final ServerSocket mSock;
     protected String mTag = null;
     protected volatile Socket mCli = null;
@@ -32,24 +31,19 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     public TCPServerOutput(InetAddress local, int port) throws IOException {
         mSock = local == null ? new ServerSocket(port, 10) : new ServerSocket(port, 10, local);
-        mSem = new Semaphore(0);
 
         Runnable mRun = new Runnable() {
             @Override
             public void run() {
-                while (true)
-                    try {
-                        Socket a = mSock.accept();
-                        mOut = a.getOutputStream();
-                        writeDescriptors(mOut);
-                        mCli = a;
-                        mSem.acquire();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        mCli = null;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    Socket a = mSock.accept();
+                    mOut = a.getOutputStream();
+                    writeDescriptors(mOut);
+                    mCli = a;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mCli = null;
+                }
             }
         };
         mSTh = new Thread(mRun, getClass().getName() + "-ServerThread");
@@ -105,7 +99,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
         if (mCli != null) {
             synchronized (mSock) {
                 try {
-                    mOut.write(new byte[] { 0x1E, 100, (byte) mSensors.indexOf(event.sensor) });
+                    mOut.write(new byte[] { 0x1E, 101, (byte) mSensors.indexOf(event.sensor) });
                     ByteBuffer b = ByteBuffer.allocate(12);
                     b.putLong(event.timestamp); // Big-Endian java and network
                     b.putInt(event.code); // Big-Endian java and network
@@ -114,13 +108,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                     mOut.write(event.message.getBytes());
                 } catch (IOException e) {
                     e.printStackTrace();
-                    try {
-                        mCli.close();
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
                     mCli = null;
-                    mSem.release();
                 }
             }
         }
@@ -131,7 +119,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
         if (mCli != null) {
             synchronized (mSock) {
                 try {
-                    mOut.write(new byte[] { 0x1E, 101, (byte) mSensors.indexOf(data.sensor) });
+                    mOut.write(new byte[] { 0x1E, 100, (byte) mSensors.indexOf(data.sensor) });
                     ByteBuffer b = ByteBuffer.allocate(8 + data.value.length * 8);
                     b.putLong(data.timestamp);
                     for (double v : data.value)
@@ -139,6 +127,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                     mOut.write(b.array());
                 } catch (IOException e) {
                     e.printStackTrace();
+                    mCli = null;
                 }
             }
         }

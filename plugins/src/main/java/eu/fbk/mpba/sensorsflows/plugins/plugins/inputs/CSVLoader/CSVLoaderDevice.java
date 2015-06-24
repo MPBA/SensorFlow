@@ -16,7 +16,7 @@ import java.util.List;
 */
 public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference
 {
-    private List<SensorComponent<Long, double[]>> _sensors;
+    protected List<SensorComponent<Long, double[]>> _sensors;
     private String _name;
 
     /**
@@ -49,29 +49,11 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      * @param fieldSeparator separatore dei vari campi
      * @param rowSeparator separatore delle varie righe di campi.
      *
-     * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
+     * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n" ovviamente.
      */
-    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws Exception {
-        _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, this));
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, long tsScale) throws Exception {
+        _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, tsScale, this));
     }
-    /**
-     * @param is stream di input
-     * @param fieldSeparator separatore dei vari campi
-     *
-     * Separatore di riga di default: "\n"
-     *
-     * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
-     */
-    public void addFile(InputStreamReader is, String fieldSeparator) throws Exception {addFile(is, fieldSeparator, "\n");}
-    /**
-     * @param is stream di input
-     *
-     * Separatore di campo di default: ";"
-     * Separatore di riga di default: "\n"
-     *
-     * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n"
-     */
-    public void addFile(InputStreamReader is) throws Exception {addFile(is, ";", "\n");}
 
     /**
      * Qui faccio partire i sensori

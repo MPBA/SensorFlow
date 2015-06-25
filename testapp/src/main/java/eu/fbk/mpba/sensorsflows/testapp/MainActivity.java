@@ -12,8 +12,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +27,7 @@ import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader.CSVLoaderDevice;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3ToFile;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.android.SmartphoneDevice;
@@ -94,6 +97,29 @@ public class MainActivity extends Activity {
                 }));
             }
         });
+
+
+        /**
+         * Prova CSVLoader
+         * */
+        addPluginChoice(true, "CSVLoader", new Runnable() {
+            @Override
+            public void run() {
+                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
+                String str = "ts;x;y;z\n0;1;0;0\n1;0;1;0\n2;0;0;1";
+
+                try
+                {
+                    cl.addFile(new InputStreamReader(new ByteArrayInputStream(str.getBytes())), ";", "\n", 1);
+                }
+                catch (Exception e)
+                {
+                    Log.i("CSVL", e.getMessage());
+                }
+                m.addDevice(cl);
+            }
+        });
+
         addPluginChoice(false, "CSV", new Runnable() {
             @Override
             public void run() {

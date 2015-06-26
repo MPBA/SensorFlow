@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
 
                 final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
 
-                //
+                //Carico i files dalla cartella di input
                 for (final File fileEntry : folder.listFiles())
                 {
                     if (fileEntry.isFile())
@@ -123,11 +123,6 @@ public class MainActivity extends Activity {
                     }
                 }
 
-                //Stampo i descriptors dei vari sensori
-                for(SensorComponent sc : cl.getSensors()) {
-
-                    Log.i("CSVL", Arrays.toString(sc.getValuesDescriptors().toArray()));
-                }
                 m.addDevice(cl);
             }
         });

@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Hashtable;
@@ -105,17 +106,20 @@ public class MainActivity extends Activity {
         addPluginChoice(true, "CSVLoader", new Runnable() {
             @Override
             public void run() {
-                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
-                String str = "ts;x;y;z\n0;1;0;0\n1;0;1;0\n2;0;0;1";
 
-                try
+                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
+
+                final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
+
+                for (final File fileEntry : folder.listFiles())
                 {
-                    cl.addFile(new InputStreamReader(new ByteArrayInputStream(str.getBytes())), ";", "\n", 1);
+                    if (fileEntry.isFile())
+                    {
+                        try{cl.addFile(new InputStreamReader(new FileInputStream(fileEntry)), ";", "\n", 1);}
+                        catch (Exception e){Log.i("CSVL", e.getMessage());}
+                    }
                 }
-                catch (Exception e)
-                {
-                    Log.i("CSVL", e.getMessage());
-                }
+
                 m.addDevice(cl);
             }
         });

@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
+import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
@@ -111,6 +113,7 @@ public class MainActivity extends Activity {
 
                 final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
 
+                //
                 for (final File fileEntry : folder.listFiles())
                 {
                     if (fileEntry.isFile())
@@ -120,6 +123,11 @@ public class MainActivity extends Activity {
                     }
                 }
 
+                //Stampo i descriptors dei vari sensori
+                for(SensorComponent sc : cl.getSensors()) {
+
+                    Log.i("CSVL", Arrays.toString(sc.getValuesDescriptors().toArray()));
+                }
                 m.addDevice(cl);
             }
         });

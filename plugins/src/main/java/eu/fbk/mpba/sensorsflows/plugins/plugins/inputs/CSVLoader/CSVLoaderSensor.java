@@ -83,6 +83,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
         return ch.getDescriptors();
     }
     @Override public String toString() {
-        return "CSVLoader sensor";
+        return "CSVLoader sensor" + debugID;
     }
 }

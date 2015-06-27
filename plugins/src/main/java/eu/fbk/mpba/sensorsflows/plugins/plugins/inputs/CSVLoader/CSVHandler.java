@@ -173,7 +173,6 @@ public class CSVHandler
         return r;
     }
 
-    public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception{this(isr, fieldSeparator, rowSeparator, 1);}
     public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception
     {
         is = isr;
@@ -212,11 +211,6 @@ public class CSVHandler
         }
     }
 
-
-    private boolean isCifraOpunto(char c)
-    {
-        return c >= '0' && c <= '9' || c == '.';
-    }
 
     /**
      * @return [next field]

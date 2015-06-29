@@ -140,7 +140,7 @@ public class CSVHandler
 
             if(i++ == tsIndex)
             {
-                try{r.timestamp = Long.parseLong(f.value);}
+                try{r.timestamp = Long.parseLong(f.value)*tsScale;}
                 catch (Exception e2)
                 {
                     try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}

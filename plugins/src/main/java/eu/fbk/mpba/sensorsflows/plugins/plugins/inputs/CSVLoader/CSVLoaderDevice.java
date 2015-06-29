@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader;
 
+import android.util.Log;
+
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
@@ -17,13 +19,15 @@ import java.util.List;
 public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference
 {
     protected List<SensorComponent<Long, double[]>> _sensors;
-    private String _name;
+    protected String _name;
+    protected Runnable onfinish = null;
 
     /**
      * @param name nome del Device
      *     I vari file vanno aggiunti con addFile.
      */
-    public CSVLoaderDevice(String name) {
+    public CSVLoaderDevice(String name)
+    {
         _name = name;
         _sensors = new LinkedList<>();
     }
@@ -36,12 +40,18 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
         for(SensorComponent s : _sensors)
             s.switchOnAsync();
 
-        boolean ceAncoraSperanza = false;
+        boolean ceAncoraSperanza;
         do
         {
-            for(SensorComponent s:_sensors)
-                ceAncoraSperanza = ((CSVLoaderSensor)s).sendRow();
+            ceAncoraSperanza = false;
+            for(SensorComponent s:_sensors) {
+                if(((CSVLoaderSensor) s).sendRow())
+                    ceAncoraSperanza = true;
+            }
         } while(ceAncoraSperanza);
+
+        if(onfinish != null)
+            onfinish.run();
     }});
 
     /**
@@ -51,8 +61,17 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      *
      * AVVERTENZA: ricordati che "\n" e' diverso da "\r\n" ovviamente.
      */
-    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, long tsScale) throws Exception {
-        _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, tsScale, this));
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, long tsScale, String name) throws Exception {
+        _sensors.add(new CSVLoaderSensor(is, fieldSeparator, rowSeparator, tsScale, name, this));
+    }
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, long tsScale) throws Exception {addFile(is, fieldSeparator, rowSeparator, tsScale, "");}
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, String name) throws Exception {addFile(is,fieldSeparator,rowSeparator,1,name);}
+    public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator) throws Exception {addFile(is,fieldSeparator,rowSeparator,1,"");}
+
+
+    public void setAsyncActionOnFinish(Runnable action)
+    {
+        onfinish = action;
     }
 
     /**

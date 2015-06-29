@@ -140,7 +140,7 @@ public class CSVHandler
 
             if(i++ == tsIndex)
             {
-                try{r.timestamp = Long.parseLong(f.value);}
+                try{r.timestamp = Long.parseLong(f.value)*tsScale;}
                 catch (Exception e2)
                 {
                     try{r.timestamp = (long)(Double.parseDouble(f.value)*tsScale);}
@@ -173,7 +173,6 @@ public class CSVHandler
         return r;
     }
 
-    public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator) throws Exception{this(isr, fieldSeparator, rowSeparator, 1);}
     public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception
     {
         is = isr;
@@ -212,11 +211,6 @@ public class CSVHandler
         }
     }
 
-
-    private boolean isCifraOpunto(char c)
-    {
-        return c >= '0' && c <= '9' || c == '.';
-    }
 
     /**
      * @return [next field]

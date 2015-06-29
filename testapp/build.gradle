@@ -19,6 +19,6 @@ android {
 }
 
 dependencies {
-    compile project(':sensorsflows')
+    //compile project(':sensorsflows')
     compile project(':plugins')
 }

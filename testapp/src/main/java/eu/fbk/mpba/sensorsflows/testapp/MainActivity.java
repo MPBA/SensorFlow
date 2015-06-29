@@ -6,14 +6,22 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
@@ -21,10 +29,12 @@ import java.util.UUID;
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
+import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader.CSVLoaderDevice;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3Device;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.EXLs3.EXLs3ToFile;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.android.SmartphoneDevice;
@@ -94,6 +104,70 @@ public class MainActivity extends Activity {
                 }));
             }
         });
+
+
+        /**
+         * Prova CSVLoader
+         * */
+        addPluginChoice(true, "CSVLoader", new Runnable() {
+            @Override
+            public void run() {
+
+                //Creo il device
+                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
+                cl.setAsyncActionOnFinish(new Runnable(){public void run()
+                {
+                        ((Activity)_this).runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(((Activity)_this), "FINITOOOOO :D", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }});
+
+
+                //Prendo la scala timestamp per alcuni files.
+                HashMap<String, Long> scale = new HashMap<>();
+                BufferedReader br = null;
+                try
+                {
+                    br = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader/input_config.txt"));
+                    String line;
+                    while ((line = br.readLine()) != null)
+                    {
+                        if(line.replaceAll("\\s","").charAt(0) != '#')
+                        {
+                            String[] parts = line.split(";");
+                            scale.put(parts[0], Long.parseLong(parts[1]));
+                        }
+                    }
+                }
+                catch (Exception e){Log.i("CSVL", e.getMessage());}
+                finally {
+                    try{br.close();}
+                    catch (Exception e){Log.i("CSVL", e.getMessage());}
+                }
+
+
+                //Carico i files dalla cartella di input
+                final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
+                for (final File fileEntry : folder.listFiles())
+                {
+                    if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt"))
+                    {
+                        long tsScale = 1;
+                        Long tmp = scale.get(fileEntry.getName());
+                        if(tmp != null)
+                            tsScale = tmp;
+
+                        try{cl.addFile(new InputStreamReader(new FileInputStream(fileEntry)), ";", "\n", tsScale, fileEntry.getName());}
+                        catch (Exception e){Log.i("CSVL", e.getMessage());}
+                    }
+                }
+
+                m.addDevice(cl);
+            }
+        });
+
         addPluginChoice(false, "CSV", new Runnable() {
             @Override
             public void run() {

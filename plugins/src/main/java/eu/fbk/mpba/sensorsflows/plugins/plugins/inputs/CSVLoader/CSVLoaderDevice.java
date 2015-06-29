@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader;
 
+import android.util.Log;
+
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
@@ -38,11 +40,14 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
         for(SensorComponent s : _sensors)
             s.switchOnAsync();
 
-        boolean ceAncoraSperanza = false;
+        boolean ceAncoraSperanza;
         do
         {
-            for(SensorComponent s:_sensors)
-                ceAncoraSperanza = ((CSVLoaderSensor)s).sendRow();
+            ceAncoraSperanza = false;
+            for(SensorComponent s:_sensors) {
+                if(((CSVLoaderSensor) s).sendRow())
+                    ceAncoraSperanza = true;
+            }
         } while(ceAncoraSperanza);
 
         if(onfinish != null)

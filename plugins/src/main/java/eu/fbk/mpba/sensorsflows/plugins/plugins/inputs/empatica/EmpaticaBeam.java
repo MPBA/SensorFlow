@@ -54,8 +54,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     public void assert_web_reachable() throws UnreachableWebException {
         if (!PingMan.isNetworkAvailable(_context)) {
             throw new UnreachableWebException("No network available! No manifest permission or no active network available.");
-        }
-        else if (!PingMan.isHttpColonSlashSlashWwwDotEmpaticaDotComReachable(_context)) {
+        } else if (!PingMan.isHttpColonSlashSlashWwwDotEmpaticaDotComReachable(_context)) {
             throw new UnreachableWebException("Empatica is not reachable via http!");
         }
     }
@@ -118,23 +117,24 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                     _device.connectDevice(device);
                     // Here no exception
                     _code = device.getName();
-                    Log.d(LOG_TAG, "Device name: " + _code + ", label: " + label);
                 } catch (ConnectionNotAllowedException e) {
                     // Bisogna aver pazienza con loro...
                     allowed = false;
                 }
             }
-    /*      else {          */ if (!allowed) {
+    /*      else {          */
+            if (!allowed) {
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_ALLOWED);
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
             }
-        } else {
-            if (_foundE3s.contains(device.getAddress())) {
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_FOUND);
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
-            } else
-                _foundE3s.add(device.getAddress());
         }
+        if (_foundE3s.contains(device.getAddress())) {
+            _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_FOUND);
+            _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
+        } else
+            _foundE3s.add(device.getAddress());
+
+        Log.d(LOG_TAG, "Device name: " + _code + ", label: " + label + ", allowed: " + allowed);
     }
 
     @Override

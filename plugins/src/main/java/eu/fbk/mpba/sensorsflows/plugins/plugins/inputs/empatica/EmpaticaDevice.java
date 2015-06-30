@@ -84,7 +84,8 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
                 EmpaticaDevice.this.mTem };
             Long now = System.currentTimeMillis() * 1_000_000L;
             for (EmpaticaSensor s : is) {
-                s.sensorEvent(now, 0, result.toString());
+                if (s!=null)
+                    s.sensorEvent(now, 0, result.toString());
             }
 //            switch (result) {
 //                case JUST_INITIALIZED:

@@ -9,7 +9,7 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
  *
  * The user should access to these methods only to have a higher control of the operation.
  */
-public interface ISensor {
+public interface ISensor extends ISampleCounter {
 
     public void switchOnAsync();
 
@@ -20,4 +20,6 @@ public interface ISensor {
     public DevicePlugin getParentDevicePlugin();
 
     public abstract List<Object> getValuesDescriptors();
+
+    public abstract String getName();
 }

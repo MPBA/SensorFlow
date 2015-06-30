@@ -22,7 +22,7 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
     }
 
     @Override
-    public void initialize() {
+    public void initializeDevice() {
         changeState(DeviceStatus.INITIALIZING);
         _devicePlugin.inputPluginInitialize();
         changeState(DeviceStatus.INITIALIZED);

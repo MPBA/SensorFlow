@@ -9,7 +9,6 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 
 
-
 /**
  * [IMPORTANTE] Vai a vedere il javadoc di CSVLoaderSensor,
  * non lo riporto qui per non creare ridondanza ovviamente.
@@ -55,7 +54,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      * @param is             stream di input
      * @param fieldSeparator separatore dei vari campi
      * @param rowSeparator   separatore delle varie righe di campi.
-     *                       <p/>
+     *                       
      *                       AVVERTENZA: ricordati che "\n" e' diverso da "\r\n" ovviamente.
      */
     public void addFile(InputStreamReader is, String fieldSeparator, String rowSeparator, long tsScale, String name) throws Exception {

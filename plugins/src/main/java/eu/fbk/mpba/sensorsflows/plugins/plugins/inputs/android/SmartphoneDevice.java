@@ -23,8 +23,8 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
         resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
         _sensors = new ArrayList<>();
         _sensors.add(new GpsSensor(this, context, "0", 0, 0));
-        _sensors.add(new AccelerometerSensor(this, context, "acc", SensorManager.SENSOR_DELAY_GAME));
-        _sensors.add(_textSensor = new TextEventsSensor<>(this, "notes"));
+        _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_GAME));
+        _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
     }
 
     public void addNoteNow(String text) {
@@ -61,7 +61,7 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return name;
     }
 }

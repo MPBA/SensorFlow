@@ -195,7 +195,7 @@ public abstract class EXLs3Receiver {
                 }
             }
         } catch (IOException e) {
-            Log.i(TAG, "+++ Disconnection: " + e.getMessage() + " <- " + e.getClass().getName());
+            Log.i(TAG, "+++ Disconnection: " + e.getMessage() + " <- " + e.getClass().getSimpleName());
             switch (e.getMessage()) {
                 case "Operation Canceled":
                 case "bt socket closed, read return: -1":

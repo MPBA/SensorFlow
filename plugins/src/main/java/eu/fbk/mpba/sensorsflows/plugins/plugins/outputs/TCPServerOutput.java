@@ -1,10 +1,13 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.outputs;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -43,13 +46,19 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                     mOut = a.getOutputStream();
                     writeDescriptors(mOut);
                     mCli = a;
+                } catch (SocketException e) {
+                    if (e.getMessage().equals("Socket closed"))
+                        Log.v(TCPServerOutput.class.getSimpleName(), "Socket closed");
+                    else
+                        e.printStackTrace();
+                    mCli = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                     mCli = null;
                 }
             }
         };
-        mSTh = new Thread(mRun, TCPServerOutput.class.getName() + "-ServerThread");
+        mSTh = new Thread(mRun, TCPServerOutput.class.getSimpleName() + "-ServerThread");
     }
 
     private List<ISensor> mSensors = null;
@@ -61,8 +70,8 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
             // sensor_info_block: p,h,id
             o.write(new byte[] { 0x1E, 115, i });
             // type
-            o.write(mSensors.get(i).getClass().getName().length());
-            o.write(mSensors.get(i).getClass().getName().getBytes());
+            o.write(mSensors.get(i).getClass().getSimpleName().length());
+            o.write(mSensors.get(i).getClass().getSimpleName().getBytes());
             // name
             o.write(mSensors.get(i).toString().length());
             o.write(mSensors.get(i).toString().getBytes());
@@ -142,7 +151,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return TCPServerOutput.class.getName();
+        return TCPServerOutput.class.getSimpleName();
     }
 
     @Override

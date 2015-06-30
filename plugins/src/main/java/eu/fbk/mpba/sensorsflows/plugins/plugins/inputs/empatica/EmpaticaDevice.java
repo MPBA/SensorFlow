@@ -66,27 +66,44 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
         return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) mAcc, mBat, mBvp, mIbi, mGsr, mTem).iterator());
     }
 
+    @Override
+    public String getName() {
+        return "EmpaticaBeam";
+    }
+
     EmpaticaBeam.ConnectEventHandler conn = new EmpaticaBeam.ConnectEventHandler() {
         @Override
         public void end(EmpaticaBeam sender, Result result) {
-            switch (result) {
-                case JUST_INITIALIZED:
-                    break;
-                case NOT_CONNECTED:
-                    break;
-                case NOT_FOUND:
-                    break;
-                case NOT_ALLOWED:
-                    break;
-                case DISCOVERING:
-                    break;
-                case CONNECTING:
-                    break;
-                case CONNECTED:
-                    break;
-                case LOST:
-                    break;
+            //noinspection unchecked
+            EmpaticaSensor[] is = new EmpaticaSensor[] {
+                EmpaticaDevice.this.mAcc,
+                EmpaticaDevice.this.mBat,
+                EmpaticaDevice.this.mBvp,
+                EmpaticaDevice.this.mGsr,
+                EmpaticaDevice.this.mIbi,
+                EmpaticaDevice.this.mTem };
+            Long now = System.currentTimeMillis() * 1_000_000L;
+            for (EmpaticaSensor s : is) {
+                s.sensorEvent(now, 0, result.toString());
             }
+//            switch (result) {
+//                case JUST_INITIALIZED:
+//                    break;
+//                case NOT_CONNECTED:
+//                    break;
+//                case NOT_FOUND:
+//                    break;
+//                case NOT_ALLOWED:
+//                    break;
+//                case DISCOVERING:
+//                    break;
+//                case CONNECTING:
+//                    break;
+//                case CONNECTED:
+//                    break;
+//                case LOST:
+//                    break;
+//            }
             Log.d(LOG_TAG, sender.getAddress() + " " + sender.getCode() + " -> " + result.toString());
         }
     };

@@ -14,7 +14,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
-    final String LOG_TAG = "ALE EMPA DEV";
+    final String LOG_TAG = "ALE EMP DEV";
 
     final EmpaticaBeam beam;
     final EmpaticaSensor.Accelerometer mAcc;

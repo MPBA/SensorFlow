@@ -65,7 +65,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return name;
     }
 
@@ -191,7 +191,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
             @Override
             public void lost(EXLs3Manager sender, int from, int to, int howMany) {
-                Log.v(this.getClass().getName(), "lost:" + howMany + " fr:" + from + " to:" + to);
+                Log.v(this.getClass().getSimpleName(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
 

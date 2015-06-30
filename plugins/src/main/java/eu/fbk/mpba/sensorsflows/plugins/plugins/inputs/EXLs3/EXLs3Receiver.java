@@ -59,7 +59,7 @@ public abstract class EXLs3Receiver {
         }
         setState(BTSrvState.CONNECTING);
         if (mStatusDelegate != null)
-            mStatusDelegate.connecting(this, mDevice, false); // TODO 8 Not only insecure
+            mStatusDelegate.connecting(this, mDevice, false); // TODO 8 Using only the insecure mode
         if (tryConnect()) {     // Acts as a reset
             // Connection Established
             setState(BTSrvState.CONNECTED);

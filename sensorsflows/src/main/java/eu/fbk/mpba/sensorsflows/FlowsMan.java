@@ -145,7 +145,7 @@ public class FlowsMan<TimeT, ValueT> implements
     protected List<OutputDecorator<TimeT, ValueT>> _userOutputs = new ArrayList<>();
 
     protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
-    protected List<IOutput> _outputsToInit = new ArrayList<>();   // FIXME Can change to OutputPlugin?                                    // null
+    protected List<IOutput> _outputsToInit = new ArrayList<>();   // FIXME Can change the type to OutputPlugin?                                    // null
 
     protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
             , EngineStatus> _onStateChanged = null;                   // null
@@ -283,23 +283,23 @@ public class FlowsMan<TimeT, ValueT> implements
     //      Internal init and final management
 
     /**
-     * This method allows to initialize the device before the {@code start} call.
+     * This method allows to initializeDevice the device before the {@code start} call.
      * Made private
      *
-     * @param device {@code IDevice} to initialize
+     * @param device {@code IDevice} to initializeDevice
      */
     void initialize(DeviceDecorator device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
         if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
-            device.initialize();
+            device.initializeDevice();
         } else {
 //            Log.w(LOG_TAG, "IDevice not NOT_INITIALIZED: " + device.toString());
         }
     }
 
     /**
-     * This method allows to initialize the device before the {@code start} call.
+     * This method allows to initializeDevice the device before the {@code start} call.
      * Made private
      *
      * @param output {@code IOutput} to finalize.
@@ -307,7 +307,7 @@ public class FlowsMan<TimeT, ValueT> implements
     void initialize(OutputDecorator<TimeT, ValueT> output, String sessionName) {
         //noinspection StatementWithEmptyBody
         if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
-            output.initialize(sessionName);
+            output.initializeOutput(sessionName);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
         }
@@ -356,7 +356,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOn(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        /*if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
+        /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
             */sensor.switchOnAsync();/* FIXME
         } else {
@@ -374,7 +374,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOff(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        /*if (_status == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
+        /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
             */sensor.switchOffAsync();/* FIXME
         } else {
@@ -471,12 +471,12 @@ public class FlowsMan<TimeT, ValueT> implements
         _devicesToInit.addAll(_userDevices);
         // Launches the initializations
         for (DeviceDecorator d : _userDevices) {
-            // only if NOT_INITIALIZED: checked in the initialize method
+            // only if NOT_INITIALIZED: checked in the initializeDevice method
             initialize(d);
         }
         _outputsToInit.addAll(_userOutputs);
         for (OutputDecorator<TimeT, ValueT> o : _userOutputs) {
-            // only if NOT_INITIALIZED: checked in the initialize method
+            // only if NOT_INITIALIZED: checked in the initializeDevice method
             initialize(o, sessionName);
         }
         // WAS _outputsSensors.clear();

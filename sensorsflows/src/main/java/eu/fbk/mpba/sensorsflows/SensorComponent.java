@@ -12,16 +12,17 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * This class adds internal support for the library data-paths.
  */
 public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
+    protected ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
     protected DevicePlugin<TimeT, ValueT> _parent = null;
     protected ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
-    protected ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
-
-    protected boolean _listened = true;
-    protected SensorStatus _status = SensorStatus.OFF;
 
     protected SensorComponent(DevicePlugin<TimeT, ValueT> parent) {
         _parent = parent;
     }
+
+    private int mForwardedMessages = 0;
+    private boolean mListened = true;
+    protected SensorStatus mStatus = SensorStatus.OFF;
 
     void addOutput(OutputDecorator<TimeT, ValueT> _output) {
         _outputs.add(_output);
@@ -38,48 +39,56 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        _handler.sensorStateChanged(this, null, _status = state);
+        // TODO: check if the null is necessary
+        _handler.sensorStateChanged(this, null, mStatus = state);
     }
 
     // Managed Overrides
 
-    @Override
-    public SensorStatus getState() {
-        return _status;
+    public int getForwardedMessagesCount() {
+        return mForwardedMessages;
+    }
+
+    public int getReceivedMessagesCount() {
+        return getForwardedMessagesCount();
     }
 
     public DevicePlugin<TimeT, ValueT> getParentDevicePlugin() {
         return _parent;
     }
 
+    @Override
+    public SensorStatus getState() {
+        return mStatus;
+    }
+
     // Notify methods
 
     public void sensorValue(TimeT time, ValueT value) {
-        //noinspection StatementWithEmptyBody
-        if (_handler != null)
+        if (_handler != null) {
             _handler.sensorValue(this, time, value);
+            mForwardedMessages++;
+        }
     }
 
     public void sensorEvent(TimeT time, int type, String message) {
-        //noinspection StatementWithEmptyBody
-        if (_handler != null)
+        if (_handler != null) {
             _handler.sensorEvent(this, time, type, message);
+            mForwardedMessages++;
+        }
     }
 
     // Listenage
 
     public boolean isListened() {
-        return _listened;
+        return mListened;
     }
 
     public void setListened(boolean listened) {
-        this._listened = listened;
+        this.mListened = listened;
     }
 
     // To implement
 
     public abstract List<Object> getValuesDescriptors();
-
-    @Override
-    public abstract String toString();
 }

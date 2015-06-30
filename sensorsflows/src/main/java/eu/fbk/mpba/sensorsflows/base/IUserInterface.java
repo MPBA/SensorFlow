@@ -29,12 +29,12 @@ public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extend
 
     // ITEMS OPERATION control part
 
-    // WAS it is not safe that the user do this as the current setup provides a static configuration
-//    public void initialize(DeviceT device);
+// WAS it is not safe that the user does this as the current setup provides a static configuration
+//    public void initializeDevice(DeviceT device);
 //
 //    public void finalize(DeviceT device);
 //
-//    public void initialize(IOutput<TimeT, ValueT> output);
+//    public void initializeDevice(IOutput<TimeT, ValueT> output);
 //
 //    public void finalize(IOutput<TimeT, ValueT> output);
 

@@ -15,8 +15,7 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * GESTIONE ERRORI: - Se dovesse esserci un qualsivoglia errore nel costruttore verra' lanciata un'eccezione, altrimenti
  *                      lo stato del sensore verra' settato ad 'ERROR' e verra' inviato un evento Error con il testo dell'eccezione/errore.
  */
-public class CSVLoaderSensor extends SensorComponent<Long, double[]>
-{
+public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     CSVHandler ch;
     protected String name;
     static int globalDebugID = 0;
@@ -26,40 +25,39 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
         super(d);
 
         name = sensorName;
-        if(name.equals(""))
-            name = "Sensor_"+(globalDebugID++);
+        if (name.equals(""))
+            name = "Sensor_" + (globalDebugID++);
 
-        ch = new CSVHandler(isr,fieldSeparator, rowSeparator, tsScale);
-        _status = SensorStatus.ON;
+        ch = new CSVHandler(isr, fieldSeparator, rowSeparator, tsScale);
+        mStatus = SensorStatus.ON;
     }
 
     /**
      * @return true se devo ancora leggere, false se ho finito oppure c'e' stato un errore.
      * Metodo che invia una riga del CSV che sto leggendo.
      */
-    public boolean sendRow()
-    {
-        if(fileFinito)
+    public boolean sendRow() {
+        if (fileFinito)
             return false;
 
         CSVHandler.CSVRow r = null;
-        try { r = ch.getNextRow(); } catch (IOException e) {
-            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 101, "[ "+ name + " ] Error reading row: " + e.getMessage());
-            _status = SensorStatus.ERROR;
+        try {
+            r = ch.getNextRow();
+        } catch (IOException e) {
+            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 101, "[ " + name + " ] Error reading row: " + e.getMessage());
+            mStatus = SensorStatus.ERROR;
             fileFinito = true;
         }
 
-        if(r!= null)
-        {
-            if(!r.getError())
+        if (r != null) {
+            if (!r.getError())
                 sensorValue(r.timestamp, r.fields);
-            else
-            {
+            else {
                 sensorEvent(r.timestamp, 101, r.getErrorMsg());
-                _status = SensorStatus.ERROR;
+                mStatus = SensorStatus.ERROR;
             }
 
-            if(r.endfile)
+            if (r.endfile)
                 fileFinito = true;
         }
 
@@ -70,23 +68,30 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]>
     public void sensorValue(long time, double[] value) {
         super.sensorValue(time, value);
     }
+
     public void sensorEvent(long time, int type, String message) {
         super.sensorEvent(time, type, message);
     }
 
     //Inutili
-    @Override public void switchOnAsync() {
+    @Override
+    public void switchOnAsync() {
         //Boh qui devo far qualcosa?
     }
-    @Override public void switchOffAsync() {
+
+    @Override
+    public void switchOffAsync() {
         //Jajajajaja dovrei fermarmi? MAI!
     }
 
     //Per la libreria sottostante
-    @Override public List<Object> getValuesDescriptors() {
+    @Override
+    public List<Object> getValuesDescriptors() {
         return ch.getDescriptors();
     }
-    @Override public String toString() {
+
+    @Override
+    public String getName() {
         return name;
     }
 }

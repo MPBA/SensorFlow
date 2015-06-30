@@ -69,7 +69,7 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + "/" + _name;
     }
 }

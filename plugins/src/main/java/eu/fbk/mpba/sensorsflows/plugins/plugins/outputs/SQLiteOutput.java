@@ -23,6 +23,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     String _name;
     String _path;
     SQLiteDatabase _sav;
+    private int mCount = 0;
 
     public SQLiteOutput(String name, String path) {
         _name = name;
@@ -37,7 +38,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         File f = new File(_path + "/" + sessionTag.toString());
         //noinspection ResultOfMethodCallIgnored
         f.mkdirs();
-        _sav = SQLiteDatabase.openOrCreateDatabase(new File(f, toString() + ".db"), null);
+        _sav = SQLiteDatabase.openOrCreateDatabase(new File(f, getName() + ".db"), null);
         for (ISensor l : linkedSensors) {
             _sav.execSQL(
                     "CREATE TABLE IF NOT EXISTS " + getEventsTblName(l) +
@@ -67,6 +68,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
                 event.code,
                 event.message
         ).toArray());
+        mCount++;
     }
 
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
@@ -81,6 +83,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
             sb.append(",?");
         sb.append(")");
         _sav.execSQL(sb.toString(), h.toArray());
+        mCount++;
     }
 
     public static String getDataTblName(ISensor s) {
@@ -92,7 +95,17 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return SQLiteOutput.class.getSimpleName() + "-" + _name;
+    }
+
+    @Override
+    public int getReceivedMessagesCount() {
+        return getForwardedMessagesCount();
+    }
+
+    @Override
+    public int getForwardedMessagesCount() {
+        return mCount;
     }
 }

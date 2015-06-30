@@ -25,6 +25,9 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
     protected volatile Socket mCli = null;
     protected volatile OutputStream mOut = null;
 
+    private int mReceived = 0;
+    private int mForwarded = 0;
+
     public TCPServerOutput(int port) throws IOException {
         this(null, port);
     }
@@ -46,7 +49,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                 }
             }
         };
-        mSTh = new Thread(mRun, getClass().getName() + "-ServerThread");
+        mSTh = new Thread(mRun, TCPServerOutput.class.getName() + "-ServerThread");
     }
 
     private List<ISensor> mSensors = null;
@@ -96,6 +99,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void newSensorEvent(SensorEventEntry<Long> event) {
+        mReceived++;
         if (mCli != null) {
             synchronized (mSock) {
                 try {
@@ -106,6 +110,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                     mOut.write(b.array());
                     mOut.write(event.message.length());
                     mOut.write(event.message.getBytes());
+                    mForwarded++;
                 } catch (IOException e) {
                     e.printStackTrace();
                     mCli = null;
@@ -116,6 +121,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
+        mReceived++;
         if (mCli != null) {
             synchronized (mSock) {
                 try {
@@ -125,11 +131,27 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                     for (double v : data.value)
                         b.putDouble(v);
                     mOut.write(b.array());
+                    mForwarded++;
                 } catch (IOException e) {
                     e.printStackTrace();
                     mCli = null;
                 }
             }
         }
+    }
+
+    @Override
+    public String getName() {
+        return TCPServerOutput.class.getName();
+    }
+
+    @Override
+    public int getReceivedMessagesCount() {
+        return mForwarded;
+    }
+
+    @Override
+    public int getForwardedMessagesCount() {
+        return mReceived;
     }
 }

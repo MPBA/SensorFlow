@@ -6,7 +6,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
-import android.util.Pair;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
@@ -14,13 +13,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -29,7 +26,6 @@ import java.util.UUID;
 import eu.fbk.mpba.sensorsflows.AutoLinkMode;
 import eu.fbk.mpba.sensorsflows.FlowsMan;
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
-import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
@@ -143,24 +139,26 @@ public class MainActivity extends Activity {
                 }
                 catch (Exception e){Log.i("CSVL", e.getMessage());}
                 finally {
-                    try{br.close();}
+                    try{if (br != null)
+                        br.close();}
                     catch (Exception e){Log.i("CSVL", e.getMessage());}
                 }
 
 
                 //Carico i files dalla cartella di input
                 final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
-                for (final File fileEntry : folder.listFiles())
-                {
-                    if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt"))
-                    {
+                for (final File fileEntry : folder.listFiles()) {
+                    if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt")) {
                         long tsScale = 1;
                         Long tmp = scale.get(fileEntry.getName());
-                        if(tmp != null)
+                        if (tmp != null)
                             tsScale = tmp;
 
-                        try{cl.addFile(new InputStreamReader(new FileInputStream(fileEntry)), ";", "\n", tsScale, fileEntry.getName());}
-                        catch (Exception e){Log.i("CSVL", e.getMessage());}
+                        try {
+                            cl.addFile(new InputStreamReader(new FileInputStream(fileEntry)), ";", "\n", tsScale, fileEntry.getName());
+                        } catch (Exception e) {
+                            Log.i("CSVL", e.getMessage());
+                        }
                     }
                 }
 
@@ -188,9 +186,6 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 Hashtable<Class, SensorsProtobuffer.SensorInfo.TYPESENSOR> types = new Hashtable<>();
-                //        types.put(GpsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.GPS);
-                //        types.put(AccelerometerSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.ACC);
-                //        types.put(TextEventsSensor.class, SkiloProtobuffer.SensorInfo.TYPESENSOR.MARKER);
                 types.put(EXLs3Device.EXLAccelerometer.class, SensorsProtobuffer.SensorInfo.TYPESENSOR.ACC);
                 types.put(EXLs3Device.EXLGyroscope.class, SensorsProtobuffer.SensorInfo.TYPESENSOR.GYRO);
                 types.put(EXLs3Device.EXLMagnetometer.class, SensorsProtobuffer.SensorInfo.TYPESENSOR.MAGNE);
@@ -199,7 +194,7 @@ public class MainActivity extends Activity {
 
                 m.addOutput(new ProtobufferOutput("Protobuf", new File(
                         Environment.getExternalStorageDirectory().getPath()
-                                + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), types));
+                                + "/eu.fbk.mpba.sensorsflows/"), 1000, UUID.randomUUID().toString(), 0, types));
             }
         });
         addPluginChoice(false, "TCPServer", new Runnable() {
@@ -249,6 +244,21 @@ public class MainActivity extends Activity {
                         //     .sensor      : sender sensor, useful with the instanceof to filter the events
                         //     .timestamp   : data's
                         //     .value       : value of double[] type, see the sensor's code
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "UserOutput-MainActivity";
+                    }
+
+                    @Override
+                    public int getReceivedMessagesCount() {
+                        return 0;
+                    }
+
+                    @Override
+                    public int getForwardedMessagesCount() {
+                        return 0;
                     }
                 });
             }

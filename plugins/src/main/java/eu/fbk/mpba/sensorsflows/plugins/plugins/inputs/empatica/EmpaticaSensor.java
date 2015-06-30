@@ -29,9 +29,8 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         _enabled = false;
     }
 
-
     @Override
-    public String toString() {
+    public String getName() {
         return name + "/" + getClass().getSimpleName();
     }
 
@@ -68,8 +67,8 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
     }
 
-    public static class Termometer extends EmpaticaSensor {
-        public Termometer(EmpaticaDevice p) {
+    public static class Thermometer extends EmpaticaSensor {
+        public Thermometer(EmpaticaDevice p) {
             super(p);
         }
 

@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows;
 
+import eu.fbk.mpba.sensorsflows.base.ISampleCounter;
+
 public interface DevicePlugin<TimeT, ValueT> {
 
     void inputPluginInitialize();

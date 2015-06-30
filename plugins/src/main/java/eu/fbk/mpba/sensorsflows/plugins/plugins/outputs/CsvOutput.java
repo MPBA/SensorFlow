@@ -22,7 +22,9 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     private final String _ext;
     private final String _nl;
     private final String _sep;
-    String _name;
+    private int mReceived = 0;
+    private int mForwarded = 0;
+    String mName;
     String _path;
     CsvDataSaver _savData;
     CsvDataSaver _savEvents;
@@ -33,7 +35,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public CsvOutput(String name, String path, String timestampColumnName, String fileSuffix, String separator, String newLine) {
-        _name = name;
+        mName = name;
         _path = path;
         _tsCol = timestampColumnName;
         _ext = fileSuffix;
@@ -53,9 +55,9 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
-        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/data_" + toString(),
+        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/data_" + getName(),
                 streamingSensors.toArray(), _ext, _sep, _nl);
-        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/events_" + toString(),
+        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/events_" + getName(),
                 streamingSensors.toArray(), _ext, _sep, _nl);
         _linkedSensors.addAll(streamingSensors);
         List<List<Object>> dataH = new ArrayList<>();
@@ -77,23 +79,37 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void newSensorEvent(SensorEventEntry event) {
+        mReceived++;
         List<Object> line = new ArrayList<>();
         line.add(event.timestamp.toString());
         line.add(event.code);
         line.add(event.message);
         _savEvents.save(_linkedSensors.indexOf(event.sensor), line);
+        mForwarded++;
     }
 
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
+        mReceived++;
         List<Object> line = new ArrayList<>();
         line.add(data.timestamp.toString());
         for (int i = 0; i < data.value.length; i++)
             line.add(data.value[i]);
         _savData.save(_linkedSensors.indexOf(data.sensor), line);
+        mForwarded++;
     }
 
     @Override
-    public String toString() {
-        return CsvOutput.class.getSimpleName() + "-" + _name;
+    public String getName() {
+        return CsvOutput.class.getSimpleName() + "-" + mName;
+    }
+
+    @Override
+    public int getReceivedMessagesCount() {
+        return 0; // TODO implement: variabile int con numero di righe elaborate
+    }
+
+    @Override
+    public int getForwardedMessagesCount() {
+        return 0; // TODO implement: variabile int con numero di righe salvate
     }
 }

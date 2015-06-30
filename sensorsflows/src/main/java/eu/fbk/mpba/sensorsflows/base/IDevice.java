@@ -7,7 +7,7 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface IDevice<SensorT> {
 
-    public void initialize();
+    public void initializeDevice();
 
     public Iterable<SensorT> getSensors();
 

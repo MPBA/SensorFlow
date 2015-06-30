@@ -51,7 +51,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     @Override
     public void inputPluginFinalize() {
-        monoSensor.close();
+        monoSensor.disconnect();
     }
 
     private long bootUTCNanos;
@@ -72,6 +72,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
     public static class EXLSensor extends SensorComponent<Long, double[]> {
 
         boolean streaming = true;
+        int received = 0;
 
         EXLs3Manager manager;
         EXLs3Device parent;
@@ -101,7 +102,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             manager.connect();
         }
 
-        public void close() {
+        public void disconnect() {
             manager.stop();
         }
 
@@ -124,7 +125,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         }
 
         @Override
-        public String toString() {
+        public String getName() {
             return name + "/" + getClass().getSimpleName();
         }
 
@@ -164,7 +165,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
             @Override
             public void received(EXLs3Manager sender, EXLs3Manager.Packet p) {
-                // TODO check timestamp calc
+                // TODO! check timestamp calc
                 now = parent.getMonoTimestampNanos(p.receptionTime);
                 if (ref < 0) {
                     pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
@@ -172,16 +173,18 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
                 long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;
 
+                received++;
+
                 if (parent.er.streaming)
-                    parent.er.sensorValue(now, new double[] { p.ax, p.ay, p.az } );
+                    parent.er.sensorValue(now, new double[]{p.ax, p.ay, p.az});
                 if (parent.pe.streaming)
-                    parent.pe.sensorValue(now, new double[] { p.gx, p.gy, p.gz } );
+                    parent.pe.sensorValue(now, new double[]{p.gx, p.gy, p.gz});
                 if (parent.ma.streaming)
-                    parent.ma.sensorValue(now, new double[] { p.mx, p.my, p.mz } );
+                    parent.ma.sensorValue(now, new double[]{p.mx, p.my, p.mz});
                 if (parent.on.streaming && (qd++ % parent.qDS) == 0)
-                    parent.on.sensorValue(now, new double[] { p.q1, p.q2, p.q3, p.q4 } );
+                    parent.on.sensorValue(now, new double[]{p.q1, p.q2, p.q3, p.q4});
                 if (parent.ry.streaming && (bd++ % parent.bDS) == 0)
-                    parent.ry.sensorValue(now, new double[] { p.vbatt } );
+                    parent.ry.sensorValue(now, new double[]{p.vbatt});
 
                 last = p.counter;
             }
@@ -191,6 +194,11 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
                 Log.v(this.getClass().getName(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
+
+        @Override
+        public int getReceivedMessagesCount() {
+            return received;
+        }
     }
 
     public static class EXLAccelerometer extends EXLs3Device.EXLSensor {

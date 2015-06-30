@@ -22,7 +22,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     final EmpaticaSensor.BVP mBvp;
     final EmpaticaSensor.GSR mGsr;
     final EmpaticaSensor.IBI mIbi;
-    final EmpaticaSensor.Termometer mTem;
+    final EmpaticaSensor.Thermometer mTem;
 
     public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth) {
         beam = new EmpaticaBeam(context, address, data, conn, enableBluetooth);
@@ -42,7 +42,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
         mBvp = new EmpaticaSensor.BVP(this);
         mGsr = new EmpaticaSensor.GSR(this);
         mIbi = new EmpaticaSensor.IBI(this);
-        mTem = new EmpaticaSensor.Termometer(this);
+        mTem = new EmpaticaSensor.Thermometer(this);
         beam.authenticate(key);
     }
 

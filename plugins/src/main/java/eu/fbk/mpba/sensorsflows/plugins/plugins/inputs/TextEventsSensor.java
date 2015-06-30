@@ -43,7 +43,7 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
         return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + "TextEvents-" + name;
     }
 }

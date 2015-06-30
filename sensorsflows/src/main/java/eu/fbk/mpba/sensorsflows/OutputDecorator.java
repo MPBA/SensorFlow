@@ -17,7 +17,6 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * Polls but has a fixed sleep timestamp in the case that each queue is empty.
  */
 class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
-//    final String LOG_TAG = "ALE SFW";
     private IOutputCallback<TimeT, ValueT> _manager = null;
 
     private boolean _stopPending = false;
@@ -80,7 +79,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     // Implemented Callbacks
 
     @Override
-    public void initialize(Object sessionTag) {
+    public void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
         changeState(OutputStatus.INITIALIZING);
         // outputPlugIn.outputPluginInitialize(...) in _thread

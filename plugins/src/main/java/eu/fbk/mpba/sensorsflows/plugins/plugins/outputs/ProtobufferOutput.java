@@ -42,6 +42,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         uuid = phoneId;
         uid = UUID.randomUUID();
         mTypesMap = sensorTypesMap;
+        mTimeOffsetMillis = timeOffsetMillis;
     }
 
     public long currentBacklogSize() {

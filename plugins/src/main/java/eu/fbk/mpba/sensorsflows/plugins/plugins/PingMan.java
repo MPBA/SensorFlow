@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.empatica;
+package eu.fbk.mpba.sensorsflows.plugins.plugins;
 
 import android.Manifest;
 import android.content.Context;
@@ -13,10 +13,14 @@ import java.net.URL;
 
 public class PingMan {
     public static boolean isHttpColonSlashSlashWwwDotEmpaticaDotComReachable(Context context) {
+        return isUrlReachable(context, "http://www.empatica.com/");
+    }
+
+    public static boolean isUrlReachable(Context context, String url) {
         boolean ret;
         if (isNetworkAvailable(context)) {
             try {
-                HttpURLConnection urlc = (HttpURLConnection) (new URL("http://www.empatica.com/").openConnection());
+                HttpURLConnection urlc = (HttpURLConnection) (new URL(url).openConnection());
                 urlc.setRequestProperty("User-Agent", "Test");
                 urlc.setRequestProperty("Connection", "close");
                 urlc.setConnectTimeout(3000);

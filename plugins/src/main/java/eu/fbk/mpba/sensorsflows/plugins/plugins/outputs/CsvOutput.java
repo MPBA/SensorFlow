@@ -55,10 +55,13 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
-        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/data_" + getName(),
-                streamingSensors.toArray(), _ext, _sep, _nl);
-        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/events_" + getName(),
-                streamingSensors.toArray(), _ext, _sep, _nl);
+        List<String> nn = new ArrayList<>(streamingSensors.size());
+        for (ISensor s : streamingSensors)
+            nn.add(s.getName());
+        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + getName() + "/data_",
+                nn.toArray(), _ext, _sep, _nl);
+        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + getName() + "/events_",
+                nn.toArray(), _ext, _sep, _nl);
         _linkedSensors.addAll(streamingSensors);
         List<List<Object>> dataH = new ArrayList<>();
         List<List<Object>> evtH = new ArrayList<>();

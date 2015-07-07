@@ -61,9 +61,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
                 fileFinito = true;
         }
 
-        if(fileFinito)
-            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 101, "Tracciamento finito");
-
         return !fileFinito;
     }
 
@@ -77,16 +74,24 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     }
 
     //Inutili
-    public void switchOnAsync(){/*Boh qui devo far qualcosa?*/}
+    @Override
+    public void switchOnAsync() {
+        //Boh qui devo far qualcosa?
+    }
 
-    public void switchOffAsync(){/*Jajajajaja dovrei fermarmi? MAI!*/}
+    @Override
+    public void switchOffAsync() {
+        //Jajajajaja dovrei fermarmi? MAI!
+    }
 
     //Per la libreria sottostante
+    @Override
     public List<Object> getValuesDescriptors() {
         return ch.getDescriptors();
     }
 
+    @Override
     public String getName() {
-        return name;
+        return getParentDevicePlugin().getName() + "/" + name;
     }
 }

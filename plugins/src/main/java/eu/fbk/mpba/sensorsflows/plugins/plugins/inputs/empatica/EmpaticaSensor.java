@@ -9,10 +9,10 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
     public EmpaticaSensor(EmpaticaDevice p) {
         super(p);
-        name = p.getAddress().replace(":", "_");
+        _dev = p;
     }
 
-    private String name;
+    private EmpaticaDevice _dev;
     private boolean _enabled = true;
 
     public boolean isOn() {
@@ -31,7 +31,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public String getName() {
-        return name + "/" + getClass().getSimpleName();
+        return _dev.getName() + "-" + _dev.getAddress().replace(":", "-") + "/" + getClass().getSimpleName();
     }
 
     public static class Battery extends EmpaticaSensor {

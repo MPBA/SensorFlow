@@ -8,6 +8,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -40,6 +42,7 @@ import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.CsvOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.ProtobufferOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SensorsProtobuffer;
+import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.TCPClientOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.TCPServerOutput;
 
 
@@ -111,37 +114,38 @@ public class MainActivity extends Activity {
 
                 //Creo il device
                 CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
-                cl.setAsyncActionOnFinish(new Runnable(){public void run()
-                {
-                        ((Activity)_this).runOnUiThread(new Runnable() {
-                        public void run() {
-                            Toast.makeText(((Activity)_this), "FINITOOOOO :D", Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }});
+                cl.setAsyncActionOnFinish(new Runnable() {
+                    public void run() {
+                        ((Activity) _this).runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(((Activity) _this), "FINITOOOOO :D", Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    }
+                });
 
 
                 //Prendo la scala timestamp per alcuni files.
                 HashMap<String, Long> scale = new HashMap<>();
                 BufferedReader br = null;
-                try
-                {
+                try {
                     br = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader/input_config.txt"));
                     String line;
-                    while ((line = br.readLine()) != null)
-                    {
-                        if(line.replaceAll("\\s","").charAt(0) != '#')
-                        {
+                    while ((line = br.readLine()) != null) {
+                        if (line.replaceAll("\\s", "").charAt(0) != '#') {
                             String[] parts = line.split(";");
                             scale.put(parts[0], Long.parseLong(parts[1]));
                         }
                     }
-                }
-                catch (Exception e){Log.i("CSVL", e.getMessage());}
-                finally {
-                    try{if (br != null)
-                        br.close();}
-                    catch (Exception e){Log.i("CSVL", e.getMessage());}
+                } catch (Exception e) {
+                    Log.i("CSVL", e.getMessage());
+                } finally {
+                    try {
+                        if (br != null)
+                            br.close();
+                    } catch (Exception e) {
+                        Log.i("CSVL", e.getMessage());
+                    }
                 }
 
 
@@ -202,6 +206,18 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     TCPServerOutput x = new TCPServerOutput(2000);
+                    m.addOutput(x);
+                } catch (IOException e) {
+                    Toast.makeText(_this, e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+        addPluginChoice(false, "TCPClient", new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String[] t = ((EditText)findViewById(R.id.tcpServerPort)).getText().toString().split(":");
+                    TCPClientOutput x = new TCPClientOutput(InetAddress.getByName(t[0]), Integer.getInteger(t[1]), "User", "password");
                     m.addOutput(x);
                 } catch (IOException e) {
                     Toast.makeText(_this, e.getMessage(), Toast.LENGTH_LONG).show();

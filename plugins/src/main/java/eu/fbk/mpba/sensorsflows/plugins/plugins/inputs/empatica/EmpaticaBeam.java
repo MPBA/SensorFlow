@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import eu.fbk.mpba.sensorsflows.plugins.plugins.PingMan;
+
 public class EmpaticaBeam implements EmpaStatusDelegate {
     protected final EmpaDeviceManager _device;
     protected final String _address;

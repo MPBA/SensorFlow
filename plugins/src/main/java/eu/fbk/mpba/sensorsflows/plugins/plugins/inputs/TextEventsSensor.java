@@ -44,6 +44,6 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     @Override
     public String getName() {
-        return (getParentDevicePlugin() != null ? getParentDevicePlugin().toString() + "/" : "") + "TextEvents-" + name;
+        return getParentDevicePlugin().getName() + "/" + getClass().getSimpleName() + "-" + name;
     }
 }

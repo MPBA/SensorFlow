@@ -45,6 +45,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
                 }
             } while (ceAncoraSperanza);
 
+
             if (onfinish != null)
                 onfinish.run();
         }

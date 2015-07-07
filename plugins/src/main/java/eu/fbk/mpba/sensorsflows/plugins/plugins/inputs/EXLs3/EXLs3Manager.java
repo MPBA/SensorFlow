@@ -68,7 +68,7 @@ public class EXLs3Manager extends EXLs3Receiver {
 
     // Subclasses
 
-    public static interface DataDelegate {
+    public interface DataDelegate {
         void received(EXLs3Manager sender, Packet p);
         void lost(EXLs3Manager sender, int from, int to, int howMany);
     }

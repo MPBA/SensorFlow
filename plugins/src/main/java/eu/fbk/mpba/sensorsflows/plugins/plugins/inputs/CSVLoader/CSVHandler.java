@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader;
 
+import android.util.Log;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -160,7 +162,13 @@ public class CSVHandler {
         while (f.type == FieldType.NORMAL);
 
         if (j != descriptors.size())
-            r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione");
+        {
+            //TODO no fineriga
+            String str = "";
+            if(f.type == FieldType.ENDFILE)
+                str = " HOHOOOO FINEFIELELELE";
+            r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione" + str);
+        }
 
         if (r.getError())
             r.addErrorInfo(" [linea: '" + sb.toString() + "']");
@@ -212,9 +220,9 @@ public class CSVHandler {
     /**
      * @return [next field]
      * La classe Field contiene info a seconda se e' un campo di tipo:
-     *     - Normale
-     *     - Fine Linea
-     *     - Fine File
+     * - Normale
+     * - Fine Linea
+     * - Fine File
      */
     private Field getNextField() throws IOException {
         int i;
@@ -264,8 +272,11 @@ public class CSVHandler {
 
                 if (i == -1 || (!bsfield && !bsrow))
                     sb.append(sb2.toString());
-                else if (bsfield) return new Field(sb.toString(), FieldType.NORMAL);
-                else if (bsrow) return new Field(sb.toString(), FieldType.ENDLINE); // TODO: Paisss, è sempre true
+                else
+                    if (bsfield)
+                        return new Field(sb.toString(), FieldType.NORMAL);
+                    else
+                        return new Field(sb.toString(), FieldType.ENDLINE);
             } else
                 sb.append(c);
         }

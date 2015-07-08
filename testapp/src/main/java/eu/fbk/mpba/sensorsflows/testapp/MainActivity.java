@@ -217,7 +217,9 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     String[] t = ((EditText)findViewById(R.id.tcpServerPort)).getText().toString().split(":");
-                    TCPClientOutput x = new TCPClientOutput(InetAddress.getByName(t[0]), Integer.getInteger(t[1]), "User", "password");
+                    String username = ((EditText)findViewById(R.id.editTextUsername)).getText().toString();
+                    String password = ((EditText)findViewById(R.id.editTextPassword)).getText().toString();
+                    TCPClientOutput x = new TCPClientOutput(InetAddress.getByName(t[0]), Integer.parseInt(t[1]), username, password);
                     m.addOutput(x);
                 } catch (IOException e) {
                     Toast.makeText(_this, e.getMessage(), Toast.LENGTH_LONG).show();

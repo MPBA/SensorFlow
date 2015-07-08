@@ -52,6 +52,8 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
             o.write(mPass.length());
             o.write(mPass.getBytes());
             writeDescriptors(o);
+            mCli = mSock;
+            mOut = o;
         } catch (IOException e) {
             mSock = null;
             throw new IllegalArgumentException(e.getMessage());
@@ -122,7 +124,7 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
         if (mCli != null) {
             synchronized (mSockSync) {
                 try {
-                    mOut.write(new byte[] { 0x1E, 100, (byte) mSensors.indexOf(data.sensor) });
+                    mOut.write(new byte[]{0x1E, 100, (byte) mSensors.indexOf(data.sensor)});
                     ByteBuffer b = ByteBuffer.allocate(8 + data.value.length * 8);
                     b.putLong(data.timestamp);
                     for (double v : data.value)

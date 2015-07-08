@@ -35,11 +35,33 @@
             android:layout_height="wrap_content"
             android:labelFor="@+id/tcpServerPort"/>
         <EditText
-            android:text=""
+            android:text="192.168.205.227:2000"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textUri"
             android:id="@id/tcpServerPort"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:layout_width="168dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/editTextUsername"
+                android:hint="Username" />
+
+            <EditText
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="10"
+                android:id="@+id/editTextPassword"
+                android:layout_weight="1"
+                android:hint="Password" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <LinearLayout

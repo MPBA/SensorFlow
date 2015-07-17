@@ -35,7 +35,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private int seqNumber = 0;
     private int mTimeOffsetMillis = 0;
 
-    public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId, int timeOffsetMillis, Dictionary<Class, SensorInfo.TYPESENSOR> sensorTypesMap) { // TODO Horrible
+    public ProtobufferOutput(String name, File dir, long flushSizeElements, String phoneId, int timeOffsetMillis, Dictionary<Class, SensorInfo.TYPESENSOR> sensorTypesMap) {
         mName = name;
         mFolder = dir;
         mFlushSize = flushSizeElements;

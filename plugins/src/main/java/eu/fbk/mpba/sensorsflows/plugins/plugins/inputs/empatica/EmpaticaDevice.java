@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 
 import java.util.Arrays;
@@ -24,8 +25,95 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     final EmpaticaSensor.IBI mIbi;
     final EmpaticaSensor.Thermometer mTem;
 
+    // This two values to perform an approximation of the times of the events keeping the order safe
+    // also through the values.
+    private Long mTimeToDevice = 0L;
+
+    private Long proTime(double seconds) {
+        Long nanoTime = System.nanoTime();
+        Long nanos = (long) (seconds * 1_000_000_000);
+        mTimeToDevice = (mTimeToDevice * 2 - nanoTime + nanos) / 3;
+        return nanos;
+    }
+
+    private Long proTime() {
+        return mTimeToDevice + System.nanoTime();
+    }
+
     public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth) {
-        beam = new EmpaticaBeam(context, address, data, conn, enableBluetooth);
+        final EmpaticaDevice _this = this;
+        beam = new EmpaticaBeam(context,
+                new EmpaDataDelegate() {
+                    @Override
+                    public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
+                        mAcc.sensorValue(proTime(timestamp), new double[]{x, y, z});
+                    }
+
+                    @Override
+                    public void didReceiveBVP(float bvp, double timestamp) {
+                        mBat.sensorValue(proTime(timestamp), new double[]{bvp});
+                    }
+
+                    @Override
+                    public void didReceiveBatteryLevel(float battery, double timestamp) {
+                        mBat.sensorValue(proTime(timestamp), new double[]{battery});
+                        Log.v(LOG_TAG, EmpaticaDevice.this.getName() + " didReceiveBatteryLevel: " + battery);
+                    }
+
+                    @Override
+                    public void didReceiveGSR(float gsr, double timestamp) {
+                        mGsr.sensorValue(proTime(timestamp), new double[]{gsr});
+                    }
+
+                    @Override
+                    public void didReceiveIBI(float ibi, double timestamp) {
+                        mIbi.sensorValue(proTime(timestamp), new double[]{ibi});
+                    }
+
+                    @Override
+                    public void didReceiveTemperature(float temp, double timestamp) {
+                        mTem.sensorValue(proTime(timestamp), new double[]{temp});
+                    }
+                },
+                new EmpaticaBeam.ConnectEventHandler() {
+                    @Override
+                    public void end(EmpaticaBeam sender, Result result) {
+                        //noinspection unchecked
+                        EmpaticaSensor[] is = new EmpaticaSensor[]{
+                                EmpaticaDevice.this.mAcc,
+                                EmpaticaDevice.this.mBat,
+                                EmpaticaDevice.this.mBvp,
+                                EmpaticaDevice.this.mGsr,
+                                EmpaticaDevice.this.mIbi,
+                                EmpaticaDevice.this.mTem};
+                        Long now = proTime();
+                        for (EmpaticaSensor s : is) {
+                            if (s != null)
+                                s.sensorEvent(now, 1, result.toString());
+                        }
+                        Log.d(LOG_TAG, result.toString() + " " + sender.getName() + " " + sender.getAddress());
+                    }
+                },
+                new EmpaticaBeam.DeviceEventHandler() {
+                    @Override
+                    public void end(EmpaticaBeam sender, EmpaSensorType type, Result result, boolean status) {
+                        switch (type) {
+                            case BVP:
+                                mBvp.sensorEvent(_this.proTime(), 2, EmpaSensorType.class.getSimpleName() + "." + type.toString());
+                                mIbi.sensorEvent(_this.proTime(), 2, EmpaSensorType.class.getSimpleName() + "." + type.toString());
+                                break;
+                            case GSR:
+                                mGsr.sensorEvent(_this.proTime(), 2, EmpaSensorType.class.getSimpleName() + "." + type.toString());
+                                break;
+                            case ACC:
+                                mAcc.sensorEvent(_this.proTime(), 2, EmpaSensorType.class.getSimpleName() + "." + type.toString());
+                                break;
+                            case TEMP:
+                                mTem.sensorEvent(_this.proTime(), 2, EmpaSensorType.class.getSimpleName() + "." + type.toString());
+                                break;
+                        }
+                    }
+                }, enableBluetooth);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -43,21 +131,18 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
         mGsr = new EmpaticaSensor.GSR(this);
         mIbi = new EmpaticaSensor.IBI(this);
         mTem = new EmpaticaSensor.Thermometer(this);
+        if (address != null)
+            beam.doNotConnectToTheFirstAvailableButTo(address);
         beam.authenticate(key);
-    }
-
-    public String getAddress() {
-        return beam.getAddress();
     }
 
     @Override
     public void inputPluginInitialize() {
-        beam.startStreaming();
+
     }
 
     @Override
     public void inputPluginFinalize() {
-        beam.stopStreaming();
         beam.destroy();
     }
 
@@ -68,77 +153,6 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return "EmpaticaBeam";
+        return beam.getName();
     }
-
-    EmpaticaBeam.ConnectEventHandler conn = new EmpaticaBeam.ConnectEventHandler() {
-        @Override
-        public void end(EmpaticaBeam sender, Result result) {
-            //noinspection unchecked
-            EmpaticaSensor[] is = new EmpaticaSensor[] {
-                EmpaticaDevice.this.mAcc,
-                EmpaticaDevice.this.mBat,
-                EmpaticaDevice.this.mBvp,
-                EmpaticaDevice.this.mGsr,
-                EmpaticaDevice.this.mIbi,
-                EmpaticaDevice.this.mTem };
-            Long now = System.currentTimeMillis() * 1_000_000L;
-            for (EmpaticaSensor s : is) {
-                if (s!=null)
-                    s.sensorEvent(now, 0, result.toString());
-            }
-//            switch (result) {
-//                case JUST_INITIALIZED:
-//                    break;
-//                case NOT_CONNECTED:
-//                    break;
-//                case NOT_FOUND:
-//                    break;
-//                case NOT_ALLOWED:
-//                    break;
-//                case DISCOVERING:
-//                    break;
-//                case CONNECTING:
-//                    break;
-//                case CONNECTED:
-//                    break;
-//                case LOST:
-//                    break;
-//            }
-            Log.d(LOG_TAG, sender.getAddress() + " " + sender.getCode() + " -> " + result.toString());
-        }
-    };
-
-    EmpaDataDelegate data = new EmpaDataDelegate() {
-        @Override
-        public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
-            mAcc.sensorValue((long)timestamp, new double[]{x, y, z});
-        }
-
-        @Override
-        public void didReceiveBVP(float bvp, double timestamp) {
-            mBat.sensorValue((long) timestamp, new double[]{bvp});
-        }
-
-        @Override
-        public void didReceiveBatteryLevel(float battery, double timestamp) {
-            Log.v("Empatica", EmpaticaDevice.this.getAddress() + " didReceiveBatteryLevel = " + battery);
-            mBat.sensorValue((long)timestamp, new double[]{battery});
-        }
-
-        @Override
-        public void didReceiveGSR(float gsr, double timestamp) {
-            mGsr.sensorValue((long)timestamp, new double[]{gsr});
-        }
-
-        @Override
-        public void didReceiveIBI(float ibi, double timestamp) {
-            mIbi.sensorValue((long)timestamp, new double[]{ibi});
-        }
-
-        @Override
-        public void didReceiveTemperature(float temp, double timestamp) {
-            mTem.sensorValue((long)timestamp, new double[]{temp});
-        }
-    };
 }

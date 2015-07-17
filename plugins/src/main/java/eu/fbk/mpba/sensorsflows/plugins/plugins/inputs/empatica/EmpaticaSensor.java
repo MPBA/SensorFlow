@@ -31,7 +31,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public String getName() {
-        return _dev.getName() + "-" + _dev.getAddress().replace(":", "-") + "/" + getClass().getSimpleName();
+        return _dev.getName() + "-" + getClass().getSimpleName();
     }
 
     public static class Battery extends EmpaticaSensor {

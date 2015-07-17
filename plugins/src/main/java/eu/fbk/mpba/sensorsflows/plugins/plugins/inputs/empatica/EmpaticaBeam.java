@@ -15,42 +15,41 @@ import com.empatica.empalink.delegate.EmpaStatusDelegate;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import eu.fbk.mpba.sensorsflows.plugins.plugins.PingMan;
 
 public class EmpaticaBeam implements EmpaStatusDelegate {
+    private static final String LOG_TAG = "ALE EMP BEAM";
     protected final EmpaDeviceManager _device;
-    protected final String _address;
-    private final String LOG_TAG = "ALE EMPA BEAM";
-    protected String _code;
-    protected Runnable _enableBluetooth;
-    protected ConnectEventHandler _onConnectionChanged;
-    protected int __e3_streamed_messages = 0;
-    private boolean _recording = false;
-    private boolean _connected;
-    private ArrayList<String> _foundE3s;
-    private Context _context;
+    protected final Runnable _enableBluetooth;
+    protected final ConnectEventHandler _onConnectionChanged;
+    protected final DeviceEventHandler _onDeviceEvent;
+    private   final Context _context;
+    protected String _address = null;
+    protected String _devName;
+    private   boolean _disconnectionPending = false;
+    private   boolean _notReady = true;
+    private   ArrayList<String> _foundE3s;
+
+    public EmpaticaBeam(Context context, EmpaDataDelegate onData,
+                        ConnectEventHandler onConnectionChanged, DeviceEventHandler onDevice,
+                        Runnable enableBluetooth) {
+        clearLogs(context);
+        _foundE3s = new ArrayList<String>();
+        _enableBluetooth = enableBluetooth;
+        _onConnectionChanged = onConnectionChanged;
+        _onDeviceEvent = onDevice;
+        _device = new EmpaDeviceManager(_context = context, onData, this);
+    }
 
     public String getAddress() {
         return _address;
     }
 
-    public String getCode() {
-        return _code;
-    }
-
-    public boolean isRecording() {
-        return _recording;
-    }
-
-    public EmpaticaBeam(Context context, String address,
-                        EmpaDataDelegate onData, ConnectEventHandler onConnectionChanged, Runnable enableBluetooth) {
-        clearLogs(context);
-        _foundE3s = new ArrayList<String>();
-        _address = address;
-        _enableBluetooth = enableBluetooth;
-        _onConnectionChanged = onConnectionChanged;
-        _device = new EmpaDeviceManager(_context = context, onData, this);
+    public String getName() {
+        return _devName;
     }
 
     public void assert_web_reachable() throws UnreachableWebException {
@@ -61,67 +60,45 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         }
     }
 
+    public void doNotConnectToTheFirstAvailableButTo(String address) {
+        _address = address;
+    }
+
     public void authenticate(String key) {
         _device.authenticateWithAPIKey(key);
     }
 
-    public boolean startStreaming() {
-        Log.e(LOG_TAG, "StartStreaming()");
-        if (_connected) {
-            if (!_recording) {
-                _recording = true;
-                return true;
-            } else {
-                Log.e(LOG_TAG, "Alredy recording");
-                return false;
-            }
-        } else
-            return false;
-    }
-
-    public void stopStreaming() {
-        Log.e(LOG_TAG, "StopStreaming()");
-        if (_recording)
-            _recording = false;
-        else
-            Log.e(LOG_TAG, "Alredy NOT recording");
-    }
-
     public void destroy() {
-        Log.e(LOG_TAG, "Destroy()");
-        if (_connected) {
-            _connected = false;
-            _device.disconnect();
-            _device.cleanUp();
-        } else
-            Log.e(LOG_TAG, "Alredy NOT connected");
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o instanceof EmpaticaBeam &&
-                this.getAddress().equals(((EmpaticaBeam) o).getAddress());
-    }
-
-    @Override
-    public int hashCode() {
-        return _address.hashCode();
+        Log.d(LOG_TAG, "destroy()");
+        if (!_disconnectionPending) {
+            try {
+                _disconnectionPending = true;
+                _device.disconnect();
+                _device.cleanUp();
+            }
+            catch (IllegalArgumentException | NullPointerException e) {
+                Log.e(LOG_TAG, "destroy() " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            }
+        }
     }
 
     // EmpaStatusDelegate overrides
 
     @Override
     public void didDiscoverDevice(BluetoothDevice device, String label, int rssi, boolean allowed) {
+        Log.v(LOG_TAG, "didDiscover: " + label + ", allowed: " + allowed);
         if (_address == null || _address.length() == 0 || device.getAddress().equals(_address)) {
             if (allowed) {
                 _device.stopScanning();
                 try {
+                    _address = device.getAddress();
                     _device.connectDevice(device);
                     // Here no exception
-                    _code = device.getName();
+                    _devName = label;
                 } catch (ConnectionNotAllowedException e) {
                     // Bisogna aver pazienza con loro...
                     allowed = false;
+                    _device.startScanning();
                 }
             }
     /*      else {          */
@@ -136,7 +113,6 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         } else
             _foundE3s.add(device.getAddress());
 
-        Log.d(LOG_TAG, "Device name: " + _code + ", label: " + label + ", allowed: " + allowed);
     }
 
     @Override
@@ -144,81 +120,111 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         _enableBluetooth.run();
     }
 
+    Map<EmpaSensorType, Boolean> mIsDead = new HashMap<>();
     @Override
     public void didUpdateSensorStatus(EmpaSensorStatus status, EmpaSensorType type) {
         Log.e(LOG_TAG, "didUpdateSensorStatus");
+        if (status != EmpaSensorStatus.DEAD) { // UnDEAD
+            if (!mIsDead.containsKey(type))
+                mIsDead.put(type, false);
+
+            if (mIsDead.get(type)) {
+                mIsDead.put(type, false);
+                _onDeviceEvent.end(this, type, DeviceEventHandler.Result.DEAD, false);
+            }
+
+            switch (status) {
+                case NOT_ON_WRIST:
+                    _onDeviceEvent.end(this, type, DeviceEventHandler.Result.ON_WRIST, false);
+                    break;
+                case ON_WRIST:
+                    _onDeviceEvent.end(this, type, DeviceEventHandler.Result.ON_WRIST, true);
+                    break;
+            }
+        }
+        else { // DEAD
+            mIsDead.put(type, true);
+            _onDeviceEvent.end(this, type, DeviceEventHandler.Result.DEAD, true);
+        }
     }
 
+    EmpaStatus _lastStatus = EmpaStatus.DISCONNECTED;
     @Override
     public void didUpdateStatus(EmpaStatus status) {
-        switch (status) {
-            case DISCONNECTED:
-                // Manager created or sensor dis{appeared|connected}
-                // TODO 5 Find a way to give advice on when the signal is missing too many times. (Need E3 for test)
-                if (_connected) {
-                    _onConnectionChanged.end(this, ConnectEventHandler.Result.LOST);
-                    stopStreaming();
-                    destroy();
-                }
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
-                break;
-            case READY:
-                // >> authenticate..
-                // Manager authenticated
-                _device.startScanning();
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.JUST_INITIALIZED);
-                break;
-            case DISCOVERING:
-                // Manager discovering new devices
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.DISCOVERING);
-                break;
-            case CONNECTING:
-                // >> connect device
-                // Manager connecting to the found and allowed device
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.CONNECTING);
-                break;
-            case CONNECTED:
-                // Manager can start streaming
-                _connected = true;
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.CONNECTED);
-                break;
-            default:
-                break;
-        }
-        String sc = _address;
-        sc = sc.length() > 6 ? sc.substring(sc.length() - 6, sc.length() - 1) : sc;
-        Log.d(LOG_TAG, "didUpdateStatus " + sc + ".. " + status.toString());
-        Log.d(LOG_TAG, "didUpdateStatus with msgs: " + __e3_streamed_messages);
+        Log.d(LOG_TAG,
+                "didUpdateStatus " + status.toString() + " (" + getAddress() + ")" +
+                (_lastStatus.equals(status) ? " repeated" : "")
+        );
+        if (!_lastStatus.equals(status))
+            switch (status) {
+                case DISCONNECTING:
+                    break;
+                case DISCONNECTED:
+                    // Manager created or sensor dis{appeared|connected}
+                    if (_disconnectionPending || _notReady) {
+                        _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
+                    } else {
+                        _onConnectionChanged.end(this, ConnectEventHandler.Result.LOST);
+                        _device.startScanning();
+                    }
+                    break;
+                case READY:
+                    // >> authenticate..
+                    // Manager authenticated
+                    _notReady = false;
+                    _device.startScanning();
+                    _onConnectionChanged.end(this, ConnectEventHandler.Result.JUST_INITIALIZED);
+                    break;
+                case DISCOVERING:
+                    // Manager discovering new devices
+                    _onConnectionChanged.end(this, ConnectEventHandler.Result.DISCOVERING);
+                    break;
+                case CONNECTING:
+                    // >> connect device
+                    // Manager connecting to the found and allowed device
+                    _onConnectionChanged.end(this, ConnectEventHandler.Result.CONNECTING);
+                    break;
+                case CONNECTED:
+                    // Manager can start streaming
+                    _onConnectionChanged.end(this, ConnectEventHandler.Result.CONNECTED);
+                    break;
+                default:
+                    break;
+            }
+        _lastStatus = status;
     }
 
     // FS
 
-    private void deleteDirTree(File dir) {
-        Log.d(LOG_TAG, dir.getAbsolutePath());
+    private static void deleteDirTree(File dir) {
+        Log.d(LOG_TAG, "Deleting " + dir.getAbsolutePath());
         if (dir.isDirectory())
             for (String s : dir.list())
                 deleteDirTree(new File(dir, s));
         boolean deleted = dir.delete();
-        if (deleted)
-            Log.d(LOG_TAG, "    " + dir.getName() + " - " + true);
-        else
-            Log.e(LOG_TAG, "    " + dir.getName() + " - " + false);
+        Log.d(LOG_TAG, "    " + dir.getName() + " - " + (deleted ? "deleted" : "not deleted"));
     }
 
-    private void deleteDirTreeChecked(File dir) {
-        if (dir.exists()) {
-            Log.d(LOG_TAG, dir.getPath() + ": clearing..");
+    private static void deleteDirTreeChecked(File dir) {
+        if (dir.exists())
             deleteDirTree(dir);
-            Log.d(LOG_TAG, "..done");
-        } else
-            Log.d(LOG_TAG, "Folder does not exist: " + dir.getPath());
     }
 
-    private void clearLogs(Context context) {
+    public static void clearLogs(Context context) {
         File appDir = new File(context.getCacheDir().getParent());
         // Empatica data
         deleteDirTreeChecked(new File(appDir, "files/Logs"));
         deleteDirTreeChecked(new File(appDir, "files/Sessions"));
+    }
+
+    public interface DeviceEventHandler {
+        void end(EmpaticaBeam sender, EmpaSensorType type, Result result, boolean status);
+
+        public enum Result {
+            DEAD,
+            ON_WRIST,
+            STREAMING
+        }
     }
 
     public interface ConnectEventHandler {

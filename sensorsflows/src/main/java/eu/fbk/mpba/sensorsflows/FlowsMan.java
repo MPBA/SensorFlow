@@ -13,7 +13,6 @@ import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
-import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
 /**
@@ -89,7 +88,8 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorStateChanged(SensorComponent<TimeT, ValueT> sender, TimeT time, SensorStatus state) {
-        // TO DO The sensor has to send also an event on a status change.
+        // TODO 3 Implement an 'internal device' with an 'internal sensor' for log utilities.
+        // The sensor has to send also an event on a status change.
     }
 
     // Data and Events Interface
@@ -104,7 +104,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorValue(SensorComponent<TimeT, ValueT> sender, TimeT time, ValueT value) {
-        if (sender.isListened()) {
+        if (sender.isListened() && !_paused) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
                 ((OutputDecorator<TimeT, ValueT>)o).sensorValue(sender, time, value);
@@ -121,7 +121,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void sensorEvent(SensorComponent<TimeT, ValueT> sender, TimeT time, int type, String message) {
-        if (sender.isListened()) {
+        if (sender.isListened() && !_paused) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
                 ((OutputDecorator<TimeT, ValueT>)o).sensorEvent(sender, time, type, message);
@@ -145,13 +145,12 @@ public class FlowsMan<TimeT, ValueT> implements
     protected List<OutputDecorator<TimeT, ValueT>> _userOutputs = new ArrayList<>();
 
     protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
-    protected List<IOutput> _outputsToInit = new ArrayList<>();   // FIXME Can change the type to OutputPlugin?                                    // null
+    protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null
 
     protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
             , EngineStatus> _onStateChanged = null;                   // null
     protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
     protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
-    protected EventCallback<SensorComponent<TimeT, ValueT>, SensorEventEntry<TimeT>> _onNewEvent = null;     // null
 
     // Engine implementation
 
@@ -358,7 +357,7 @@ public class FlowsMan<TimeT, ValueT> implements
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
-            */sensor.switchOnAsync();/* FIXME
+            */sensor.switchOnAsync();/* FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -376,7 +375,7 @@ public class FlowsMan<TimeT, ValueT> implements
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
-            */sensor.switchOffAsync();/* FIXME
+            */sensor.switchOffAsync();/* FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -394,7 +393,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
-        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME
+        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
             */sensor.setListened(streaming);/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
@@ -410,7 +409,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
-        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME
+        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
             */return sensor.isListened();/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/

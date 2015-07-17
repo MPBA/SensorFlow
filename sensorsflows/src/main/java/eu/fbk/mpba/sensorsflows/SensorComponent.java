@@ -12,8 +12,8 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * This class adds internal support for the library data-paths.
  */
 public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
-    protected ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
     protected DevicePlugin<TimeT, ValueT> _parent = null;
+    protected ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
     protected ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
 
     protected SensorComponent(DevicePlugin<TimeT, ValueT> parent) {
@@ -39,7 +39,6 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        // TODO: check if the null is necessary
         _handler.sensorStateChanged(this, null, mStatus = state);
     }
 

@@ -18,13 +18,13 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     @Override
     public void switchOnAsync() {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                 1, "Switched on");
     }
 
     @Override
     public void switchOffAsync() {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                 2, "Switched off");
     }
 
@@ -34,7 +34,7 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
     }
 
     public void addText(CharSequence text) {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                 0, text.toString());
     }
 

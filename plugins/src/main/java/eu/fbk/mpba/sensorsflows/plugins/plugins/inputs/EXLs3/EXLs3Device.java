@@ -27,7 +27,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
         this.name = name;
-        resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
+        setBootUTCNanos();
         er = new EXLAccelerometer(this);
         ry = new EXLBattery(this);
         pe = new EXLGyroscope(this);
@@ -56,11 +56,11 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     private long bootUTCNanos;
 
-    public void resetMonoTimestamp(long timestamp, long realTimeNanos) {
-        bootUTCNanos = timestamp * 1000000 - realTimeNanos;
+    public void setBootUTCNanos() {
+        bootUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
     }
 
-    public long getMonoTimestampNanos(long realTimeNanos) {
+    public long getMonoUTCNanos(long realTimeNanos) {
         return realTimeNanos + bootUTCNanos;
     }
 
@@ -132,22 +132,22 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
 
             public void idle(EXLs3Receiver sender) {
-                sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
                         READY, "idle");
             }
 
             public void connecting(EXLs3Receiver sender, BluetoothDevice device, boolean secureMode) {
-                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
                         CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
             public void connected(EXLs3Receiver sender, String deviceName) {
-                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
                         CONNECTED, "connected to " + deviceName);
             }
 
             public void disconnected(EXLs3Receiver sender, DisconnectionCause cause) {
-                parent.er.sensorEvent(parent.getMonoTimestampNanos(System.nanoTime()),
+                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
                         DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
             }
         };
@@ -166,7 +166,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             @Override
             public void received(EXLs3Manager sender, EXLs3Manager.Packet p) {
                 // TODO! check timestamp calc
-                now = parent.getMonoTimestampNanos(p.receptionTime);
+                now = parent.getMonoUTCNanos(p.receptionTime);
                 if (ref < 0) {
                     pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
                 }

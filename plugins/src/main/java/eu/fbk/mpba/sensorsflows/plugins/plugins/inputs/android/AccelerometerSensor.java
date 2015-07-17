@@ -39,7 +39,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         else if (getState() == SensorStatus.OFF) {
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                     0, "Switched on");
         }
     }
@@ -49,7 +49,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         if (getState() == SensorStatus.ON) {
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                     0, "Switched off");
         }
     }
@@ -70,7 +70,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onSensorChanged(SensorEvent event) {
-        sensorValue(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(event.timestamp),
+        sensorValue(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(event.timestamp),
                 new double[] {event.values[0], event.values[1], event.values[2]});
     }
 
@@ -86,7 +86,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()),
+        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                 accuracy, "Accuracy changed");
     }
 

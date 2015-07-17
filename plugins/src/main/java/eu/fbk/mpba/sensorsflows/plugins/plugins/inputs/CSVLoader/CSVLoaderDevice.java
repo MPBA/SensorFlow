@@ -108,11 +108,11 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
     //Questi metodi sono per il timestamp, non sono metodi miei quindi non saprei documentarli
     private long refUTCNanos;
 
-    public void resetMonoTimestamp(long timestampMillis, long realTimeNanos) {
-        refUTCNanos = timestampMillis * 1000000 - realTimeNanos;
+    public void setBootUTCNanos() {
+        refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
     }
 
-    public long getMonoTimestampNanos(long realTimeNanos) {
+    public long getMonoUTCNanos(long realTimeNanos) {
         return realTimeNanos + refUTCNanos;
     }
 }

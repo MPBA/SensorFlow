@@ -20,7 +20,7 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     public SmartphoneDevice(Context context, String name) {
         this.name = name;
-        resetMonoTimestamp(System.currentTimeMillis(), System.nanoTime());
+        setBootUTCNanos();
         _sensors = new ArrayList<>();
         _sensors.add(new GpsSensor(this, context, "0", 0, 0));
         _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_GAME));
@@ -52,11 +52,11 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     private long refUTCNanos;
 
-    public void resetMonoTimestamp(long timestampMillis, long realTimeNanos) {
-        refUTCNanos = timestampMillis * 1000000 - realTimeNanos;
+    public void setBootUTCNanos() {
+        refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
     }
 
-    public long getMonoTimestampNanos(long realTimeNanos) {
+    public long getMonoUTCNanos(long realTimeNanos) {
         return realTimeNanos + refUTCNanos;
     }
 

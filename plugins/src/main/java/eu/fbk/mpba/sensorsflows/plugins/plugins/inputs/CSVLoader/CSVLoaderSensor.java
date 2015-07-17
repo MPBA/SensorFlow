@@ -44,7 +44,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
         try {
             r = ch.getNextRow();
         } catch (IOException e) {
-            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoTimestampNanos(System.nanoTime()), 101, "[ " + name + " ] Error reading row: " + e.getMessage());
+            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()), 101, "[ " + name + " ] Error reading row: " + e.getMessage());
             mStatus = SensorStatus.ERROR;
             fileFinito = true;
         }

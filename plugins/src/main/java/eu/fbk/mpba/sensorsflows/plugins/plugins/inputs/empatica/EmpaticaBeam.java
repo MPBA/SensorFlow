@@ -92,7 +92,6 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                 _device.stopScanning();
                 try {
                     _address = device.getAddress();
-                    didUpdateStatus(EmpaStatus.CONNECTING);// TODO OU: Delete this if used by empa (not yet)
                     _device.connectDevice(device);
                     // Here no exception
                     _devName = label;

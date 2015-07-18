@@ -51,7 +51,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
                     @Override
                     public void didReceiveBVP(float bvp, double timestamp) {
-                        mBat.sensorValue(proTime(timestamp), new double[]{bvp});
+                        mBvp.sensorValue(proTime(timestamp), new double[]{bvp});
                     }
 
                     @Override

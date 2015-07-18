@@ -92,6 +92,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                 _device.stopScanning();
                 try {
                     _address = device.getAddress();
+                    didUpdateStatus(EmpaStatus.CONNECTING);// TODO OU: Delete this if used by empa (not yet)
                     _device.connectDevice(device);
                     // Here no exception
                     _devName = label;
@@ -104,12 +105,10 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     /*      else {          */
             if (!allowed) {
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_ALLOWED);
-                _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
             }
         }
         if (_foundE3s.contains(device.getAddress())) {
             _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_FOUND);
-            _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_CONNECTED);
         } else
             _foundE3s.add(device.getAddress());
 
@@ -166,14 +165,16 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                     } else {
                         _onConnectionChanged.end(this, ConnectEventHandler.Result.LOST);
                         _device.startScanning();
+                        didUpdateStatus(EmpaStatus.DISCOVERING);// TODO OU: Delete this if used by empa (not yet)
                     }
                     break;
                 case READY:
                     // >> authenticate..
-                    // Manager authenticated
+                    // Manager authenticating
                     _notReady = false;
+                    _onConnectionChanged.end(this, ConnectEventHandler.Result.INITIALIZED);
                     _device.startScanning();
-                    _onConnectionChanged.end(this, ConnectEventHandler.Result.JUST_INITIALIZED);
+                     didUpdateStatus(EmpaStatus.DISCOVERING);// TODO OU: Delete this if used by empa (not yet)
                     break;
                 case DISCOVERING:
                     // Manager discovering new devices
@@ -234,7 +235,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
             /**
              * Does not happen. It just completes the enumerator.
              */
-            JUST_INITIALIZED,
+            INITIALIZED,
             /**
              * Does not happen. It just completes the enumerator.
              */

@@ -14,12 +14,22 @@ import com.empatica.empalink.delegate.EmpaStatusDelegate;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import eu.fbk.mpba.sensorsflows.plugins.plugins.PingMan;
 
+/**
+ * Main implementation of the Empatica Beam system.
+ * Features:
+ *   - MAC connection
+ *   - First found connection
+ *   - Re-discovery on connection lost (last device's MAC used)
+ *   - SensorStatus (we hope it will be used from them soon)
+ *   - Transitory states events correction
+ *   - Internet access detection
+ *   - Splitted connection (authentication + connection)
+ */
 public class EmpaticaBeam implements EmpaStatusDelegate {
     private static final String LOG_TAG = "ALE EMP BEAM";
     protected final EmpaDeviceManager _device;
@@ -31,13 +41,11 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     protected String _devName;
     private   boolean _disconnectionPending = false;
     private   boolean _notReady = true;
-    private   ArrayList<String> _foundE3s;
 
     public EmpaticaBeam(Context context, EmpaDataDelegate onData,
                         ConnectEventHandler onConnectionChanged, DeviceEventHandler onDevice,
                         Runnable enableBluetooth) {
         clearLogs(context);
-        _foundE3s = new ArrayList<String>();
         _enableBluetooth = enableBluetooth;
         _onConnectionChanged = onConnectionChanged;
         _onDeviceEvent = onDevice;
@@ -91,26 +99,19 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
             if (allowed) {
                 _device.stopScanning();
                 try {
+                    _devName = label;
                     _address = device.getAddress();
                     _device.connectDevice(device);
-                    // Here no exception
-                    _devName = label;
                 } catch (ConnectionNotAllowedException e) {
                     // Bisogna aver pazienza con loro...
                     allowed = false;
                     _device.startScanning();
                 }
             }
-    /*      else {          */
             if (!allowed) {
                 _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_ALLOWED);
             }
         }
-        if (_foundE3s.contains(device.getAddress())) {
-            _onConnectionChanged.end(this, ConnectEventHandler.Result.NOT_FOUND);
-        } else
-            _foundE3s.add(device.getAddress());
-
     }
 
     @Override
@@ -148,12 +149,14 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
 
     EmpaStatus _lastStatus = EmpaStatus.DISCONNECTED;
     @Override
-    public void didUpdateStatus(EmpaStatus status) {
+    public synchronized void didUpdateStatus(EmpaStatus status) {
+        boolean repeated = _lastStatus.equals(status);
+        _lastStatus = status;
         Log.d(LOG_TAG,
                 "didUpdateStatus " + status.toString() + " (" + getAddress() + ")" +
-                (_lastStatus.equals(status) ? " repeated" : "")
+                (repeated ? " repeated" : "")
         );
-        if (!_lastStatus.equals(status))
+        if (!repeated)
             switch (status) {
                 case DISCONNECTING:
                     break;
@@ -191,7 +194,6 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
                 default:
                     break;
             }
-        _lastStatus = status;
     }
 
     // FS

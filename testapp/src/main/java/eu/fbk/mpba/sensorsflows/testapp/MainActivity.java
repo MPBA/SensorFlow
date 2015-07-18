@@ -3,6 +3,7 @@ package eu.fbk.mpba.sensorsflows.testapp;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -65,7 +66,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < selection.getChildCount(); i++) {
             CheckBox x =  (CheckBox)selection.getChildAt(i);
             if (x.isChecked())
-                ((Runnable) x.getTag()).run();
+                runOnUiThread((Runnable) x.getTag());
         }
     }
 
@@ -90,15 +91,18 @@ public class MainActivity extends Activity {
         addPluginChoice(true, "Empatica", new Runnable() {
             @Override
             public void run() {
-                m.addDevice(new EmpaticaDevice("e250d5fdb4644d7bbd8cbbcd4acfb860", _this, "", new Runnable() {
+                m.addDevice(new EmpaticaDevice("e250d5fdb4644d7bbd8cbbcd4acfb860", _this, null, new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(_this, "ENABLE BT in 5 sec!!!", Toast.LENGTH_LONG).show();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), -1);
+                            }
+                        });
                         try {
-                            Thread.sleep(5000, 0);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                            Thread.sleep(5000);
+                        } catch (InterruptedException ignored) { }
                     }
                 }));
             }
@@ -283,20 +287,39 @@ public class MainActivity extends Activity {
         });
     }
 
+    public void onCreatePlugins(View view) {
+        if (m.getStatus() == EngineStatus.STANDBY) {
+            findViewById(R.id.btn_create).setEnabled(false);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    runSelectedInitializations();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            findViewById(R.id.btn_start).setEnabled(true);
+                        }
+                    });
+                }
+            }, "PluginsInitialization").start();
+        }
+    }
+
     @SuppressWarnings("SpellCheckingInspection")
     public void onMStart(View v) {
         if (m.getStatus() == EngineStatus.STANDBY) {
-            runSelectedInitializations();
+            findViewById(R.id.btn_start).setEnabled(false);
             m.setAutoLinkMode(AutoLinkMode.PRODUCT);
             m.start(CsvDataSaver.getHumanDateTimeString());
+            findViewById(R.id.btn_stop).setEnabled(true);
         }
-        else
-            Toast.makeText(this, "m.close() before", Toast.LENGTH_SHORT).show();
     }
 
     public void onMClose(View v) {
+        findViewById(R.id.btn_stop).setEnabled(false);
         m.close();
         m = new FlowsMan<>();
+        findViewById(R.id.btn_create).setEnabled(true);
     }
 
     EXLs3ToFile d;

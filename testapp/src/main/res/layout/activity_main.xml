@@ -38,10 +38,11 @@
                     android:layout_height="wrap_content"
                     android:labelFor="@+id/tcpServerPort"/>
                 <EditText
-                    android:text="192.168.205.227:2000"
+                    android:text=""
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textUri"
+                    android:hint="Server:Port"
                     android:id="@id/tcpServerPort"/>
 
                 <LinearLayout
@@ -78,8 +79,17 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Start FlowsMan"
-                android:onClick="onMStart" />
+                android:id="@+id/btn_create"
+                android:text="Create Plugins"
+                android:onClick="onCreatePlugins" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/btn_start"
+                android:text="Start"
+                android:onClick="onMStart"
+                android:enabled="false"/>
 
             <LinearLayout
                 android:orientation="horizontal"
@@ -102,8 +112,10 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Stop FlowsMan"
-                android:onClick="onMClose" />
+                android:id="@+id/btn_stop"
+                android:text="Stop"
+                android:onClick="onMClose"
+                android:enabled="false" />
 
         </LinearLayout>
 

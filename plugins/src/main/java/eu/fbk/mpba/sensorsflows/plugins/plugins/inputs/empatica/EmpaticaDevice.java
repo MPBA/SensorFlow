@@ -153,6 +153,6 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return beam.getName();
+        return beam.getName() == null ? EmpaticaDevice.class.getSimpleName() : beam.getName();
     }
 }

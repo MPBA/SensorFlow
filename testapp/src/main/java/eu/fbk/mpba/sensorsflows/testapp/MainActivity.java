@@ -3,6 +3,8 @@ package eu.fbk.mpba.sensorsflows.testapp;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -44,6 +46,7 @@ import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SQLiteOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.SensorsProtobuffer;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.TCPClientOutput;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.outputs.TCPServerOutput;
+import eu.fbk.mpba.sensorsflows.testapp.CSVLoader.CSVLoader;
 
 
 public class MainActivity extends Activity {
@@ -52,13 +55,14 @@ public class MainActivity extends Activity {
     SmartphoneDevice smartphoneDevice;
     LinearLayout selection;
 
-    void addPluginChoice(boolean input, String name, Runnable initialization) {
+    CheckBox addPluginChoice(boolean input, String name, Runnable initialization) {
         LinearLayout sel = (LinearLayout) findViewById(R.id.pluginSelection);
         CheckBox x = new CheckBox(this);
         x.setChecked(false);
         x.setTag(initialization);
         x.setText((input ? "(in)" : "(out)") + name);
         sel.addView(x);
+        return x;
     }
 
     private void runSelectedInitializations() {
@@ -67,6 +71,13 @@ public class MainActivity extends Activity {
             if (x.isChecked())
                 ((Runnable) x.getTag()).run();
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        CSVLoader.onActivityResult(this, requestCode, resultCode, data);
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -104,71 +115,10 @@ public class MainActivity extends Activity {
             }
         });
 
-
-        /**
-         * Prova CSVLoader
-         * */
-        addPluginChoice(true, "CSVLoader", new Runnable() {
-            @Override
-            public void run() {
-
-                //Creo il device
-                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
-                cl.setAsyncActionOnFinish(new Runnable() {
-                    public void run() {
-                        ((Activity) _this).runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(((Activity) _this), "FINITOOOOO :D", Toast.LENGTH_LONG).show();
-                            }
-                        });
-                    }
-                });
-
-
-                //Prendo la scala timestamp per alcuni files.
-                HashMap<String, Long> scale = new HashMap<>();
-                BufferedReader br = null;
-                try {
-                    br = new BufferedReader(new FileReader(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader/input_config.txt"));
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        if (line.replaceAll("\\s", "").charAt(0) != '#') {
-                            String[] parts = line.split(";");
-                            scale.put(parts[0], Long.parseLong(parts[1]));
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.i("CSVL", e.getMessage());
-                } finally {
-                    try {
-                        if (br != null)
-                            br.close();
-                    } catch (Exception e) {
-                        Log.i("CSVL", e.getMessage());
-                    }
-                }
-
-
-                //Carico i files dalla cartella di input
-                final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
-                for (final File fileEntry : folder.listFiles()) {
-                    if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt")) {
-                        long tsScale = 1;
-                        Long tmp = scale.get(fileEntry.getName());
-                        if (tmp != null)
-                            tsScale = tmp;
-
-                        try {
-                            cl.addFile(new InputStreamReader(new FileInputStream(fileEntry)), ";", "\n", tsScale, fileEntry.getName());
-                        } catch (Exception e) {
-                            Log.i("CSVL", e.getMessage());
-                        }
-                    }
-                }
-
-                m.addDevice(cl);
-            }
-        });
+        /** CSVLoader */
+        //TODO guardar cio che causa eccezione!!!
+        /*CSVLoader.setCheckboxListener(addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m,this)));
+        CSVLoader.TemporaneallyDrawGraphics((LinearLayout) findViewById(R.id.pluginSelection), this);*/
 
         addPluginChoice(false, "CSV", new Runnable() {
             @Override

@@ -20,6 +20,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     protected String name;
     static int globalDebugID = 0;
     protected boolean fileFinito = false;
+    int righeLette = 0;
 
     public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, long tsScale, String sensorName, DevicePlugin<Long, double[]> d) throws Exception {
         super(d);
@@ -51,7 +52,10 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
         if (r != null) {
             if (!r.getError())
+            {
                 sensorValue(r.timestamp, r.fields);
+
+            }
             else {
                 sensorEvent(r.timestamp, 101, r.getErrorMsg());
                 mStatus = SensorStatus.ERROR;
@@ -93,5 +97,14 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     @Override
     public String getName() {
         return getParentDevicePlugin().getName() + "/" + name;
+    }
+
+    public int getReceivedMessagesCount()
+    {
+        return getForwardedMessagesCount();
+    }
+    public int getForwardedMessagesCount()
+    {
+        return righeLette; //TODO inviare il numero di <QUALCOSA> inviato
     }
 }

@@ -5,6 +5,6 @@ package eu.fbk.mpba.sensorsflows.base;
  * have been forwarded since the call's time.
  */
 public interface ISampleCounter {
-    public int getReceivedMessagesCount();
-    public int getForwardedMessagesCount();
+    int getReceivedMessagesCount();
+    int getForwardedMessagesCount();
 }

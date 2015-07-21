@@ -11,12 +11,11 @@ import java.util.LinkedList;
  *
  *        INTESTAZIONE
  *              1) Il file CSV contenga un'intestazione.
- *              2) Il file non contenga solo l'intestazione ma anche i dati.
- *              3) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
+ *              2) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
  *
  *        RIGHE
- *              4) Una riga sia fatta cosi': campo[sep]campo[sep]campo[finelinea]
- *              5) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
+ *              3) Una riga sia fatta cosi': campo[sep]campo[sep]campo[finelinea]
+ *              4) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
  *                      se cosi' non fosse si dovra' settare opportunamente il campo 'timestampScale'
  *                      per rendere il timestamp fornito in nanosecondi,
  *                      ovviamente si puo' inserire valori decimali nel timestamp che saranno poi convertite in non decimali
@@ -24,12 +23,12 @@ import java.util.LinkedList;
  *                      Cifre al di sotto del nanosecondo verranno prettamente ignorate.
  *                      Ricordarsi che con un double si perde un po' di precisione rispetto ad un long, letto da qui:
  *                          http://ubuntuforums.org/showthread.php?t=1520796
- *              6) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
- *              7) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
- *              8) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
+ *              5) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
+ *              6) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
+ *              7) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
  *                      e verra' riportato un errore.
- *              9) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
- *              10) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
+ *              8) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
+ *              9) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
  *                      fieldSep = ".0"; rowSep = "5.";
  *                      Se provate a scrivere questi dati con quei separatori:
  *                                                                  ts  x    y  z
@@ -39,7 +38,7 @@ import java.util.LinkedList;
  *                      Questi controlli sono difficili da fare, quindi delego il buon senso all'utente.
  *
  *        SEPARATORI
- *              11) I due separatori non siano l'uno conenuto nell'altro.
+ *              10) I due separatori non siano l'uno conenuto nell'altro.
  *                      Mettiamo che Gino abbia settato i separatori ";" e ";@",
  *                      cosi' facendo toglie pero' a Gesualdo (che costruisce il file csv)
  *                      l'opportunita' di scrivere un campo in questo modo: @campo
@@ -131,7 +130,7 @@ public class CSVHandler {
         if (endoffile)
         {
             r.endfile = true;
-            r.setError("WARNING: si sta' cercando di leggere un file gia' finito o chiuso (puo' voler dire che nel file e' presente solo l'intestazione)");
+            //r.setError("WARNING: si sta' cercando di leggere un file gia' finito o chiuso (puo' voler dire che nel file e' presente solo l'intestazione)");
             return r;
         }
 

@@ -52,12 +52,12 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
         if (r != null)
         {
-            if (r.getError())
-            {
-                sensorEvent(r.timestamp, 101, r.getErrorMsg());
-                mStatus = SensorStatus.ERROR;
-            }
-            else if(r.isValid())
+// FIXME error (tutto il commento)           if (r.getError())
+//            {
+//                sensorEvent(r.timestamp, 101, r.getErrorMsg());
+//                mStatus = SensorStatus.ERROR;
+//            }
+//            else if(r.isValid())
                 sensorValue(r.timestamp, r.fields);
 
             if (r.endfile)
@@ -95,7 +95,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public String getName() {
-        return getParentDevicePlugin().getName() + "/" + name;
+        return name;
     }
 
     public int getReceivedMessagesCount()

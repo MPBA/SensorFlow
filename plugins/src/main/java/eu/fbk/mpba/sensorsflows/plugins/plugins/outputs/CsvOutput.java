@@ -18,14 +18,14 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  */
 public class CsvOutput implements OutputPlugin<Long, double[]> {
 
-    private final String _tsCol;
-    private final String _ext;
-    private final String _nl;
-    private final String _sep;
+    private final String mTsCol;
+    private final String mExtension;
+    private final String mNewLine;
+    private final String mSeparator;
     private int mReceived = 0;
     private int mForwarded = 0;
     String mName;
-    String _path;
+    String mPath;
     CsvDataSaver _savData;
     CsvDataSaver _savEvents;
     List<ISensor> _linkedSensors = new ArrayList<>();
@@ -36,11 +36,11 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     public CsvOutput(String name, String path, String timestampColumnName, String fileSuffix, String separator, String newLine) {
         mName = name;
-        _path = path;
-        _tsCol = timestampColumnName;
-        _ext = fileSuffix;
-        _sep = separator;
-        _nl = newLine;
+        mPath = path;
+        mTsCol = timestampColumnName;
+        mExtension = fileSuffix;
+        mSeparator = separator;
+        mNewLine = newLine;
     }
 
     public List<String> getFiles() {
@@ -48,29 +48,31 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         f = _savData.getSupports();
         f.addAll(_savEvents.getSupports());
         List<String> a = new ArrayList<>(f.size());
-        for (int i = 0; i < f.size(); i++) {
+        for (int i = 0; i < f.size(); i++)
             a.add(f.get(i).getAbsolutePath());
-        }
         return a;
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
         List<String> nn = new ArrayList<>(streamingSensors.size());
         for (ISensor s : streamingSensors)
-            nn.add(s.getName());
-        _savData = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + getName() + "/data_",
-                nn.toArray(), _ext, _sep, _nl);
-        _savEvents = new CsvDataSaver(_path + "/" + sessionTag.toString() + "/" + getName() + "/events_",
-                nn.toArray(), _ext, _sep, _nl);
+            nn.add( s.getParentDevicePlugin().getClass().getSimpleName() +
+                    "-" + s.getParentDevicePlugin().getName() +
+                    "/" + s.getClass().getSimpleName() +
+                    "-" + s.getName() );
+        String p = mPath + "/" + sessionTag.toString() + "/"
+                + CsvOutput.class.getSimpleName() + "-" + getName();
+        _savData = new CsvDataSaver(p + "/data_", nn.toArray(), mExtension, mSeparator, mNewLine);
+        _savEvents = new CsvDataSaver(p + "/events_", nn.toArray(), mExtension, mSeparator, mNewLine);
         _linkedSensors.addAll(streamingSensors);
         List<List<Object>> dataH = new ArrayList<>();
         List<List<Object>> evtH = new ArrayList<>();
         for (ISensor l : streamingSensors) {
             List<Object> h = new ArrayList<>();
-            h.add(_tsCol);
+            h.add(mTsCol);
             h.addAll(l.getValuesDescriptors());
             dataH.add(h);
-            evtH.add(Arrays.asList((Object)_tsCol, "code", "message"));
+            evtH.add(Arrays.asList((Object) mTsCol, "code", "message"));
         }
         _savData.init(dataH);
         _savEvents.init(evtH);
@@ -103,16 +105,16 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return CsvOutput.class.getSimpleName() + "-" + mName;
+        return mName;
     }
 
     @Override
     public int getReceivedMessagesCount() {
-        return 0; // TODO implement: variabile int con numero di righe elaborate
+        return mReceived;
     }
 
     @Override
     public int getForwardedMessagesCount() {
-        return 0; // TODO implement: variabile int con numero di righe salvate
+        return mForwarded;
     }
 }

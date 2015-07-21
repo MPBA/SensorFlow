@@ -126,7 +126,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
         @Override
         public String getName() {
-            return name + "/" + getClass().getSimpleName();
+            return "";
         }
 
         private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {

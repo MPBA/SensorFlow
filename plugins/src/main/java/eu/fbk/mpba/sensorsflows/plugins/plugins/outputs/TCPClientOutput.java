@@ -141,7 +141,7 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return TCPClientOutput.class.getSimpleName();
+        return "";
     }
 
     @Override

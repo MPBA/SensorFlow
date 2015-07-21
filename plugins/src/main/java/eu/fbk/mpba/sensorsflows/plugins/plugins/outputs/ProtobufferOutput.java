@@ -181,7 +181,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return ProtobufferOutput.class.getSimpleName() + "-" + mName;
+        return mName;
     }
 
     @Override

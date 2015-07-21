@@ -9,13 +9,11 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
     public EmpaticaSensor(EmpaticaDevice p) {
         super(p);
-        _dev = p;
     }
 
-    private EmpaticaDevice _dev;
     private boolean _enabled = true;
 
-    public boolean isOn() {
+    public boolean isEnabled() {
         return _enabled;
     }
 
@@ -31,7 +29,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public String getName() {
-        return _dev.getName() + "-" + getClass().getSimpleName();
+        return "";
     }
 
     public static class Battery extends EmpaticaSensor {

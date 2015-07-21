@@ -217,7 +217,7 @@ public class MainActivity extends Activity {
 
                     @Override
                     public String getName() {
-                        return "UserOutput-MainActivity";
+                        return "MainActivity";
                     }
 
                     @Override

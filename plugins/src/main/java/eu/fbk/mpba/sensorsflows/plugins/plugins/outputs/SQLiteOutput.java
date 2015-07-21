@@ -96,7 +96,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return SQLiteOutput.class.getSimpleName() + "-" + _name;
+        return _name;
     }
 
     @Override

@@ -97,6 +97,6 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     @Override
     public String getName() {
-        return getParentDevicePlugin().getName() + "/" + _sAcc.getName() + "-" + _name;
+        return _sAcc.getName() + "-" + _name;
     }
 }

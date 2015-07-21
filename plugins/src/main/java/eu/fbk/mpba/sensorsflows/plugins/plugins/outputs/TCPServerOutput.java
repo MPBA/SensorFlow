@@ -10,7 +10,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
@@ -21,6 +20,12 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  * Byte-coded stream of events/timed-values
  */
 public class TCPServerOutput implements OutputPlugin<Long, double[]> {
+
+    public final int ALIGNMENT_BYTE = 0x1E;
+    public final int VERSION_BYTE = 0x1;
+    public final int DATA_CODE = 100;
+    public final int EVENT_CODE = 101;
+    public final int HEADER_CODE = 105;
 
     private final Thread mSTh;
     protected final ServerSocket mSock;
@@ -63,7 +68,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     private List<ISensor> mSensors = null;
     private void writeDescriptors(OutputStream o) throws IOException {
-        o.write(new byte[] { 0x1E, 105, 0x01, (byte) mSensors.size() });
+        o.write(new byte[] { ALIGNMENT_BYTE, HEADER_CODE, VERSION_BYTE, (byte) mSensors.size() });
         o.write(mTag.length());
         o.write(mTag.getBytes());
         for (byte i = 0; i < mSensors.size(); i++) {
@@ -112,7 +117,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
         if (mCli != null) {
             synchronized (mSock) {
                 try {
-                    mOut.write(new byte[] { 0x1E, 101, (byte) mSensors.indexOf(event.sensor) });
+                    mOut.write(new byte[] { ALIGNMENT_BYTE, EVENT_CODE, (byte) mSensors.indexOf(event.sensor) });
                     ByteBuffer b = ByteBuffer.allocate(12);
                     b.putLong(event.timestamp); // Big-Endian java and network
                     b.putInt(event.code); // Big-Endian java and network
@@ -134,7 +139,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
         if (mCli != null) {
             synchronized (mSock) {
                 try {
-                    mOut.write(new byte[] { 0x1E, 100, (byte) mSensors.indexOf(data.sensor) });
+                    mOut.write(new byte[] { ALIGNMENT_BYTE, DATA_CODE, (byte) mSensors.indexOf(data.sensor) });
                     ByteBuffer b = ByteBuffer.allocate(8 + data.value.length * 8);
                     b.putLong(data.timestamp);
                     for (double v : data.value)
@@ -151,7 +156,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return TCPServerOutput.class.getSimpleName();
+        return "";
     }
 
     @Override

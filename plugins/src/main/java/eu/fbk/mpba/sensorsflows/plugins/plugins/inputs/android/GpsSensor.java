@@ -116,6 +116,6 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public String getName() {
-        return getParentDevicePlugin().getName() + "/" + LocationManager.GPS_PROVIDER + "-" + name;
+        return LocationManager.GPS_PROVIDER + "-" + name;
     }
 }

@@ -130,7 +130,7 @@ public class CSVHandler {
         if (endoffile)
         {
             r.endfile = true;
-            //r.setError("WARNING: si sta' cercando di leggere un file gia' finito o chiuso (puo' voler dire che nel file e' presente solo l'intestazione)");
+            r.setError("WARNING: si sta' cercando di leggere un file finito (puo' voler dire nel file e' presente solo l'intestazione)");
             return r;
         }
 

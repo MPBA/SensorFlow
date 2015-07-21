@@ -17,7 +17,8 @@ import java.util.LinkedList;
  *              3) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
  *
  *        RIGHE
- *              4) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
+ *              4) Una riga sia fatta cosi': campo[sep]campo[sep]campo[finelinea]
+ *              5) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
  *                      se cosi' non fosse si dovra' settare opportunamente il campo 'timestampScale'
  *                      per rendere il timestamp fornito in nanosecondi,
  *                      ovviamente si puo' inserire valori decimali nel timestamp che saranno poi convertite in non decimali
@@ -25,22 +26,22 @@ import java.util.LinkedList;
  *                      Cifre al di sotto del nanosecondo verranno prettamente ignorate.
  *                      Ricordarsi che con un double si perde un po' di precisione rispetto ad un long, letto da qui:
  *                          http://ubuntuforums.org/showthread.php?t=1520796
- *              5) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
- *              6) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
- *              7) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
+ *              6) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
+ *              7) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
+ *              8) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
  *                      e verra' riportato un errore.
- *              8) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
- *              9) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
+ *              9) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
+ *              10) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
  *                      fieldSep = ".0"; rowSep = "5.";
  *                      Se provate a scrivere questi dati con quei separatori:
  *                                                                  ts  x    y  z
  *                                                                  5   5.0  5  5.0
  *                      ne esce una cosa incomprensibile:
  *                                                                  ts.0x.0y.0z5.5.05.0.05.05.0
- *                      Questi controlli sono difficili da fare, chi non ha testa ha gambe.
+ *                      Questi controlli sono difficili da fare, quindi delego il buon senso all'utente.
  *
  *        SEPARATORI
- *              10) I due separatori non siano l'uno conenuto nell'altro.
+ *              11) I due separatori non siano l'uno conenuto nell'altro.
  *                      Mettiamo che Gino abbia settato i separatori ";" e ";@",
  *                      cosi' facendo toglie pero' a Gesualdo (che costruisce il file csv)
  *                      l'opportunita' di scrivere un campo in questo modo: @campo
@@ -136,6 +137,9 @@ public class CSVHandler {
         do {
             f = getNextField();
 
+            if(f.type == FieldType.ENDFILE)
+                break;
+
             sb.append(f.value);
             if (f.type == FieldType.NORMAL) {
                 sb.append(fs);
@@ -156,19 +160,13 @@ public class CSVHandler {
                 try {
                     r.fields[j++] = Double.parseDouble(f.value);
                 } catch (Exception e) {
-                    r.setError("Errore linea " + rowIndex + ": campi non validi (caratteri non validi || virgola anziche' il punto).");
+                    r.setError("Errore linea " + rowIndex + ": campi non validi (Caratteri non validi || Virgola anziche' il punto).");
                 }
         }
         while (f.type == FieldType.NORMAL);
 
-        if (j != descriptors.size())
-        {
-            //TODO no fineriga
-            String str = "";
-            if(f.type == FieldType.ENDFILE)
-                str = " HOHOOOO FINEFIELELELE";
-            r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione" + str);
-        }
+        if (j != descriptors.size() && f.type != FieldType.ENDFILE)
+            r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione");
 
         if (r.getError())
             r.addErrorInfo(" [linea: '" + sb.toString() + "']");

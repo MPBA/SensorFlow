@@ -80,19 +80,15 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
     }
 
     /**
-     * Qui faccio partire i sensori
+     * Faccio partire i sensori
      * Chiamato almeno una volta
      */
-    @Override
-    public void inputPluginInitialize() {
-        //Devo far partire un thread per non bloccare il tutto.
+    @Override public void inputPluginInitialize() {
+        //Thread per un'esecuzione non bloccante.
         thr.start();
     }
 
-    @Override
-    public void inputPluginFinalize() {
-        // Finalizzo
-    }
+    @Override public void inputPluginFinalize(){}
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
@@ -107,11 +103,9 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
 
     //Questi metodi sono per il timestamp, non sono metodi miei quindi non saprei documentarli
     private long refUTCNanos;
-
     public void setBootUTCNanos() {
         refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
     }
-
     public long getMonoUTCNanos(long realTimeNanos) {
         return realTimeNanos + refUTCNanos;
     }

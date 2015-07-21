@@ -64,7 +64,7 @@ public class CSVLoader
 
     public static void setCheckboxListener(CheckBox c)
     {
-        /*c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if(!b)
@@ -72,7 +72,7 @@ public class CSVLoader
                 else
                     lall.setVisibility(View.VISIBLE);
             }
-        });*/
+        });
     }
 
     public static void TemporaneallyDrawGraphics(LinearLayout where, final Activity _this)
@@ -222,12 +222,12 @@ public class CSVLoader
                 });
 
 
-                /*for (int i = 0; i < fc.getChildCount(); i++)
+                for (int i = 0; i < fc.getChildCount(); i++)
                 {
                     FiledTextView ftw = (FiledTextView)fc.getChildAt(i);
                     Log.i(TAG, ftw.f.getName());
-                    //try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), "", "", 1, ftw.f.getName());}catch(Exception e){};//TODO scala con la hashmap scale
-                }*/
+                    try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), ";", "\n", 1, ftw.f.getName());}catch(Exception e){};//TODO scala con la hashmap scale
+                }
 
 
 

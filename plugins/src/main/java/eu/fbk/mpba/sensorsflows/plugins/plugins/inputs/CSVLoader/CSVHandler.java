@@ -111,7 +111,8 @@ public class CSVHandler {
     private int rowIndex = 2;
     private long tsScale;
 
-    public LinkedList<Object> getDescriptors() {
+    public LinkedList<Object> getDescriptors()
+    {
         return descriptors;
     }
 
@@ -121,20 +122,38 @@ public class CSVHandler {
      *                     Nel caso in cui il file sia finito ritorna una riga nulla con il tipo: ENDFILE.
      *                     Se una riga è invalida setta il tipo: ERROR e imposta il messaggio.
      */
-    public CSVRow getNextRow() throws IOException {
-
+    public CSVRow getNextRow() throws IOException
+    {
         CSVRow r = new CSVRow(descriptors.size());
         int i = 0, j = 0;
         Field f;
         StringBuilder sb = new StringBuilder();
 
-        if (endoffile) {
+        if (endoffile)
+        {
             r.endfile = true;
             r.setError("WARNING: si sta' cercando di leggere un file gia' finito o chiuso (puo' voler dire che nel file e' presente solo l'intestazione)");
             return r;
         }
 
-        do {
+        do
+        {
+            f = getNextField();
+
+            sb.append(f.value);
+
+            if (f.type == FieldType.NORMAL){sb.append(fs);sb.append(" ");}
+
+
+            i++;
+            j++;
+        }
+        while(f.type == FieldType.NORMAL);
+
+        return r;
+
+        /*do
+        {
             f = getNextField();
 
             if(f.type == FieldType.ENDFILE)
@@ -165,8 +184,15 @@ public class CSVHandler {
         }
         while (f.type == FieldType.NORMAL);
 
-        if (j != descriptors.size() && f.type != FieldType.ENDFILE)
+
+        if (j != descriptors.size() && (j != 0 || f.type != FieldType.ENDFILE))
             r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione");
+        else
+        {
+            if(j!= descriptors.size() && f.type == FieldType.ENDFILE)
+                r.endfile = true;
+        }
+
 
         if (r.getError())
             r.addErrorInfo(" [linea: '" + sb.toString() + "']");
@@ -176,7 +202,7 @@ public class CSVHandler {
 
         rowIndex++;
 
-        return r;
+        return r;*/
     }
 
     public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception {

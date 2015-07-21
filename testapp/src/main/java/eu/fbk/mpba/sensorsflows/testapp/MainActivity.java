@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -60,9 +61,12 @@ public class MainActivity extends Activity {
 
     private void runSelectedInitializations() {
         for (int i = 0; i < selection.getChildCount(); i++) {
-            CheckBox x =  (CheckBox)selection.getChildAt(i);
-            if (x.isChecked())
-                runOnUiThread((Runnable) x.getTag());
+            if(selection.getChildAt(i) instanceof CheckBox)
+            {
+                CheckBox x = (CheckBox) selection.getChildAt(i);
+                if (x.isChecked())
+                    runOnUiThread((Runnable) x.getTag());
+            }
         }
     }
 
@@ -113,8 +117,8 @@ public class MainActivity extends Activity {
 
         /** CSVLoader */
         //TODO guardar cio che causa eccezione!!!
-        /*CSVLoader.setCheckboxListener(addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m,this)));
-        CSVLoader.TemporaneallyDrawGraphics((LinearLayout) findViewById(R.id.pluginSelection), this);*/
+        CSVLoader.setCheckboxListener(addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m,this)));
+        CSVLoader.TemporaneallyDrawGraphics((LinearLayout) findViewById(R.id.pluginSelection), this);
 
         addPluginChoice(false, "CSV", new Runnable() {
             @Override

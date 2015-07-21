@@ -1,7 +1,5 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader;
 
-import android.util.Log;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -110,6 +108,7 @@ public class CSVHandler {
     private int tsIndex = -1;
     private int rowIndex = 2;
     private long tsScale;
+    Field f = null;
 
     public LinkedList<Object> getDescriptors()
     {
@@ -126,7 +125,7 @@ public class CSVHandler {
     {
         CSVRow r = new CSVRow(descriptors.size());
         int i = 0, j = 0;
-        Field f;
+
         StringBuilder sb = new StringBuilder();
 
         if (endoffile)
@@ -138,71 +137,55 @@ public class CSVHandler {
 
         do
         {
-            f = getNextField();
+            if(f == null)
+                f = getNextField();
 
             sb.append(f.value);
+            if (f.type == FieldType.NORMAL) {sb.append(fs);sb.append(" ");}
 
-            if (f.type == FieldType.NORMAL){sb.append(fs);sb.append(" ");}
-
-
-            i++;
-            j++;
-        }
-        while(f.type == FieldType.NORMAL);
-
-        return r;
-
-        /*do
-        {
-            f = getNextField();
-
-            if(f.type == FieldType.ENDFILE)
-                break;
-
-            sb.append(f.value);
-            if (f.type == FieldType.NORMAL) {
-                sb.append(fs);
-                sb.append(" ");
+            if (i++ == tsIndex)
+            {
+                try{r.timestamp = Long.parseLong(f.value) * tsScale;}
+                catch (Exception e2)
+                {
+                    try {r.timestamp = (long) (Double.parseDouble(f.value) * tsScale);}
+                    catch (Exception e) {r.setError("Errore linea " + rowIndex + ": Timestamp non valido.");}
+                }
             }
+            else
+                try{r.fields[j++] = Double.parseDouble(f.value);}
+                catch (Exception e) {r.setError("Errore linea " + rowIndex + ": campi non validi (Caratteri non validi || Virgola anziche' il punto).");}
 
-            if (i++ == tsIndex) {
-                try {
-                    r.timestamp = Long.parseLong(f.value) * tsScale;
-                } catch (Exception e2) {
-                    try {
-                        r.timestamp = (long) (Double.parseDouble(f.value) * tsScale);
-                    } catch (Exception e) {
-                        r.setError("Errore linea " + rowIndex + ": Timestamp non valido.");
-                    }
-                }
-            } else
-                try {
-                    r.fields[j++] = Double.parseDouble(f.value);
-                } catch (Exception e) {
-                    r.setError("Errore linea " + rowIndex + ": campi non validi (Caratteri non validi || Virgola anziche' il punto).");
-                }
+            if(f.type == FieldType.NORMAL)
+                f = null;
         }
-        while (f.type == FieldType.NORMAL);
+        while (f == null);
 
+        FieldType tipoUltimoCampo = f.type;
 
-        if (j != descriptors.size() && (j != 0 || f.type != FieldType.ENDFILE))
-            r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione");
-        else
+        if (j != descriptors.size())
         {
-            if(j!= descriptors.size() && f.type == FieldType.ENDFILE)
+            f = getNextField();
+            if(f.type == FieldType.ENDFILE && f.value.equals(""))
+            {
                 r.endfile = true;
+                f = null;
+            }
+            else
+                r.setError("Errore linea " + rowIndex + ": Il numero dei campi non è conforme all'intestazione");
         }
-
+        else
+            f = null;
 
         if (r.getError())
             r.addErrorInfo(" [linea: '" + sb.toString() + "']");
 
-        if (f.type == FieldType.ENDFILE)
+        if (tipoUltimoCampo == FieldType.ENDFILE)
             r.endfile = true;
 
         rowIndex++;
 
-        return r;*/
+        return r;
     }
 
     public CSVHandler(InputStreamReader isr, String fieldSeparator, String rowSeparator, long timestampScale) throws Exception {
@@ -252,7 +235,8 @@ public class CSVHandler {
         int i;
         StringBuilder sb = new StringBuilder();
 
-        while ((i = br.read()) != -1) {
+        while ((i = br.read()) != -1)
+        {
             char c = (char) i;
 
             if (c == fs.charAt(0) || c == rs.charAt(0)) {

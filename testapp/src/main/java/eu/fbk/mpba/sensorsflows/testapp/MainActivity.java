@@ -109,16 +109,18 @@ public class MainActivity extends Activity {
                         });
                         try {
                             Thread.sleep(5000);
-                        } catch (InterruptedException ignored) { }
+                        } catch (InterruptedException ignored) {
+                        }
                     }
                 }));
             }
         });
 
         /** CSVLoader */
-        //TODO guardar cio che causa eccezione!!!
-        CSVLoader.setCheckboxListener(addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m,this)));
-        CSVLoader.TemporaneallyDrawGraphics((LinearLayout) findViewById(R.id.pluginSelection), this);
+        {
+            CheckBox csvLoaderCB = addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m, this, "CSVLoader"));
+            CSVLoader.drawGraphics(csvLoaderCB, (LinearLayout) findViewById(R.id.pluginSelection), this);
+        }
 
         addPluginChoice(false, "CSV", new Runnable() {
             @Override

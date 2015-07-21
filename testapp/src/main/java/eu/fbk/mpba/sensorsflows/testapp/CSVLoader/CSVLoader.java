@@ -41,13 +41,11 @@ public class CSVLoader
     }
 
     private static final int FILE_SELECT_CODE = 0;
-    private static final String TAG = "CSVLoader";
     static LinearLayout fc;
     static LinearLayout lall;
-    static HashMap<String, Long> scale = new HashMap<>();
 
-    static TextView getNewFileListEntry(File f, final Activity _this)
-    {
+    static HashMap<String, Long> scale = new HashMap<>();
+    private static TextView getNewFileListEntry(File f, final Activity _this){
         FiledTextView tw = new FiledTextView(_this);
         tw.setText(f.getName());
         tw.setTextSize(20);
@@ -61,21 +59,39 @@ public class CSVLoader
         });
         return tw;
     }
+    private static String getPath(Context context, Uri uri) throws URISyntaxException {
+        if ("content".equalsIgnoreCase(uri.getScheme())) {
+            String[] projection = { "_data" };
+            Cursor cursor = null;
 
-    public static void setCheckboxListener(CheckBox c)
-    {
-        c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if(!b)
-                    lall.setVisibility(View.GONE);
-                else
-                    lall.setVisibility(View.VISIBLE);
+            try {
+                cursor = context.getContentResolver().query(uri, projection, null, null, null);
+                int column_index = cursor.getColumnIndexOrThrow("_data");
+                if (cursor.moveToFirst()) {
+                    return cursor.getString(column_index);
+                }
+            } catch (Exception e) {
+                // Eat it
             }
-        });
+        }
+        else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+
+        return null;
+    }
+    private static void showFileChooser(Activity a) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(DocumentsContract.Document.MIME_TYPE_DIR);
+
+        try{a.startActivityForResult(Intent.createChooser(intent, "Select a File to Upload"), FILE_SELECT_CODE);}
+        catch (android.content.ActivityNotFoundException ex){Toast.makeText(a, "Please install a File Manager.", Toast.LENGTH_SHORT).show();}
     }
 
-    public static void TemporaneallyDrawGraphics(LinearLayout where, final Activity _this)
+
+    public static void drawGraphics(CheckBox c, LinearLayout where, final Activity _this)
     {
         lall = new LinearLayout(_this);
         lall.setOrientation(LinearLayout.VERTICAL);
@@ -111,15 +127,13 @@ public class CSVLoader
                     scale.put(parts[0], Long.parseLong(parts[1]));
                 }
             }
-        } catch (Exception e) {
-            Log.i(TAG, e.getMessage());
-        } finally {
+        } catch (Exception e) {}
+        finally
+        {
             try {
                 if (br != null)
                     br.close();
-            } catch (Exception e) {
-                Log.i(TAG, e.getMessage());
-            }
+            } catch (Exception e) {}
         }
         //Carico i files dalla cartella di input
         final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
@@ -152,28 +166,16 @@ public class CSVLoader
             }
         });
         lall.addView(b);
-    }
 
-    public static String getPath(Context context, Uri uri) throws URISyntaxException {
-        if ("content".equalsIgnoreCase(uri.getScheme())) {
-            String[] projection = { "_data" };
-            Cursor cursor = null;
-
-            try {
-                cursor = context.getContentResolver().query(uri, projection, null, null, null);
-                int column_index = cursor.getColumnIndexOrThrow("_data");
-                if (cursor.moveToFirst()) {
-                    return cursor.getString(column_index);
-                }
-            } catch (Exception e) {
-                // Eat it
+        c.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if(!b)
+                    lall.setVisibility(View.GONE);
+                else
+                    lall.setVisibility(View.VISIBLE);
             }
-        }
-        else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
-        }
-
-        return null;
+        });
     }
 
     public static void onActivityResult(Activity _this,int requestCode, int resultCode, Intent data)
@@ -192,44 +194,31 @@ public class CSVLoader
         }
     }
 
-    private static void showFileChooser(Activity a) {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(DocumentsContract.Document.MIME_TYPE_DIR);
-
-        try{a.startActivityForResult(Intent.createChooser(intent, "Select a File to Upload"), FILE_SELECT_CODE);}
-        catch (android.content.ActivityNotFoundException ex){Toast.makeText(a, "Please install a File Manager.", Toast.LENGTH_SHORT).show();}
-    }
-
-    public static Runnable getRunnable(final FlowsMan<Long, double[]> m, final Activity _this)
+    public static Runnable getRunnable(final FlowsMan<Long, double[]> m, final Activity _this, final String nomeDevice)
     {
         return new Runnable() {
             @Override
             public void run() {
 
                 //Creo il device
-                CSVLoaderDevice cl = new CSVLoaderDevice("nonsochenomedargli0123456789");
+                CSVLoaderDevice cl = new CSVLoaderDevice(nomeDevice);
                 cl.setAsyncActionOnFinish(new Runnable() {
                     public void run() {
-                        ((Activity) _this).runOnUiThread(new Runnable() {
+                        _this.runOnUiThread(new Runnable() {
                             public void run() {
-                                Toast.makeText(((Activity) _this), "FINITOOOOO :D", Toast.LENGTH_LONG).show();
+                                Toast.makeText(_this, "FINITOOOOO :D", Toast.LENGTH_LONG).show();
                                 Log.i("CSVLoader", "FINITOOOOO :D");
                             }
                         });
                     }
                 });
 
-
                 for (int i = 0; i < fc.getChildCount(); i++)
                 {
                     FiledTextView ftw = (FiledTextView)fc.getChildAt(i);
-                    Log.i(TAG, ftw.f.getName());
-                    try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), ";", "\n", 1, ftw.f.getName());}catch(Exception e){};//TODO scala con la hashmap scale
+                    try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), ";", "\n", !scale.containsKey(ftw.f.getName())?1 : scale.get(ftw.f.getName()), ftw.f.getName());}
+                    catch(Exception e){Log.i("CSVL", "Errore add file '"+ftw.f.getName()+"' msg: " + e.getMessage());}
                 }
-
-
 
                 m.addDevice(cl);
             }

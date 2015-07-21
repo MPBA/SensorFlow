@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -118,8 +117,8 @@ public class MainActivity extends Activity {
 
         /** CSVLoader */
         {
-            CheckBox csvLoaderCB = addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m, this, "CSVLoader"));
-            CSVLoader.drawGraphics(csvLoaderCB, (LinearLayout) findViewById(R.id.pluginSelection), this);
+            // FIXME error CheckBox csvLoaderCB = addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m, this, "CSVLoader"));
+            // FIXME error CSVLoader.drawGraphics(csvLoaderCB, (LinearLayout) findViewById(R.id.pluginSelection), this);
         }
 
         addPluginChoice(false, "CSV", new Runnable() {

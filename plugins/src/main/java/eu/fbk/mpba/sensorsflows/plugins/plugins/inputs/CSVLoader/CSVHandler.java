@@ -72,7 +72,12 @@ public class CSVHandler {
         private boolean error2;
         private String errorMsg2;
         public boolean endfile;
-        public boolean valid;//indica che il file e' finito ma non ci sono dati letti.
+        private int charcount;//se e' zero vuol dire che c'e' un fineriga e poi un finefile.
+
+        public boolean isValid()
+        {
+            return charcount != 0;
+        }
 
         public void setError(String errorMessage) {
             error2 = true;
@@ -97,7 +102,7 @@ public class CSVHandler {
             fields = new double[numFields];
             error2 = endfile = false;
             errorMsg2 = "";
-            valid = true;
+            charcount = 0;
         }
     }
 
@@ -132,7 +137,6 @@ public class CSVHandler {
         if (endoffile)
         {
             r.endfile = true;
-            r.valid = false;
             return r;
         }
 
@@ -157,6 +161,8 @@ public class CSVHandler {
                 try{r.fields[j++] = Double.parseDouble(f.value);}
                 catch (Exception e) {r.setError("Errore linea " + rowIndex + ": campi non validi (Caratteri non validi || Virgola anziche' il punto).");}
 
+            r.charcount += f.value.length();
+
             if(f.type == FieldType.NORMAL)
                 f = null;
         }
@@ -167,9 +173,10 @@ public class CSVHandler {
         if (j != descriptors.size())
         {
             f = getNextField();
-            if(f.type == FieldType.ENDFILE && f.value.equals(""))
+            if(f.type == FieldType.ENDFILE && r.charcount == 0)
             {
                 r.endfile = true;
+                r.error2 = false;
                 f = null;
             }
             else

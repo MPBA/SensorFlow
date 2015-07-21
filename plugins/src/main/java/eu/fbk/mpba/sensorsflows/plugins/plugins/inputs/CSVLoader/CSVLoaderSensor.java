@@ -57,7 +57,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
                 sensorEvent(r.timestamp, 101, r.getErrorMsg());
                 mStatus = SensorStatus.ERROR;
             }
-            else if(r.valid)
+            else if(r.isValid())
                 sensorValue(r.timestamp, r.fields);
 
             if (r.endfile)

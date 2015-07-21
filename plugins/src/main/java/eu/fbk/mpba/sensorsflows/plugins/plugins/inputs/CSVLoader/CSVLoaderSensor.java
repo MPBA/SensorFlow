@@ -52,13 +52,13 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
         if (r != null)
         {
-            if (!r.getError())
-                sensorValue(r.timestamp, r.fields);
-            else
+            if (r.getError())
             {
                 sensorEvent(r.timestamp, 101, r.getErrorMsg());
                 mStatus = SensorStatus.ERROR;
             }
+            else if(r.valid)
+                sensorValue(r.timestamp, r.fields);
 
             if (r.endfile)
                 fileFinito = true;

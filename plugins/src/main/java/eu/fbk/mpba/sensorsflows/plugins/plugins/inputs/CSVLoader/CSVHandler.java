@@ -72,6 +72,7 @@ public class CSVHandler {
         private boolean error2;
         private String errorMsg2;
         public boolean endfile;
+        public boolean valid;//indica che il file e' finito ma non ci sono dati letti.
 
         public void setError(String errorMessage) {
             error2 = true;
@@ -96,6 +97,7 @@ public class CSVHandler {
             fields = new double[numFields];
             error2 = endfile = false;
             errorMsg2 = "";
+            valid = true;
         }
     }
 
@@ -130,7 +132,7 @@ public class CSVHandler {
         if (endoffile)
         {
             r.endfile = true;
-            r.setError("WARNING: si sta' cercando di leggere un file finito (puo' voler dire nel file e' presente solo l'intestazione)");
+            r.valid = false;
             return r;
         }
 

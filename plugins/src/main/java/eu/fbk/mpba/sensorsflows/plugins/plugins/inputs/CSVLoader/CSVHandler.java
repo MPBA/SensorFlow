@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.CSVLoader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.LinkedList;
+import java.util.*;
 
 
 /**
@@ -12,10 +12,11 @@ import java.util.LinkedList;
  *        INTESTAZIONE
  *              1) Il file CSV contenga un'intestazione.
  *              2) Nell'intestazione un campo coincida con la stringa [toLower] 'ts' oppure 'timestamp'.
+ *              3) Non ci siano campi duplicati, viene lanciata un'eccezione se se ne trovano.
  *
  *        RIGHE
- *              3) Una riga sia fatta cosi': campo[sep]campo[sep]campo[finelinea]
- *              4) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
+ *              4) Una riga sia fatta cosi': campo[sep]campo[sep]campo[finelinea]
+ *              5) Il timestamp sia in nanosecondi (il campo 'timestampScale' in questo caso varra' 1),
  *                      se cosi' non fosse si dovra' settare opportunamente il campo 'timestampScale'
  *                      per rendere il timestamp fornito in nanosecondi,
  *                      ovviamente si puo' inserire valori decimali nel timestamp che saranno poi convertite in non decimali
@@ -23,19 +24,11 @@ import java.util.LinkedList;
  *                      Cifre al di sotto del nanosecondo verranno prettamente ignorate.
  *                      Ricordarsi che con un double si perde un po' di precisione rispetto ad un long, letto da qui:
  *                          http://ubuntuforums.org/showthread.php?t=1520796
- *              5) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
- *              6) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
- *              7) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
+ *              6) Tutti i campi siano numerici (righe con campi non validi verranno ignorate e riportate come errore).
+ *              7) Tutti i numeri decimali siano rappresentati col punto, non con la virgola: ###.##### e non ###,#####
+ *              8) I campi devono essere in numero uguale all'intestazione, righe malformate saranno ignorate
  *                      e verra' riportato un errore.
- *              8) Righe vuote in mezzo o in fondo al file verranno riportate come errate ed ignorate.
- *              9) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
- *                      fieldSep = ".0"; rowSep = "5.";
- *                      Se provate a scrivere questi dati con quei separatori:
- *                                                                  ts  x    y  z
- *                                                                  5   5.0  5  5.0
- *                      ne esce una cosa incomprensibile:
- *                                                                  ts.0x.0y.0z5.5.05.0.05.05.0
- *                      Questi controlli sono difficili da fare, quindi delego il buon senso all'utente.
+ *              9) Righe vuote verranno riportate come errate ed ignorate.
  *
  *        SEPARATORI
  *              10) I due separatori non siano l'uno conenuto nell'altro.
@@ -44,6 +37,14 @@ import java.util.LinkedList;
  *                      l'opportunita' di scrivere un campo in questo modo: @campo
  *                      perche' verrebbe interpretato in maniera errata come una fine di riga;
  *                      stessa cosa per "@;@" oppure "@;".
+ *              11) [buon senso] Chi sceglie i separatori li scelga in modo coerente con i dati, esempio:
+ *                      fieldSep = ".0"; rowSep = "5.";
+ *                      Se provate a scrivere questi dati con quei separatori:
+ *                                                                  ts  x    y  z
+ *                                                                  5   5.0  5  5.0
+ *                      ne esce una cosa incomprensibile:
+ *                                                                  ts.0x.0y.0z5.5.05.0.05.05.0
+ *                      I controlli per evitare cose simili sono difficili da fare, quindi delego il buon senso all'utente.
  *
  *
  * GESTIONE ERRORI:
@@ -173,7 +174,7 @@ public class CSVHandler {
         if (j != descriptors.size())
         {
             f = getNextField();
-            if(f.type == FieldType.ENDFILE && r.charcount == 0)
+            if(f.type == FieldType.ENDFILE && tipoUltimoCampo == FieldType.ENDFILE && r.charcount == 0)
             {
                 r.endfile = true;
                 r.error2 = false;
@@ -224,6 +225,33 @@ public class CSVHandler {
             i++;
         }
         while (f.type == CSVHandler.FieldType.NORMAL);
+
+        //Controllo dei duplicati
+        LinkedList<Object> d2 = (LinkedList<Object>) descriptors.clone();
+
+        Collections.sort(d2, new Comparator<Object>(){public int compare(Object o1, Object o2){return ((String)o1).compareTo((String)o2);}});
+
+        boolean duplicati = false;
+        Iterator<Object> it = d2.listIterator();
+        if (it.hasNext())
+        {
+            Object previous = it.next();
+            while(it.hasNext())
+            {
+                Object current = it.next();
+                if (previous.equals(current))
+                {
+                    duplicati = true;
+                    break;
+                }
+                previous = current;
+            }
+        }
+        if(duplicati)
+        {
+            endoffile = true;
+            throw new Exception("Campi duplicati nell'intestazione.");
+        }
 
         if (tsIndex == -1) {
             endoffile = true;

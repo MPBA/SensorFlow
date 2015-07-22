@@ -52,12 +52,12 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
         if (r != null)
         {
-// FIXME error (tutto il commento)           if (r.getError())
-//            {
-//                sensorEvent(r.timestamp, 101, r.getErrorMsg());
-//                mStatus = SensorStatus.ERROR;
-//            }
-//            else if(r.isValid())
+            if (r.getError())
+            {
+                sensorEvent(r.timestamp, 101, r.getErrorMsg());
+                mStatus = SensorStatus.ERROR;
+            }
+            else if(r.isValid())
                 sensorValue(r.timestamp, r.fields);
 
             if (r.endfile)

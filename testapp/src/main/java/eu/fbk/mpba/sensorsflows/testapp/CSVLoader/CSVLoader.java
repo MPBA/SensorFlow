@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -137,16 +138,24 @@ public class CSVLoader
         }
         //Carico i files dalla cartella di input
         final File folder = new File(Environment.getExternalStorageDirectory().getPath() + "/eu.fbk.mpba.sensorsflows/inputCSVLoader");
-        for (final File fileEntry : folder.listFiles()) {
-            if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt")) {
-                long tsScale = 1;
-                Long tmp = scale.get(fileEntry.getName());
-                if (tmp != null)
-                    tsScale = tmp;
 
-                fc.addView(getNewFileListEntry(fileEntry, _this));
+        if(folder.listFiles() != null)
+        {
+            for (final File fileEntry : folder.listFiles()) {
+                if (fileEntry.isFile() && !fileEntry.getName().equals("input_config.txt")) {
+                    long tsScale = 1;
+                    Long tmp = scale.get(fileEntry.getName());
+                    if (tmp != null)
+                        tsScale = tmp;
+
+                    fc.addView(getNewFileListEntry(fileEntry, _this));
+                }
             }
         }
+
+        TextView tw = new TextView(_this);
+        tw.setText("NB: delimitatori ';' '\\r\\n'");
+        lall.addView(tw);
 
         Button b = new Button(_this);
         lp = new LinearLayout.LayoutParams(150, 150);
@@ -216,8 +225,11 @@ public class CSVLoader
                 for (int i = 0; i < fc.getChildCount(); i++)
                 {
                     FiledTextView ftw = (FiledTextView)fc.getChildAt(i);
-                    try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), ";", "\n", !scale.containsKey(ftw.f.getName())?1 : scale.get(ftw.f.getName()), ftw.f.getName());}
-                    catch(Exception e){Log.i("CSVL", "Errore add file '"+ftw.f.getName()+"' msg: " + e.getMessage());}
+                    try{cl.addFile(new InputStreamReader(new FileInputStream(ftw.f)), ";", "\r\n", !scale.containsKey(ftw.f.getName())?1 : scale.get(ftw.f.getName()), ftw.f.getName());}
+                    catch(Exception e)
+                    {
+                        Log.i("CSVL", "Errore add file '"+ftw.f.getName()+"' msg: " + e.getMessage());
+                    }
                 }
 
                 m.addDevice(cl);

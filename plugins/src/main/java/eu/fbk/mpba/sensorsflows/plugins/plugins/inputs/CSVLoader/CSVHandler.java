@@ -7,6 +7,13 @@ import java.util.*;
 
 
 /**
+ * PRIMA DI TUTTO:
+ *              - Non mi assumo nessuna responsabilita' riguardo ad un uso scorretto del plugin,
+ *                      ad esempio:
+ *                          Se il file termina le righe con '\r\n' e voi settate come delimitatore solo '\n'
+ *                          mi sembra piu' che naturale e ovvio che salteranno fuori i caratteri '\r' da qualche parte.
+ *                      Detto questo: Buona Visione, grazie e arrivederci.
+ *
  * ASSUNZIONI: assumo che...
  *
  *        INTESTAZIONE
@@ -228,9 +235,7 @@ public class CSVHandler {
 
         //Controllo dei duplicati
         LinkedList<Object> d2 = (LinkedList<Object>) descriptors.clone();
-
         Collections.sort(d2, new Comparator<Object>(){public int compare(Object o1, Object o2){return ((String)o1).compareTo((String)o2);}});
-
         boolean duplicati = false;
         Iterator<Object> it = d2.listIterator();
         if (it.hasNext())

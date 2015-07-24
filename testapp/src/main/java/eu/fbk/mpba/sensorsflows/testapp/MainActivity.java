@@ -117,8 +117,8 @@ public class MainActivity extends Activity {
 
         /** CSVLoader */
         {
-            // FIXME error CheckBox csvLoaderCB = addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m, this, "CSVLoader"));
-            // FIXME error CSVLoader.drawGraphics(csvLoaderCB, (LinearLayout) findViewById(R.id.pluginSelection), this);
+            CheckBox csvLoaderCB = addPluginChoice(true, "CSVLoader", CSVLoader.getRunnable(m, this, "CSVLoader"));
+            CSVLoader.drawGraphics(csvLoaderCB, (LinearLayout) findViewById(R.id.pluginSelection), this);
         }
 
         addPluginChoice(false, "CSV", new Runnable() {

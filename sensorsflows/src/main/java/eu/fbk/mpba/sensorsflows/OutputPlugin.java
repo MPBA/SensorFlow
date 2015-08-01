@@ -2,12 +2,13 @@ package eu.fbk.mpba.sensorsflows;
 
 import java.util.List;
 
+import eu.fbk.mpba.sensorsflows.base.INamed;
 import eu.fbk.mpba.sensorsflows.base.ISampleCounter;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
-public interface OutputPlugin<TimeT, ValueT> extends ISampleCounter {
+public interface OutputPlugin<TimeT, ValueT> extends ISampleCounter, INamed {
 
     void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors);
 
@@ -16,6 +17,4 @@ public interface OutputPlugin<TimeT, ValueT> extends ISampleCounter {
     void newSensorEvent(SensorEventEntry<TimeT> event);
 
     void newSensorData(SensorDataEntry<TimeT, ValueT> data);
-
-    String getName();
 }

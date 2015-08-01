@@ -90,7 +90,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
                                 if (cb != null)
                                     cb.end(error, server, serverName, offset);
                             }
-                        }, i.first, i.second, 50);
+                        }, i.first, i.second, passes);
                 }
             }
         });

@@ -17,25 +17,24 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
     private TextEventsSensor<double[]> _textSensor;
+    private TimeOffsetSensor _timeOffsetSensor;
 
     public SmartphoneDevice(Context context, String name) {
-        this(context, name, true, true, true);
-    }
-
-    public SmartphoneDevice(Context context, String name, boolean accelerometer, boolean gps, boolean text) {
         this.name = name;
         setBootUTCNanos();
         _sensors = new ArrayList<>();
-        if (gps)
-            _sensors.add(new GpsSensor(this, context, "0", 0, 0));
-        if (accelerometer)
-            _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_FASTEST));
-        if (text)
-            _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
+        _sensors.add(new GpsSensor(this, context, "0", 0, 0));
+        _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_FASTEST));
+        _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
+        _sensors.add(_timeOffsetSensor = new TimeOffsetSensor(this, "0"));
     }
 
     public void addNoteNow(String text) {
         _textSensor.addText(text);
+    }
+
+    public void computeOffsetBroadcastedAsync(int passes, LanUdpTimeClient.TimeOffsetCallback cb) {
+        _timeOffsetSensor.computeOnEveryServer(passes, cb);
     }
 
     @Override

@@ -19,12 +19,19 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
     private TextEventsSensor<double[]> _textSensor;
 
     public SmartphoneDevice(Context context, String name) {
+        this(context, name, true, true, true);
+    }
+
+    public SmartphoneDevice(Context context, String name, boolean accelerometer, boolean gps, boolean text) {
         this.name = name;
         setBootUTCNanos();
         _sensors = new ArrayList<>();
-        _sensors.add(new GpsSensor(this, context, "0", 0, 0));
-        _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_GAME));
-        _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
+        if (gps)
+            _sensors.add(new GpsSensor(this, context, "0", 0, 0));
+        if (accelerometer)
+            _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_FASTEST));
+        if (text)
+            _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
     }
 
     public void addNoteNow(String text) {

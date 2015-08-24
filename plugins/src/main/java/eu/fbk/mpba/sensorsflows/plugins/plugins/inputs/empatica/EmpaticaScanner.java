@@ -10,6 +10,10 @@ import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
 
+import java.io.IOException;
+
+import eu.fbk.mpba.sensorsflows.plugins.plugins.PingMan;
+
 public class EmpaticaScanner {
     private Runnable mEnableBT;
     private EmpaDeviceManager mDevMan;
@@ -24,6 +28,14 @@ public class EmpaticaScanner {
 
     public interface NewDeviceFound {
         public void newDevice(Bracelet b, int rssi, boolean allowed);
+    }
+
+    public void assert_web_reachable() throws UnreachableWebException {
+        if (!PingMan.isNetworkAvailable(mContext)) {
+            throw new UnreachableWebException("network");
+        } else if (!PingMan.isHttpColonSlashSlashWwwDotEmpaticaDotComReachable(mContext)) {
+            throw new UnreachableWebException("http");
+        }
     }
 
     public EmpaticaScanner(final Context context, String key, final NewDeviceFound callback, final Runnable enableBluetooth) {
@@ -63,7 +75,8 @@ public class EmpaticaScanner {
         }, new EmpaStatusDelegate() {
             @Override
             public void didUpdateStatus(EmpaStatus empaStatus) {
-
+                if (empaStatus == EmpaStatus.READY)
+                    start();
             }
 
             @Override
@@ -102,6 +115,12 @@ public class EmpaticaScanner {
             return null;
         else {
             return new EmpaticaDevice(mKey, mContext, b.device.getAddress(), mEnableBT);
+        }
+    }
+
+    public class UnreachableWebException extends IOException {
+        public UnreachableWebException(String detailMessage) {
+            super(detailMessage);
         }
     }
 }

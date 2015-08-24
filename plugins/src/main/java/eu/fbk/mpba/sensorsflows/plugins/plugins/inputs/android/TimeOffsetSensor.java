@@ -77,21 +77,26 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
                 sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                             servers.size() == 0 ? 1 : 0, "Servers found:" + servers.size() + x);
 
-                for (Pair<InetAddress, String> i : servers) {
-                    sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
-                            2, "Computing: " + passes + " passes on " + i.first + "//" + i.second);
-
-                    LanUdpTimeClient.computeOffsetAsync(new LanUdpTimeClient.TimeOffsetCallback() {
-                            @Override
-                            public void end(boolean error, InetAddress server, String serverName, LanUdpTimeClient.OffsetInfo offset) {
-                                sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
-                                        error ? 4 : 3, server + ";" + serverName.replace("$", "$$").replace(";", "$,") + ";" + offset.average + ";" + offset.stDev + ";" + offset.passes);
-
-                                if (cb != null)
-                                    cb.end(error, server, serverName, offset);
-                            }
-                        }, i.first, i.second, passes);
+                if (servers.size() == 0) {
+                    if (cb != null)
+                        cb.end(true, null, "SERVER NOT FOUND", null);
                 }
+                else
+                    for (Pair<InetAddress, String> i : servers) {
+                        sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+                                2, "Computing: " + passes + " passes on " + i.first + "//" + i.second);
+
+                        LanUdpTimeClient.computeOffsetAsync(new LanUdpTimeClient.TimeOffsetCallback() {
+                                @Override
+                                public void end(boolean error, InetAddress server, String serverName, LanUdpTimeClient.OffsetInfo offset) {
+                                    sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+                                            error ? 4 : 3, server + ";" + serverName.replace("$", "$$").replace(";", "$,") + ";" + offset.average + ";" + offset.stDev + ";" + offset.passes);
+
+                                    if (cb != null)
+                                        cb.end(error, server, serverName, offset);
+                                }
+                            }, i.first, i.second, passes);
+                    }
             }
         });
     }

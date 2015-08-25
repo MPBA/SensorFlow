@@ -222,7 +222,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     public interface DeviceEventHandler {
         void end(EmpaticaBeam sender, EmpaSensorType type, Result result, boolean status);
 
-        public enum Result {
+        enum Result {
             DEAD,
             ON_WRIST,
             STREAMING
@@ -232,7 +232,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
     public interface ConnectEventHandler {
         void end(EmpaticaBeam sender, Result result);
 
-        public enum Result {
+        enum Result {
             /**
              * Does not happen. It just completes the enumerator.
              */

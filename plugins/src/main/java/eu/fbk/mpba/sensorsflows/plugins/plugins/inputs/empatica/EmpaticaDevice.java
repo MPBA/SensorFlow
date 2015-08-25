@@ -17,6 +17,8 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     final String LOG_TAG = "ALE EMP DEV";
 
+    private boolean lastCheckTODO = true;
+
     final EmpaticaBeam beam;
     final EmpaticaSensor.Accelerometer mAcc;
     final EmpaticaSensor.Battery mBat;
@@ -41,11 +43,20 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     }
 
     public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth) {
+        this(key, context, address, enableBluetooth, null);
+    }
+
+    public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth, final Runnable connectedStreaming) {
         final EmpaticaDevice _this = this;
         beam = new EmpaticaBeam(context,
                 new EmpaDataDelegate() {
                     @Override
                     public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
+                        if (lastCheckTODO) {
+                            lastCheckTODO = false;
+                            if (connectedStreaming != null)
+                                new Thread(connectedStreaming).start();
+                        }
                         mAcc.sensorValue(proTime(timestamp), new double[]{x, y, z});
                     }
 

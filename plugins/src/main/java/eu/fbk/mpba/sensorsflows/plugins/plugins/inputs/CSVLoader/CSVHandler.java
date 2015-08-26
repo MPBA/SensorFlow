@@ -234,6 +234,7 @@ public class CSVHandler {
         while (f.type == CSVHandler.FieldType.NORMAL);
 
         //Controllo dei duplicati
+        //noinspection unchecked
         LinkedList<Object> d2 = (LinkedList<Object>) descriptors.clone();
         Collections.sort(d2, new Comparator<Object>(){public int compare(Object o1, Object o2){return ((String)o1).compareTo((String)o2);}});
         boolean duplicati = false;

@@ -149,12 +149,12 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public void inputPluginInitialize() {
-
+        // Nothing to do before the start
     }
 
     @Override
     public void inputPluginFinalize() {
-        beam.destroy();
+        // Device kept connected
     }
 
     @Override
@@ -165,5 +165,13 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     @Override
     public String getName() {
         return beam.getName() == null ? EmpaticaDevice.class.getSimpleName() : beam.getName();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        beam.destroy();
+        super.finalize();
+        // TODO 3: Make every plug-in replayable with the same settings and so add finalize method (and maybe the close one)
+        // After an Output/Input Finalize an other Initialize may occur, minimal waste.
     }
 }

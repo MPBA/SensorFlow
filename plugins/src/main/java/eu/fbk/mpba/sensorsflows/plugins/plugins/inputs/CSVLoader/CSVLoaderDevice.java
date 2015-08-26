@@ -7,6 +7,7 @@ import java.util.List;
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 
 /**
@@ -85,14 +86,23 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
      */
     @Override public void inputPluginInitialize() {
         //Thread per un'esecuzione non bloccante.
-        thr.start();
+        try {
+            thr.start();
+        } catch (IllegalThreadStateException e) {
+            for (SensorComponent s : _sensors) {
+                // File already uploaded
+                ((CSVLoaderSensor) s).sensorEvent(getMonoUTCNanos(System.nanoTime()), -12, s.getName());
+            }
+        }
     }
 
-    @Override public void inputPluginFinalize(){}
+    @Override public void inputPluginFinalize() {
+
+    }
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return _sensors;
+        return new ReadOnlyIterable<>(_sensors.iterator());
     }
 
     @Override

@@ -14,6 +14,11 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  *
  * GESTIONE ERRORI: - Se dovesse esserci un qualsivoglia errore nel costruttore verra' lanciata un'eccezione, altrimenti
  *                      lo stato del sensore verra' settato ad 'ERROR' e verra' inviato un evento Error con il testo dell'eccezione/errore.
+ *                  - (new) In caso di replay gli stessi file non verranno inviati ma ogni nome verrà notificato come evento con codice -12
+ *             Codici:
+ *                  -12     File già caricato
+ *                  101     IO error
+ *                  102     Parser error
  */
 public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     CSVHandler ch;
@@ -45,7 +50,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
         try {
             r = ch.getNextRow();
         } catch (IOException e) {
-            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()), 101, "[ " + name + " ] Error reading row: " + e.getMessage());
+            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()), 101, "[" + name + "]\t" + e.getMessage());
             mStatus = SensorStatus.ERROR;
             fileFinito = true;
         }
@@ -54,7 +59,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
         {
             if (r.getError())
             {
-                sensorEvent(r.timestamp, 101, r.getErrorMsg());
+                sensorEvent(r.timestamp, 102, r.getErrorMsg());
                 mStatus = SensorStatus.ERROR;
             }
             else if(r.isValid())

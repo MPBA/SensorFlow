@@ -90,7 +90,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
                                 @Override
                                 public void end(boolean error, InetAddress server, String serverName, LanUdpTimeClient.OffsetInfo offset) {
                                     sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
-                                            error ? 4 : 3, server + ";" + serverName.replace("$", "$$").replace(";", "$,") + ";" + offset.average + ";" + offset.stDev + ";" + offset.passes);
+                                            error ? 4 : 3, server + ";" + serverName.replace("\\", "\\\\").replace(";", "\\,") + ";" + offset.average + ";" + offset.stDev + ";" + offset.passes);
 
                                     if (cb != null)
                                         cb.end(error, server, serverName, offset);

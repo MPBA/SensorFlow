@@ -61,6 +61,10 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         return mStatus;
     }
 
+    public String getName() {
+        return this.getClass().getSimpleName();
+    }
+
     // Notify methods
 
     public void sensorValue(TimeT time, ValueT value) {

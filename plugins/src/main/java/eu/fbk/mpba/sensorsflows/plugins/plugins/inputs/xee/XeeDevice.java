@@ -18,19 +18,18 @@ import java.util.HashMap;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
+import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 
-public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener {
+public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonotonicTimestampReference {
 
-    @Override
-    public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return null;
-    }
+    // TODO 8: understand firmware update operation
 
     private boolean receivingData;
     private BluetoothDevice deviceToConnect;
     private boolean firmwareUPDRequested;
     private boolean connectionRequested;
     private boolean serialNumberRequested;
+    private boolean flowing = false;
 
     protected boolean debug = true;
     protected final String debugTAG = "XeeALE";
@@ -41,9 +40,9 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     }
 
     protected void setEnvironment(DQUtils.DQuidEnvs e) {
+        if (debug)
+            Log.v(debugTAG, "Set environment: " + e);
         DQUtils.setEnvironment(e);
-        // TODO 5: event
-        // TO DO 3: check docu:: says nothing...
     }
 
     /**
@@ -53,41 +52,50 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
      */
     public XeeDevice() {
         if (debug)
-            Log.d(debugTAG, "XeeDevice construction");
+            Log.v(debugTAG, "XeeDevice construction");
         DQDriver.INSTANCE.setEventListener(this);
         DQUnitManager.INSTANCE.addListener(this);
         setReceivingData(true);
         if (debug)
-            Log.d(debugTAG, "XeeDevice construction done");
+            Log.v(debugTAG, "XeeDevice inner construction done");
     }
 
     public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e) {
+        this();
         setDeviceToConnect(d);
         setEnvironment(e);
+        connection(true);
     }
 
     public void inputPluginInitialize(){
         if (debug)
-            Log.d(debugTAG, "onResume");
+            Log.v(debugTAG, "onResume");
 
         DQUnitManager.INSTANCE.addListener(this);
+        flowing = true;
     }
 
     public void inputPluginFinalize() {
         if (debug)
-            Log.d(debugTAG, "onPause");
+            Log.v(debugTAG, "onPause");
         DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+        flowing = false;
     }
 
     @Override
     public String getName() {
-        return ""; // TODO x: Add sense
+        return deviceToConnect != null ? deviceToConnect.getName() : "UnknownXee";
+    }
+
+    @Override
+    public Iterable<SensorComponent<Long, double[]>> getSensors() {
+        return null; // TODO 6: add sense
     }
 
     // Device Connected Button
     protected void connection(boolean connect) {
         if (debug)
-            Log.d(debugTAG, "connection - connect: " + connect);
+            Log.v(debugTAG, "connection - connect: " + connect);
 
         if (connect) {
             // WAS: simulator option
@@ -95,17 +103,27 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
                 connectionRequested = true;
                 initDriver(false);
             } else {
-                // TODO 5: error or choose
+                throw new NullPointerException("Device to connect to not set.");
             }
-
         } else {
             disconnectFromBd();
         }
     }
 
-    void initDriver(Boolean simulation) {
+    // Firmware update button
+    protected void callFWUpdate(DQUtils.DQuidEnvs e) {
+        if (deviceToConnect != null){
+            firmwareUPDRequested = true;
+            DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+        }
+        else {
+            broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
+        }
+    }
+
+    private void initDriver(Boolean simulation) {
         if (debug)
-            Log.d(debugTAG, "initDriver - simulation: " + simulation);
+            Log.v(debugTAG, "initDriver - simulation: " + simulation);
 
         if(simulation){
             // DQDriver reads from a can trace (Simulator)
@@ -119,20 +137,9 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         }
     }
 
-    // Button firmware update clicked
-    protected void callFWUpdate(DQUtils.DQuidEnvs e) {
-        if (deviceToConnect != null){
-            firmwareUPDRequested = true;
-            DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
-        }
-        else {
-            // TODO 6: log error
-        }
-    }
-
     private void setReceivingData(final boolean receiving) {
         if (debug)
-            Log.d(debugTAG, "setReceivingData - receiving: " + receiving);
+            Log.v(debugTAG, "setReceivingData - receiving: " + receiving);
 
         if (receivingData != receiving) {
             if (receiving) {
@@ -146,65 +153,47 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     private void disconnectFromBd() {
         if (debug)
-            Log.d(debugTAG, "disconnectFromBd");
+            Log.v(debugTAG, "disconnectFromBd");
         DQUnitManager.INSTANCE.disconnect();
     }
 
     @Override
     public void onConnectionSuccessful() {
         if (debug)
-            Log.d(debugTAG, "Connection Successful");
-
-//		updateUiOnConnection(true, -1);
-        // TODO 5: event
+            Log.v(debugTAG, "Connection Successful");
     }
 
     @Override
     public void onDisconnection() {
         if (debug)
-            Log.d(debugTAG, "Disconnected");
-
-//		updateUiOnConnection(false, -1);
-        // TODO 5: event
+            Log.v(debugTAG, "Disconnected");
+        broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
     }
 
     @Override
     public void onError(int arg0, String arg1) {
-        final String completeDescr = "Error Occurred, code: " + arg0 + ": " + arg1;
 
         if (debug)
-            Log.d(debugTAG, completeDescr);
+            Log.v(debugTAG, "onError: " + arg1);
 
         if(arg0 == 401){
-            Log.d(debugTAG, "ERRORE!!!!");
+            Log.e(debugTAG, "ERROR 401!!!! " + arg1);
             DQUnitManager.INSTANCE.disconnect();
-            // TODO 7: check this if/code
         }
-
-        // TODO 5: event
-        //        runOnUiThread(new Runnable() {
-        //
-        //            @Override
-        //            public void run() {
-        //
-        //                hideProgressWheel();
-        //
-        //                Toast.makeText(getApplicationContext(), completeDescr, Toast.LENGTH_LONG).show();
-        //            }
-        //        });
+        broadcastEvent(getMonoUTCNanos(System.nanoTime()), arg0, arg1);
     }
 
     @Override
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
         if(debug)
-            Log.d(debugTAG, "onNewAccelerometerData - " + arg0.toString());
+            Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
         // TODO 5: data sensor ACC
     }
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
         if(debug)
-            Log.d(debugTAG, "onNewGpsData - " + arg0.toString());
+            Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
         // TODO 5: data sensor GPS
     }
 
@@ -219,17 +208,17 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onDriverDown(int arg0) {
         if(debug)
-            Log.d(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
+            Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
 
+        // FIXME T: recursive???
         if(firmwareUPDRequested)
             initDriver(false);
     }
 
     @Override
     public void onDriverReady() {
-        // TODO 4: understand driver ready/down operation (check docu)
         if (debug)
-            Log.d(debugTAG, "onDriverReady");
+            Log.v(debugTAG, "onDriverReady");
 
         if (firmwareUPDRequested) {
             firmwareUPDRequested = false;
@@ -246,7 +235,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 //          }
         } else {
             if (debug)
-                Log.i(debugTAG, "!-! no fw nor conn requested");
+                Log.i(debugTAG, "...no fw nor conn requested");
             DQUnitManager.INSTANCE.checkFirmwareVersion();
         }
     }
@@ -256,31 +245,31 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onDtcCodesAvailable(final ArrayList<String> arg0) {
         if(debug)
-            Log.d(debugTAG, "DTC Codes: " + arg0.toString());
+            Log.v(debugTAG, "DTC Codes: " + arg0.toString());
     }
 
     @Override
     public void onDtcNumberAvailable(final int arg0) {
         if (debug)
-            Log.d(debugTAG, "DTC Number: " + arg0);
+            Log.v(debugTAG, "DTC Number: " + arg0);
     }
 
     @Override
     public void onFirmwareUpdateCompleted() {
         if (debug)
-            Log.d(debugTAG, "onFirmwareUpdateCompleted");
+            Log.v(debugTAG, "onFirmwareUpdateCompleted");
     }
 
     @Override
     public void onFirmwareUpdateIncrease(final double arg0) {
         if (debug)
-            Log.d(debugTAG, "onFirmwareUpdateIncrease: " + arg0);
+            Log.v(debugTAG, "onFirmwareUpdateIncrease: " + arg0);
     }
 
     @Override
     public void onFirmwareUpdateNeeded(String versionAvailable) {
         if(debug)
-            Log.d(debugTAG, "onFirmwareUpdateNeeded - version " + versionAvailable + " is available");
+            Log.v(debugTAG, "onFirmwareUpdateNeeded - version " + versionAvailable + " is available");
 
         firmwareUPDRequested = true;
         DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
@@ -289,26 +278,26 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onFirmwareUpdateNotNeeded() {
         if(debug)
-            Log.d(debugTAG, "onFirmwareUpdateNotNeeded");
+            Log.v(debugTAG, "onFirmwareUpdateNotNeeded");
     }
 
     @Override
     public void onFirmwareUpdateStarted() {
         if(debug)
-            Log.d(debugTAG, "onFirmwareUpdateStarted");
+            Log.v(debugTAG, "onFirmwareUpdateStarted");
     }
 
     @Override
     public void onFirmwareVersionObtained(final String arg0) {
         if(debug)
-            Log.d(debugTAG, "onFirmwareVersionObtained: " + arg0);
+            Log.v(debugTAG, "onFirmwareVersionObtained: " + arg0);
 
     }
 
     @Override
     public void onSerialNumberObtained(final String arg0) {
         if(debug)
-            Log.d(debugTAG, "onSerialNumberObtained: " + arg0);
+            Log.v(debugTAG, "onSerialNumberObtained: " + arg0);
 
         // TODO 8: return it to the user/event
     }
@@ -341,5 +330,20 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onSettingNack() {
 
+    }
+
+    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+
+    @Override
+    public long getMonoUTCNanos(long realTimeNanos) {
+        return bootUTCNanos + realTimeNanos;
+    }
+
+    private void broadcastEvent(long time, int code, String message) {
+        if (flowing)
+            for (SensorComponent<Long, double[]> i : getSensors())
+                i.sensorEvent(time, code, message);
+        else
+            Log.i(debugTAG, "event: " + time + ", " + code + ", " + message);
     }
 }

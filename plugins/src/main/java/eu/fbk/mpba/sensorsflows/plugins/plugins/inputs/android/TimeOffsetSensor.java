@@ -18,12 +18,10 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
  */
 public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
-    private String name;
     private boolean forward = false;
 
-    public TimeOffsetSensor(DevicePlugin<Long, double[]> parent, String name) {
+    public TimeOffsetSensor(DevicePlugin<Long, double[]> parent) {
         super(parent);
-        this.name = name;
     }
 
     public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -108,7 +106,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
         if (forward)
             super.sensorEvent(time, type, message);
         else
-            superBuffer.add(new SensorEventEntry<Long>(this, time, type, message));
+            superBuffer.add(new SensorEventEntry<>(this, time, type, message));
     }
 
     @Override
@@ -117,6 +115,6 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public String getName() {
-        return LocationManager.GPS_PROVIDER + "-" + name;
+        return LocationManager.GPS_PROVIDER;
     }
 }

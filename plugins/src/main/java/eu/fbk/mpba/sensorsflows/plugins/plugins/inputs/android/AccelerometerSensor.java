@@ -21,13 +21,11 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     private SensorManager _sensorMan;
     private Sensor _sAcc;
-    private String _name;
     private int _delay;
 
-    public AccelerometerSensor(DevicePlugin<Long, double[]> d, Context context, String name, int sensorDelay) {
+    public AccelerometerSensor(DevicePlugin<Long, double[]> d, Context context, int sensorDelay) {
         super(d);
         _delay = sensorDelay;
-        _name = name;
         _sensorMan = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         _sAcc = _sensorMan.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
@@ -97,6 +95,6 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     @Override
     public String getName() {
-        return _sAcc.getName() + "-" + _name;
+        return _sAcc.getName();
     }
 }

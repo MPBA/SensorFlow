@@ -9,11 +9,8 @@ import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
 
 public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
-    private final String name;
-
-    public TextEventsSensor(DevicePlugin<Long, ValueT> parent, String name) {
+    public TextEventsSensor(DevicePlugin<Long, ValueT> parent) {
         super(parent);
-        this.name = name;
     }
 
     @Override
@@ -40,10 +37,5 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     public void addTimedText(long timestamp, CharSequence text) {
         sensorEvent(timestamp, 0, text.toString());
-    }
-
-    @Override
-    public String getName() {
-        return name;
     }
 }

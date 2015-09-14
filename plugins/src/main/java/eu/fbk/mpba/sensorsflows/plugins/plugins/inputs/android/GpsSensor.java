@@ -26,7 +26,6 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     private Context context;
     private long minTime;
     private float minDistance;
-    private String name;
     private long sysToSysClockNanoOffset = 0;
     private boolean timeFallback = Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1;
 
@@ -39,12 +38,11 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
     @SuppressLint("NewApi")
-    public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, String name, long minTime, float minDistance) {
+    public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, long minTime, float minDistance) {
         super(parent);
         this.minTime = minTime;
         this.minDistance = minDistance;
         this.context = context;
-        this.name = name;
         if (!timeFallback)
             this.sysToSysClockNanoOffset = SystemClock.elapsedRealtimeNanos() - System.nanoTime();
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
@@ -116,6 +114,6 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public String getName() {
-        return LocationManager.GPS_PROVIDER + "-" + name;
+        return LocationManager.GPS_PROVIDER;
     }
 }

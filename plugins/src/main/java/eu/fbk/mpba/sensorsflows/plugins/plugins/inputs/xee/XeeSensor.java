@@ -26,8 +26,24 @@ public class XeeSensor extends SensorComponent<Long, double[]> {
         return null;
     }
 
-    @Override
-    public String getName() {
-        return null;
+    public static class ACC extends XeeSensor {
+
+        protected ACC(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+    }
+
+    public static class GPS extends XeeSensor {
+
+        protected GPS(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
+    }
+
+    public static class DATA extends XeeSensor {
+
+        protected DATA(DevicePlugin<Long, double[]> parent) {
+            super(parent);
+        }
     }
 }

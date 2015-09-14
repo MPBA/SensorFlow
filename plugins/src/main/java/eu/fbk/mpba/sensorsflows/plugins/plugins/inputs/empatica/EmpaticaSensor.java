@@ -27,11 +27,6 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         _enabled = false;
     }
 
-    @Override
-    public String getName() {
-        return "";
-    }
-
     public static class Battery extends EmpaticaSensor {
         public Battery(EmpaticaDevice p) {
             super(p);

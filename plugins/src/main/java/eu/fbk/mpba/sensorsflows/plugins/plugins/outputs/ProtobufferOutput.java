@@ -86,8 +86,14 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         Log.v("ProtoOut", "Flush cleared list of size:" + xl);
     }
 
+    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L + System.nanoTime();
+
+    private long getMonoTimeMillis() {
+        return (System.nanoTime() + bootUTCNanos) / 1_000_000L;
+    }
+
     public String getTrackSplitNameForNow() {
-        return new File(mFolder, System.currentTimeMillis() + ".pb").getAbsolutePath();
+        return new File(mFolder, getMonoTimeMillis() + ".pb").getAbsolutePath();
     }
 
     String join(List<Object> x) {

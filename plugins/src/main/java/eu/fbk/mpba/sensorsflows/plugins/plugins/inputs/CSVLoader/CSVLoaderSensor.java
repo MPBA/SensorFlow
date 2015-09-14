@@ -72,15 +72,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
         return !fileFinito;
     }
 
-    //Per poter fare i test estendendo questa classe
-    public void sensorValue(long time, double[] value) {
-        super.sensorValue(time, value);
-    }
-
-    public void sensorEvent(long time, int type, String message) {
-        super.sensorEvent(time, type, message);
-    }
-
     //Inutili
     @Override
     public void switchOnAsync() {

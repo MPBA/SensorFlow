@@ -23,10 +23,10 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
         this.name = name;
         setBootUTCNanos();
         _sensors = new ArrayList<>();
-        _sensors.add(new GpsSensor(this, context, "0", 0, 0));
-        _sensors.add(new AccelerometerSensor(this, context, "0", SensorManager.SENSOR_DELAY_FASTEST));
-        _sensors.add(_textSensor = new TextEventsSensor<>(this, "0"));
-        _sensors.add(_timeOffsetSensor = new TimeOffsetSensor(this, "0"));
+        _sensors.add(new GpsSensor(this, context, 0, 0));
+        _sensors.add(new AccelerometerSensor(this, context, SensorManager.SENSOR_DELAY_FASTEST));
+        _sensors.add(_textSensor = new TextEventsSensor<>(this));
+        _sensors.add(_timeOffsetSensor = new TimeOffsetSensor(this));
     }
 
     public void addNoteNow(String text) {

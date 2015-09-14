@@ -124,11 +124,6 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             streaming = false;
         }
 
-        @Override
-        public String getName() {
-            return "";
-        }
-
         private final EXLs3Manager.StatusDelegate btsStatus = new EXLs3Manager.StatusDelegate() {
 
             public void idle(EXLs3Receiver sender) {

@@ -37,7 +37,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return Arrays.asList((Object)
                 "Longitude",
                 "Latitude",

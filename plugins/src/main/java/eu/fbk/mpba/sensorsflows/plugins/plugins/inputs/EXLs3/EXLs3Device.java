@@ -94,7 +94,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             throw new UnsupportedOperationException("Do not use this sensor.");
         }
 
@@ -202,7 +202,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             super(parent);
         }
 
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "ax", "ay", "az");
         }
 
@@ -214,7 +214,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             super(parent);
         }
 
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "gx", "gy", "gz");
         }
 
@@ -226,7 +226,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             super(parent);
         }
 
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "mx", "my", "mz");
         }
 
@@ -238,7 +238,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             super(parent);
         }
 
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "q1", "q2", "q3", "q4");
         }
 
@@ -250,7 +250,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
             super(parent);
         }
 
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "vbatt");
         }
 

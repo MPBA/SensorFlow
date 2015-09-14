@@ -132,7 +132,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     .setSensorId(s)
                     .setDesc("data_" + mSensors.get(s).getName())
                     .setType(type == null ? SensorInfo.TYPESENSOR.OTHER : type)
-                    .setMeta(join(mSensors.get(s).getValuesDescriptors()))
+                    .setMeta(join(mSensors.get(s).getValueDescriptor()))
                     .build());
             mSensorInfo.add(SensorInfo.newBuilder()
                     .setSensorId(mSensors.size() + s)

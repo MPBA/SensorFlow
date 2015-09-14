@@ -64,7 +64,7 @@ public class SequentialSensorStub extends SensorComponent<Long, float[]> {
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return Arrays.asList((Object)"SeqX", "SeqY", "SeqZ");
     }
 

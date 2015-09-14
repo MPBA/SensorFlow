@@ -70,7 +70,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         for (ISensor l : streamingSensors) {
             List<Object> h = new ArrayList<>();
             h.add(mTsCol);
-            h.addAll(l.getValuesDescriptors());
+            h.addAll(l.getValueDescriptor());
             dataH.add(h);
             evtH.add(Arrays.asList((Object) mTsCol, "code", "message"));
         }

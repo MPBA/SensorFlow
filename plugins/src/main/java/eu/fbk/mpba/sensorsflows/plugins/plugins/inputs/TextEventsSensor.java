@@ -26,7 +26,7 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return Arrays.asList();
     }
 

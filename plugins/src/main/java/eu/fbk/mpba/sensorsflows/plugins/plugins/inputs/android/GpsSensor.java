@@ -89,7 +89,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return Arrays.asList((Object)
                 "Longitude",
                 "Latitude",

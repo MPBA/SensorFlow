@@ -89,7 +89,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
     }
 
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return Arrays.asList((Object)"x0", "x1", "x2");
     }
 

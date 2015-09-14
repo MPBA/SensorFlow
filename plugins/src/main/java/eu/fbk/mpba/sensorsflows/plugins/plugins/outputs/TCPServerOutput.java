@@ -81,7 +81,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
             o.write(mSensors.get(i).toString().length());
             o.write(mSensors.get(i).toString().getBytes());
 
-            List<Object> oo = mSensors.get(i).getValuesDescriptors();
+            List<Object> oo = mSensors.get(i).getValueDescriptor();
             // N
             o.write(oo.size());
             // descriptors

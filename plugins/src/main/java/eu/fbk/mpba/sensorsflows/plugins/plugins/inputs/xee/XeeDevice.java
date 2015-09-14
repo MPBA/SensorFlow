@@ -7,18 +7,23 @@ import com.dquid.xee.driver.DQDriver;
 import com.dquid.xee.driver.DQDriverEventListener;
 import com.dquid.xee.driver.DQSourceType;
 import com.dquid.xee.sdk.DQAccelerometerData;
+import com.dquid.xee.sdk.DQCar;
 import com.dquid.xee.sdk.DQData;
 import com.dquid.xee.sdk.DQGpsData;
 import com.dquid.xee.sdk.DQListenerInterface;
 import com.dquid.xee.sdk.DQUnitManager;
 import com.dquid.xee.sdk.DQUtils;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonotonicTimestampReference {
 
@@ -28,12 +33,16 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     private BluetoothDevice deviceToConnect;
     private boolean firmwareUPDRequested;
     private boolean connectionRequested;
-    private boolean serialNumberRequested;
     private boolean flowing = false;
 
     protected boolean debug = true;
     protected final String debugTAG = "XeeALE";
     protected DevicePlugin<Long, double[]> parent;
+    protected XeeSensor.XeeAccelerometer xeeAcc;
+    protected XeeSensor.XeeGPS xeeGPS;
+    protected ReadOnlyIterable<SensorComponent<Long, double[]>> sensors;
+    protected Map<String, XeeSensor.CarData> namesMap = new HashMap<>(50);
+    protected Map<Long, XeeSensor.CarData> idMap = new HashMap<>(50);
 
     protected void setDeviceToConnect(BluetoothDevice d) {
         deviceToConnect = d;
@@ -53,6 +62,23 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public XeeDevice() {
         if (debug)
             Log.v(debugTAG, "XeeDevice construction");
+
+        xeeAcc = new XeeSensor.XeeAccelerometer(this);
+        xeeGPS = new XeeSensor.XeeGPS(this);
+
+        // Adding every possible sensor, every stream present in DQCar as DQData field.
+        Field[] f = DQCar.class.getFields();
+        List<SensorComponent<Long, double[]>> s = new ArrayList<>(f.length);
+        s.add(xeeAcc);
+        s.add(xeeGPS);
+        for (Field i : f)
+            if (i.getType().equals(DQData.class)) {
+                XeeSensor.CarData c = new XeeSensor.CarData(this, i.getName());
+                namesMap.put(i.getName(), c);
+                s.add(c);
+            }
+        sensors = new ReadOnlyIterable<>(s.iterator());
+
         DQDriver.INSTANCE.setEventListener(this);
         DQUnitManager.INSTANCE.addListener(this);
         setReceivingData(true);
@@ -89,7 +115,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return null; // TODO 6: add sense
+        return sensors;
     }
 
     // Device Connected Button
@@ -187,32 +213,30 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
         if(debug)
             Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
-        // TODO 5: data sensor ACC
+        xeeAcc.sensorValue(arg0);
     }
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
         if(debug)
             Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
-        // TODO 5: data sensor GPS
+        xeeGPS.sensorValue(arg0);
     }
 
     @Override
     public void onNewData(HashMap<Long, DQData> arg0) {
-        //noinspection unused
-        HashMap<Long, DQData> dataHashMap = DQUnitManager.INSTANCE.getLastAvailable();
-        // TODO 5: data sensor DATA
-        // TODO 8: check the difference between arg0 and dataHashMap.
-    }
+        for (DQData d : arg0.values()) {
+            if (!idMap.containsKey(d.getId())) {
+                if (namesMap.containsKey(d.getName()))
+                    idMap.put(d.getId(), namesMap.get(d.getName()));
+                    // TODO 4: notify here
+                else
+                    Log.wtf(debugTAG, "Stream " + d.getId() + "-" + d.getName() + " was not put into the output sensors because was not in DQCar's DQData fields!");
+            }
+            idMap.get(d.getId()).sensorValue(d);
+        }
 
-    @Override
-    public void onDriverDown(int arg0) {
-        if(debug)
-            Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
-
-        // FIXME T: recursive???
-        if(firmwareUPDRequested)
-            initDriver(false);
+        // TODO 8: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
     }
 
     @Override
@@ -238,6 +262,31 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
                 Log.i(debugTAG, "...no fw nor conn requested");
             DQUnitManager.INSTANCE.checkFirmwareVersion();
         }
+    }
+
+    @Override
+    public void onDriverDown(int arg0) {
+        if(debug)
+            Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
+
+        // FIXME T: recursive???
+        if(firmwareUPDRequested)
+            initDriver(false);
+    }
+
+    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+
+    @Override
+    public long getMonoUTCNanos(long realTimeNanos) {
+        return bootUTCNanos + realTimeNanos;
+    }
+
+    private void broadcastEvent(long time, int code, String message) {
+        if (flowing)
+            for (SensorComponent<Long, double[]> i : getSensors())
+                i.sensorEvent(time, code, message);
+        else
+            Log.i(debugTAG, "event: " + time + ", " + code + ", " + message);
     }
 
     // unused
@@ -330,20 +379,5 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onSettingNack() {
 
-    }
-
-    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-
-    @Override
-    public long getMonoUTCNanos(long realTimeNanos) {
-        return bootUTCNanos + realTimeNanos;
-    }
-
-    private void broadcastEvent(long time, int code, String message) {
-        if (flowing)
-            for (SensorComponent<Long, double[]> i : getSensors())
-                i.sensorEvent(time, code, message);
-        else
-            Log.i(debugTAG, "event: " + time + ", " + code + ", " + message);
     }
 }

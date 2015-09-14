@@ -85,7 +85,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
 
     //Per la libreria sottostante
     @Override
-    public List<Object> getValuesDescriptors() {
+    public List<Object> getValueDescriptor() {
         return ch.getDescriptors();
     }
 

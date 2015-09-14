@@ -33,7 +33,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "Battery");
         }
     }
@@ -44,7 +44,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "accX", "accY", "accZ");
         }
     }
@@ -55,7 +55,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "IBI");
         }
     }
@@ -66,7 +66,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "Temperature");
         }
     }
@@ -77,7 +77,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "GSR");
         }
     }
@@ -88,7 +88,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
         }
 
         @Override
-        public List<Object> getValuesDescriptors() {
+        public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "BVP");
         }
     }

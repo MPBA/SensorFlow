@@ -48,7 +48,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
             sb.append("CREATE TABLE IF NOT EXISTS ");
             sb.append(getDataTblName(l));
             sb.append(" (timestamp INTEGER ASC");
-            for (Object i : l.getValuesDescriptors()) {
+            for (Object i : l.getValueDescriptor()) {
                 sb.append(",[");
                 sb.append(i.toString().replace("[", "").replace("]", ""));
                 sb.append("] REAL");

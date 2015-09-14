@@ -93,5 +93,5 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
 
     // To implement
 
-    public abstract List<Object> getValuesDescriptors();
+    public abstract List<Object> getValueDescriptor();
 }

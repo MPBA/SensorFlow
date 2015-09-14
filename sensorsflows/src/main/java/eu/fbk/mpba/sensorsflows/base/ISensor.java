@@ -19,7 +19,7 @@ public interface ISensor extends ISampleCounter {
 
     public DevicePlugin getParentDevicePlugin();
 
-    public abstract List<Object> getValuesDescriptors();
+    public abstract List<Object> getValueDescriptor();
 
     public abstract String getName();
 }

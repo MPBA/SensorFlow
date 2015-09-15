@@ -1,0 +1,9 @@
+Test a Reggio Emilia
+ - Funzionamento ready/down con log
+ - Funzionamento firmware update con log e TestApp XeeDQuid
+ - Analisi elasticità e stabilità tempo di trasmissione pacchetti (pk.t - dev.t)
+     - Valutazione
+        - sorgente dq con stima statica tempo trasmissione e stima per sessione offset dq (dq.t - dev.t)
+            o
+        - sorgente dev con stima statica tempo trasmissione
+ - Eventuali fix

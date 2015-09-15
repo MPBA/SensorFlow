@@ -4,8 +4,10 @@ import com.dquid.xee.sdk.DQAccelerometerData;
 import com.dquid.xee.sdk.DQData;
 import com.dquid.xee.sdk.DQGpsData;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
@@ -14,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 public abstract class XeeSensor extends SensorComponent<Long, double[]> {
 
     protected boolean streaming = true;
-
+    protected boolean debug = true;
     public int EC_CONNECTION = 0;
     public int EC_META = 1;
 
@@ -37,13 +39,19 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
             super(parent);
         }
 
-        void sensorValue(DQAccelerometerData d) {
-            sensorValue(d.timestamp, new double[]{d.x, d.y, d.z, d.nda});
+        void sensorValue(Long timestamp, DQAccelerometerData d) {
+            if (debug)
+                sensorValue(timestamp, new double[]{d.timestamp, d.x, d.y, d.z, d.nda});
+            else
+                sensorValue(timestamp, new double[]{d.x, d.y, d.z, d.nda});
         }
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object)"x", "y", "z", "nda");
+            if (debug)
+                return Arrays.asList((Object)"xee_timestamp", "x", "y", "z", "nda");
+            else
+                return Arrays.asList((Object)"x", "y", "z", "nda");
         }
 
     }
@@ -53,13 +61,20 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
             super(parent);
         }
 
-        void sensorValue(DQGpsData d) {
-            sensorValue(d.timestamp, new double[]{ d.latitude, d.longitude, d.altitude, d.heading, d.latitude_direction, d.longitude_direction, d.satellites });
+        void sensorValue(Long timestamp, DQGpsData d) {
+            if (debug)
+                sensorValue(timestamp, new double[]{ d.timestamp, d.latitude, d.longitude, d.altitude, d.heading, d.latitude_direction, d.longitude_direction, d.satellites });
+            else
+                sensorValue(timestamp, new double[]{ d.latitude, d.longitude, d.altitude, d.heading, d.latitude_direction, d.longitude_direction, d.satellites });
+
         }
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object)"latitude", "longitude", "altitude", "heading", "latitude_direction", "longitude_direction", "satellites");
+            if (debug)
+                return Arrays.asList((Object)"xee_timestamp", "latitude", "longitude", "altitude", "heading", "latitude_direction", "longitude_direction", "satellites");
+            else
+                return Arrays.asList((Object)"latitude", "longitude", "altitude", "heading", "latitude_direction", "longitude_direction", "satellites");
         }
 
     }
@@ -72,30 +87,40 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
             this.name = name;
         }
 
-        void sensorValue(DQData d) {
-            sensorValue(d.getTimestamp(), new double[]{d.getValue()});
+        void sensorValue(Long timestamp, DQData d) {
+            if (debug)
+                sensorValue(timestamp, new double[]{d.getTimestamp(), d.getValue()});
+            else
+                sensorValue(timestamp, new double[]{d.getValue()});
         }
 
-        void notify(DQData d) {
+        void sendMeta(DQData d) {
             StringBuilder s = new StringBuilder(100);
-            s.append("fieldName\ttoString");
-            for (Field i : d.getClass().getFields()) {
-                s.append(i.getName());
-                s.append("\t");
-                try {
-                    s.append(i.get(d));
-                } catch (IllegalAccessException e) {
-                    s.append("error");
-                    e.printStackTrace();
+            s.append("property\tvalue");
+            for (Method i : d.getClass().getMethods())
+                if (i.getName().startsWith("get")) {
+                    s.append(i.getName());
+                    s.append("\t");
+                    try {
+                        //noinspection NullArgumentToVariableArgMethod by doc
+                        s.append(i.invoke(d, null).toString().replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n"));
+                    } catch (IllegalAccessException e) {
+                        s.append("error");
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                    s.append("\n");
                 }
-                s.append("\n");
-            }
             sensorEvent(d.getTimestamp(), EC_META, s.toString());
         }
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object)"timestamp", "value");
+            if (debug)
+                return Arrays.asList((Object)"xee_timestamp", "value");
+            else
+                return Collections.singletonList((Object) "value");
         }
 
         @Override

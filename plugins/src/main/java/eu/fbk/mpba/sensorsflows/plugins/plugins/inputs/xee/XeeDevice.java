@@ -27,8 +27,6 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonotonicTimestampReference {
 
-    // TODO 8: understand firmware update operation
-
     private boolean receivingData;
     private BluetoothDevice deviceToConnect;
     private boolean firmwareUPDRequested;
@@ -198,7 +196,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onError(int arg0, String arg1) {
-
         if (debug)
             Log.v(debugTAG, "onError: " + arg1);
 
@@ -211,32 +208,36 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
+        Long ts = getMonoUTCNanos(System.nanoTime());
         if(debug)
             Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
-        xeeAcc.sensorValue(arg0);
+        xeeAcc.sensorValue(ts, arg0);
     }
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
+        Long ts = getMonoUTCNanos(System.nanoTime());
         if(debug)
             Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
-        xeeGPS.sensorValue(arg0);
+        xeeGPS.sensorValue(ts, arg0);
     }
 
     @Override
     public void onNewData(HashMap<Long, DQData> arg0) {
+        Long ts = getMonoUTCNanos(System.nanoTime());
         for (DQData d : arg0.values()) {
             if (!idMap.containsKey(d.getId())) {
-                if (namesMap.containsKey(d.getName()))
+                if (namesMap.containsKey(d.getName())) {
+                    idMap.get(d.getId()).sendMeta(d);
                     idMap.put(d.getId(), namesMap.get(d.getName()));
-                    // TODO 4: notify here
+                }
                 else
                     Log.wtf(debugTAG, "Stream " + d.getId() + "-" + d.getName() + " was not put into the output sensors because was not in DQCar's DQData fields!");
             }
-            idMap.get(d.getId()).sensorValue(d);
+            idMap.get(d.getId()).sensorValue(ts, d);
         }
 
-        // TODO 8: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
+        // TODO 7: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
     }
 
     @Override
@@ -269,7 +270,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if(debug)
             Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
 
-        // FIXME T: recursive???
         if(firmwareUPDRequested)
             initDriver(false);
     }

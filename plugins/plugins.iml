@@ -98,8 +98,8 @@
     <orderEntry type="library" exported="" name="gson-2.3" level="project" />
     <orderEntry type="library" exported="" name="android-async-http-1.4.6" level="project" />
     <orderEntry type="module" module-name="empalink-2.0" exported="" />
-    <orderEntry type="module" module-name="dquid_xee_driver" exported="" />
     <orderEntry type="module" module-name="sensorsflows" exported="" />
+    <orderEntry type="module" module-name="dquid_xee_driver" exported="" />
     <orderEntry type="module" module-name="dquid_xee_sdk" exported="" />
     <orderEntry type="library" exported="" name="empalink-2.0-unspecified" level="project" />
   </component>

@@ -8,6 +8,7 @@ import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
@@ -26,7 +27,8 @@ public class FlowsMan<TimeT, ValueT> implements
         IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
         IDeviceCallback<DeviceDecorator<TimeT, ValueT>>,
         ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>,
-        IOutputCallback<TimeT, ValueT> {
+        IOutputCallback<TimeT, ValueT>,
+        IMonoTimestampSource{
 
     // Status Interface
 
@@ -152,6 +154,8 @@ public class FlowsMan<TimeT, ValueT> implements
     protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
     protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
 
+    private long bootNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+
     // Engine implementation
 
     /**
@@ -187,14 +191,25 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPlugin<TimeT, ValueT> toOutput) {
+        // TODO N1 Remember enabling/disabling each link
+        // Manual indexOf for performance
+        for (OutputDecorator<TimeT, ValueT> outMan : _userOutputs)
+            if (toOutput == outMan.getPlugIn()) { // for reference, safe
+                addLink(fromSensor, outMan);
+                break;
+            }
+    }
+
+    /**
+     * Adds a link between a sensor and an output-decorator object (N to M relation) before the {@code start} call.
+     *
+     * @param fromSensor Input sensor retrieved from a device.
+     * @param outMan     OutputDecorator object.
+     */
+    void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputDecorator<TimeT, ValueT> outMan) {
         if (_status == EngineStatus.STANDBY) {
-            // TODO N1 Remember enabling/disabling each link
-            // Manual indexOf for performance
-            for (OutputDecorator<TimeT, ValueT> outMan : _userOutputs)
-                if (toOutput == outMan.getPlugIn()) { // for reference, safe
-                    fromSensor.addOutput(outMan);
-                    outMan.addSensor(fromSensor);
-                }
+            fromSensor.addOutput(outMan);
+            outMan.addSensor(fromSensor);
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
@@ -282,7 +297,7 @@ public class FlowsMan<TimeT, ValueT> implements
     //      Internal init and final management
 
     /**
-     * This method allows to initializeDevice the device before the {@code start} call.
+     * This method allows to initialize the device before the {@code start} call.
      * Made private
      *
      * @param device {@code IDevice} to initializeDevice
@@ -352,12 +367,13 @@ public class FlowsMan<TimeT, ValueT> implements
      *
      * @param sensor {@code ISensor} to switch on.
      */
+    @Deprecated
     @Override
     public void switchOn(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
-            */sensor.switchOnAsync();/* FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
+            */sensor.switchOnAsync();/*
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -370,12 +386,13 @@ public class FlowsMan<TimeT, ValueT> implements
      *
      * @param sensor {@code ISensor} to switch off.
      */
+    @Deprecated
     @Override
     public void switchOff(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
-            */sensor.switchOffAsync();/* FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
+            */sensor.switchOffAsync();/*
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -391,9 +408,10 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param sensor    The sensor.
      * @param streaming If to listen to the data events of the sensor.
      */
+    @Deprecated
     @Override
     public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
-        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
+        /*if (_userDevices.contains(sensor.getParentDevice()))
             */sensor.setListened(streaming);/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
@@ -407,9 +425,10 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param sensor The sensor.
      * @return If the sensor is listened.
      */
+    @Deprecated
     @Override
     public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
-        /*if (_userDevices.contains(sensor.getParentDevice())) FIXME N1: Identity method! Unchecked switch, can move it inside a sensor?
+        /*if (_userDevices.contains(sensor.getParentDevice()))
             */return sensor.isListened();/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
@@ -456,14 +475,14 @@ public class FlowsMan<TimeT, ValueT> implements
                 for (DeviceDecorator<TimeT, ValueT> d : _userDevices)
                     for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
                         for (OutputDecorator<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
-                            addLink(s, o.getPlugIn()); // FIXME Stupid inefficiency, add an overload.
+                            addLink(s, o);
                 break;
             case NTH_TO_NTH:
                 // max SENSORS, OUTPUTS
                 int maxi = Math.max(_userDevices.size(), _userOutputs.size());
                 for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
                     for (SensorComponent<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
-                        addLink(s, _userOutputs.get(i % _userOutputs.size()).getPlugIn()); // FIXME Stupid inefficiency, add an overload.
+                        addLink(s, _userOutputs.get(i % _userOutputs.size()));
                 break;
         }
         changeState(EngineStatus.PREPARING);
@@ -574,5 +593,15 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void setOnOutputStateChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
+    }
+
+    @Override
+    public long getMonoUTCNanos() {
+        return System.nanoTime() + bootNanos;
+    }
+
+    @Override
+    public long getMonoUTCNanos(long nanoTime) {
+        return nanoTime + bootNanos;
     }
 }

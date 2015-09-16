@@ -1,11 +1,11 @@
 package eu.fbk.mpba.sensorsflows.plugins.plugins.inputs;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 
 public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
@@ -15,23 +15,23 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     @Override
     public void switchOnAsync() {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
                 1, "Switched on");
     }
 
     @Override
     public void switchOffAsync() {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
                 2, "Switched off");
     }
 
     @Override
     public List<Object> getValueDescriptor() {
-        return Arrays.asList();
+        return Collections.emptyList();
     }
 
     public void addText(CharSequence text) {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
                 0, text.toString());
     }
 

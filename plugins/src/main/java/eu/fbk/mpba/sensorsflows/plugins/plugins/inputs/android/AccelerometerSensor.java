@@ -11,7 +11,7 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
 /**
@@ -37,7 +37,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         else if (getState() == SensorStatus.OFF) {
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+            sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                     0, "Switched on");
         }
     }
@@ -47,7 +47,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
         if (getState() == SensorStatus.ON) {
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
-            sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+            sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                     0, "Switched off");
         }
     }
@@ -68,7 +68,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onSensorChanged(SensorEvent event) {
-        sensorValue(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(event.timestamp),
+        sensorValue(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(event.timestamp),
                 new double[] {event.values[0], event.values[1], event.values[2]});
     }
 
@@ -84,7 +84,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        sensorEvent(((IMonotonicTimestampReference)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                 accuracy, "Accuracy changed");
     }
 

@@ -9,10 +9,10 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
+public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
 
     private String name;
     private EXLSensor monoSensor;
@@ -58,6 +58,11 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonotonicTime
 
     public void setBootUTCNanos() {
         bootUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
+    }
+
+    @Override
+    public long getMonoUTCNanos() {
+        return System.nanoTime() + bootUTCNanos;
     }
 
     public long getMonoUTCNanos(long realTimeNanos) {

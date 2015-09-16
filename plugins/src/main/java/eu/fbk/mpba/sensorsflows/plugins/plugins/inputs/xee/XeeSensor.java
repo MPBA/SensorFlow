@@ -17,8 +17,8 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
 
     protected boolean streaming = true;
     protected boolean debug = true;
-    public int EC_CONNECTION = 0;
-    public int EC_META = 1;
+    public static final int EC_CONNECTION = 0;
+    public static final int EC_META = 1;
 
     protected XeeSensor(DevicePlugin<Long, double[]> parent) {
         super(parent);
@@ -102,8 +102,8 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
                     s.append(i.getName());
                     s.append("\t");
                     try {
-                        //noinspection NullArgumentToVariableArgMethod by doc
-                        s.append(i.invoke(d, null).toString().replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n"));
+                        //noinspection NullArgumentToVariableArgMethod
+                        s.append(i.invoke(d, (Object[]) null).toString().replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n"));
                     } catch (IllegalAccessException e) {
                         s.append("error");
                         e.printStackTrace();

@@ -22,10 +22,10 @@ import java.util.Map;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonotonicTimestampReference {
+public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonoTimestampSource {
 
     private boolean receivingData;
     private BluetoothDevice deviceToConnect;
@@ -191,7 +191,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onDisconnection() {
         if (debug)
             Log.v(debugTAG, "Disconnected");
-        broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
+        broadcastEvent(getMonoUTCNanos(System.nanoTime()), XeeSensor.EC_CONNECTION, "disconnected");
     }
 
     @Override
@@ -275,6 +275,11 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     }
 
     private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+
+    @Override
+    public long getMonoUTCNanos() {
+        return System.nanoTime() + bootUTCNanos;
+    }
 
     @Override
     public long getMonoUTCNanos(long realTimeNanos) {

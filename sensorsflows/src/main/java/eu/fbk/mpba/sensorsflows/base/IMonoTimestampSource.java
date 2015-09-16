@@ -3,6 +3,7 @@ package eu.fbk.mpba.sensorsflows.base;
 /**
  * Gives support to keep a monotonic timestamp reference
  */
-public interface IMonotonicTimestampReference {
+public interface IMonoTimestampSource {
+    long getMonoUTCNanos();
     long getMonoUTCNanos(long realTimeNanos);
 }

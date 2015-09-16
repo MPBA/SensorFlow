@@ -11,15 +11,15 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
  */
 public interface ISensor extends ISampleCounter {
 
-    public void switchOnAsync();
+    void switchOnAsync();
 
-    public void switchOffAsync();
+    void switchOffAsync();
 
-    public SensorStatus getState();
+    SensorStatus getState();
 
-    public DevicePlugin getParentDevicePlugin();
+    DevicePlugin getParentDevicePlugin();
 
-    public abstract List<Object> getValueDescriptor();
+    List<Object> getValueDescriptor();
 
-    public abstract String getName();
+    String getName();
 }

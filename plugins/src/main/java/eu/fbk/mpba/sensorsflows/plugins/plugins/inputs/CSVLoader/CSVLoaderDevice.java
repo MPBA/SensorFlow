@@ -6,7 +6,7 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 
@@ -14,7 +14,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * [IMPORTANTE] Vai a vedere il javadoc di CSVLoaderSensor,
  * non lo riporto qui per non creare ridondanza ovviamente.
 */
-public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
+public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
     protected List<SensorComponent<Long, double[]>> _sensors;
     protected String _name;
     protected Runnable onfinish = null;
@@ -91,7 +91,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
         } catch (IllegalThreadStateException e) {
             for (SensorComponent s : _sensors) {
                 // File already uploaded
-                ((CSVLoaderSensor) s).sensorEvent(getMonoUTCNanos(System.nanoTime()), -12, s.getName());
+                ((CSVLoaderSensor) s).sensorEvent(getMonoUTCNanos(), -12, s.getName());
             }
         }
     }
@@ -115,6 +115,9 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonotonic
     private long refUTCNanos;
     public void setBootUTCNanos() {
         refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
+    }
+    public long getMonoUTCNanos() {
+        return System.nanoTime() + refUTCNanos;
     }
     public long getMonoUTCNanos(long realTimeNanos) {
         return realTimeNanos + refUTCNanos;

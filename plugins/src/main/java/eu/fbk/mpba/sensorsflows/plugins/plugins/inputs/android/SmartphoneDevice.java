@@ -8,11 +8,11 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonotonicTimestampReference;
+import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.plugins.plugins.inputs.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotonicTimestampReference {
+public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
 
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
@@ -60,6 +60,10 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonotoni
 
     public void setBootUTCNanos() {
         refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
+    }
+
+    public long getMonoUTCNanos() {
+        return System.nanoTime() + refUTCNanos;
     }
 
     public long getMonoUTCNanos(long realTimeNanos) {

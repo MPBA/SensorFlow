@@ -1,1 +1,1 @@
-include ':sensorsflows', ':plugins', ':testapp', ':empalink-2.0', ':dquid_xee_sdk', 'dquid_xee_driver'
+include ':dquid_xee_driver', ':dquid_xee_sdk', ':empalink-2.0', ':plugins', ':sensorsflows', ':testapp'

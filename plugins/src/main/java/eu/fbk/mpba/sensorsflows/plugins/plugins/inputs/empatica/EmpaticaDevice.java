@@ -175,7 +175,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
         // After an Output/Input Finalize an other Initialize may occur, minimal waste.
     }
 
-    protected void close() {
+    public void close() {
         beam.destroy();
     }
 }

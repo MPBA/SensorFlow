@@ -41,6 +41,12 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     protected ReadOnlyIterable<SensorComponent<Long, double[]>> sensors;
     protected Map<String, XeeSensor.CarData> namesMap = new HashMap<>(50);
     protected Map<Long, XeeSensor.CarData> idMap = new HashMap<>(50);
+    private ConnectionCallback ec = null;
+
+    public interface ConnectionCallback {
+        void error(int e, String message);
+        void success();
+    }
 
     protected void setDeviceToConnect(BluetoothDevice d) {
         deviceToConnect = d;
@@ -84,10 +90,11 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             Log.v(debugTAG, "XeeDevice inner construction done");
     }
 
-    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e) {
+    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c) {
         this();
         setDeviceToConnect(d);
         setEnvironment(e);
+        ec = c;
         connection(true);
     }
 
@@ -127,7 +134,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
                 connectionRequested = true;
                 initDriver(false);
             } else {
-                throw new NullPointerException("Device to connect to not set.");
+                if (ec != null)
+                    ec.error(XeeSensor.EC_CONNECTION, "Device to connect to not set.");
             }
         } else {
             disconnectFromBd();
@@ -185,6 +193,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onConnectionSuccessful() {
         if (debug)
             Log.v(debugTAG, "Connection Successful");
+        if (ec != null)
+            ec.success();
     }
 
     @Override
@@ -204,6 +214,43 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             DQUnitManager.INSTANCE.disconnect();
         }
         broadcastEvent(getMonoUTCNanos(System.nanoTime()), arg0, arg1);
+    }
+
+    @Override
+    public void onDriverReady() {
+        if (debug)
+            Log.v(debugTAG, "onDriverReady");
+
+        if (firmwareUPDRequested) {
+            firmwareUPDRequested = false;
+            DQUnitManager.INSTANCE.updateFirmware();
+        } else
+        if (connectionRequested) {
+            connectionRequested = false;
+//          if (serialNumberRequested) {
+//              DQUnitManager.INSTANCE.getSerialNumber(); // TODO 8 no for now
+//          } else {
+            if (debug)
+                Log.d(debugTAG, "Connecting the INSTANCE");
+            DQUnitManager.INSTANCE.connect();
+//          }
+        } else {
+            if (debug)
+                Log.i(debugTAG, "...no fw nor conn requested");
+            DQUnitManager.INSTANCE.checkFirmwareVersion();
+        }
+    }
+
+    @Override
+    public void onDriverDown(int arg0) {
+        if(debug)
+            Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
+
+        if (ec != null)
+            ec.error(arg0, DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
+
+        if(firmwareUPDRequested)
+            initDriver(false);
     }
 
     @Override
@@ -238,40 +285,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         }
 
         // TODO 7: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
-    }
-
-    @Override
-    public void onDriverReady() {
-        if (debug)
-            Log.v(debugTAG, "onDriverReady");
-
-        if (firmwareUPDRequested) {
-            firmwareUPDRequested = false;
-            DQUnitManager.INSTANCE.updateFirmware();
-        } else
-        if (connectionRequested) {
-            connectionRequested = false;
-//          if (serialNumberRequested) {
-//              DQUnitManager.INSTANCE.getSerialNumber(); // TODO 8 no for now
-//          } else {
-            if (debug)
-                Log.d(debugTAG, "Connecting the INSTANCE");
-            DQUnitManager.INSTANCE.connect();
-//          }
-        } else {
-            if (debug)
-                Log.i(debugTAG, "...no fw nor conn requested");
-            DQUnitManager.INSTANCE.checkFirmwareVersion();
-        }
-    }
-
-    @Override
-    public void onDriverDown(int arg0) {
-        if(debug)
-            Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
-
-        if(firmwareUPDRequested)
-            initDriver(false);
     }
 
     private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();

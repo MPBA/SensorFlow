@@ -96,7 +96,7 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
 
         void sendMeta(DQData d) {
             StringBuilder s = new StringBuilder(100);
-            s.append("property\tvalue");
+            s.append("property\tvalue\n");
             for (Method i : d.getClass().getMethods())
                 if (i.getName().startsWith("get")) {
                     s.append(i.getName());

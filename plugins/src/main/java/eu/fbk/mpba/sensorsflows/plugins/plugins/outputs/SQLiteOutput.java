@@ -87,11 +87,11 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     public static String getDataTblName(ISensor s) {
-        return "[data_" + s.toString().replace("[", "").replace("]", "") + "]";
+        return "[data_" + s.getName().replace("[", "").replace("]", "") + "]";
     }
 
     public static String getEventsTblName(ISensor s) {
-        return "[events_" + s.toString().replace("[", "").replace("]", "") + "]";
+        return "[events_" + s.getName().replace("[", "").replace("]", "") + "]";
     }
 
     @Override

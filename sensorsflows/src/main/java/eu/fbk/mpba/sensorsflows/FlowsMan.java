@@ -468,37 +468,42 @@ public class FlowsMan<TimeT, ValueT> implements
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
      */
     public void start(String sessionName) {
-        // Prepares the links
-        switch (_linkMode) {
-            case PRODUCT:
-                // SENSORS x OUTPUTS
-                for (DeviceDecorator<TimeT, ValueT> d : _userDevices)
-                    for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
-                        for (OutputDecorator<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
-                            addLink(s, o);
-                break;
-            case NTH_TO_NTH:
-                // max SENSORS, OUTPUTS
-                int maxi = Math.max(_userDevices.size(), _userOutputs.size());
-                for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-                    for (SensorComponent<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
-                        addLink(s, _userOutputs.get(i % _userOutputs.size()));
-                break;
+        if (getStatus() == EngineStatus.STANDBY
+                || getStatus() == EngineStatus.CLOSED) {
+            // Prepares the links
+            switch (_linkMode) {
+                case PRODUCT:
+                    // SENSORS x OUTPUTS
+                    for (DeviceDecorator<TimeT, ValueT> d : _userDevices)
+                        for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
+                            for (OutputDecorator<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
+                                addLink(s, o);
+                    break;
+                case NTH_TO_NTH:
+                    // max SENSORS, OUTPUTS
+                    int maxi = Math.max(_userDevices.size(), _userOutputs.size());
+                    for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
+                        for (SensorComponent<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+                            addLink(s, _userOutputs.get(i % _userOutputs.size()));
+                    break;
+            }
+            changeState(EngineStatus.PREPARING);
+            _devicesToInit.addAll(_userDevices);
+            // Launches the initializations
+            for (DeviceDecorator d : _userDevices) {
+                // only if NOT_INITIALIZED: checked in the initializeDevice method
+                initialize(d);
+            }
+            _outputsToInit.addAll(_userOutputs);
+            for (OutputDecorator<TimeT, ValueT> o : _userOutputs) {
+                // only if NOT_INITIALIZED: checked in the initializeDevice method
+                initialize(o, sessionName);
+            }
+            // WAS _outputsSensors.clear();
+            // WAS _outputsSensors = null;
         }
-        changeState(EngineStatus.PREPARING);
-        _devicesToInit.addAll(_userDevices);
-        // Launches the initializations
-        for (DeviceDecorator d : _userDevices) {
-            // only if NOT_INITIALIZED: checked in the initializeDevice method
-            initialize(d);
-        }
-        _outputsToInit.addAll(_userOutputs);
-        for (OutputDecorator<TimeT, ValueT> o : _userOutputs) {
-            // only if NOT_INITIALIZED: checked in the initializeDevice method
-            initialize(o, sessionName);
-        }
-        // WAS _outputsSensors.clear();
-        // WAS _outputsSensors = null;
+        else
+            throw new UnsupportedOperationException("Engine already running!");
     }
 
     /**

@@ -32,20 +32,24 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     private boolean firmwareUPDRequested;
     private boolean connectionRequested;
     private boolean flowing = false;
+    private boolean connectionCheck = false;
+    private boolean databaseCheck = false;
 
     protected boolean debug = true;
     protected final String debugTAG = "XeeALE";
     protected DevicePlugin<Long, double[]> parent;
     protected XeeSensor.XeeAccelerometer xeeAcc;
     protected XeeSensor.XeeGPS xeeGPS;
-    protected ReadOnlyIterable<SensorComponent<Long, double[]>> sensors;
+    protected List<SensorComponent<Long, double[]>> sensors;
     protected Map<String, XeeSensor.CarData> namesMap = new HashMap<>(50);
     protected Map<Long, XeeSensor.CarData> idMap = new HashMap<>(50);
     private ConnectionCallback ec = null;
 
     public interface ConnectionCallback {
         void error(int e, String message);
-        void success();
+        void connected();
+        void streaming();
+        void ready();
     }
 
     protected void setDeviceToConnect(BluetoothDevice d) {
@@ -72,35 +76,35 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
         // Adding every possible sensor, every stream present in DQCar as DQData field.
         Field[] f = DQCar.class.getFields();
-        List<SensorComponent<Long, double[]>> s = new ArrayList<>(f.length);
-        s.add(xeeAcc);
-        s.add(xeeGPS);
+        sensors = new ArrayList<>(f.length);
+        sensors.add(xeeAcc);
+        sensors.add(xeeGPS);
         for (Field i : f)
             if (i.getType().equals(DQData.class)) {
                 XeeSensor.CarData c = new XeeSensor.CarData(this, i.getName());
                 namesMap.put(i.getName(), c);
-                s.add(c);
+                sensors.add(c);
             }
-        sensors = new ReadOnlyIterable<>(s.iterator());
 
         DQDriver.INSTANCE.setEventListener(this);
         DQUnitManager.INSTANCE.addListener(this);
+
         setReceivingData(true);
         if (debug)
             Log.v(debugTAG, "XeeDevice inner construction done");
     }
 
-    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c) {
+    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
         this();
         setDeviceToConnect(d);
         setEnvironment(e);
         ec = c;
-        connection(true);
+        connect(simulation);
     }
 
     public void inputPluginInitialize(){
         if (debug)
-            Log.v(debugTAG, "onResume");
+            Log.v(debugTAG, "inputPluginInitialize");
 
         DQUnitManager.INSTANCE.addListener(this);
         flowing = true;
@@ -108,8 +112,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     public void inputPluginFinalize() {
         if (debug)
-            Log.v(debugTAG, "onPause");
-        DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+            Log.v(debugTAG, "inputPluginFinalize");
+        DQUnitManager.INSTANCE.removeListener(this);
         flowing = false;
     }
 
@@ -120,36 +124,20 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return sensors;
+        return new ReadOnlyIterable<>(sensors.iterator());
     }
 
     // Device Connected Button
-    protected void connection(boolean connect) {
+    protected void connect(boolean simulation) {
         if (debug)
-            Log.v(debugTAG, "connection - connect: " + connect);
+            Log.v(debugTAG, "connection - connect: " + simulation);
 
-        if (connect) {
-            // WAS: simulator option
-            if (deviceToConnect != null) {
-                connectionRequested = true;
-                initDriver(false);
-            } else {
-                if (ec != null)
-                    ec.error(XeeSensor.EC_CONNECTION, "Device to connect to not set.");
-            }
+        if (deviceToConnect != null || simulation) {
+            connectionRequested = true;
+            initDriver(simulation);
         } else {
-            disconnectFromBd();
-        }
-    }
-
-    // Firmware update button
-    protected void callFWUpdate(DQUtils.DQuidEnvs e) {
-        if (deviceToConnect != null){
-            firmwareUPDRequested = true;
-            DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
-        }
-        else {
-            broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
+            if (ec != null)
+                ec.error(XeeSensor.EC_CONNECTION, "Device to connect to not set.");
         }
     }
 
@@ -183,9 +171,12 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         }
     }
 
-    private void disconnectFromBd() {
+    private void disconnect() {
         if (debug)
-            Log.v(debugTAG, "disconnectFromBd");
+            Log.v(debugTAG, "disconnect");
+        // TODO Test
+        setReceivingData(false);
+        DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
         DQUnitManager.INSTANCE.disconnect();
     }
 
@@ -194,7 +185,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (debug)
             Log.v(debugTAG, "Connection Successful");
         if (ec != null)
-            ec.success();
+            ec.connected();
     }
 
     @Override
@@ -256,35 +247,59 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
         Long ts = getMonoUTCNanos(System.nanoTime());
-        if(debug)
-            Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
+//        if(debug)
+//            Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
         xeeAcc.sensorValue(ts, arg0);
     }
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
         Long ts = getMonoUTCNanos(System.nanoTime());
-        if(debug)
-            Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
+//        if(debug)
+//            Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
+        if (!connectionCheck) {
+            connectionCheck = true;
+            if (ec != null)
+                ec.streaming();
+        }
         xeeGPS.sensorValue(ts, arg0);
     }
 
     @Override
     public void onNewData(HashMap<Long, DQData> arg0) {
+//        if(debug)
+//            Log.v(debugTAG, "onNewData - " + arg0.toString());
         Long ts = getMonoUTCNanos(System.nanoTime());
-        for (DQData d : arg0.values()) {
-            if (!idMap.containsKey(d.getId())) {
-                if (namesMap.containsKey(d.getName())) {
-                    idMap.get(d.getId()).sendMeta(d);
-                    idMap.put(d.getId(), namesMap.get(d.getName()));
-                }
-                else
-                    Log.wtf(debugTAG, "Stream " + d.getId() + "-" + d.getName() + " was not put into the output sensors because was not in DQCar's DQData fields!");
-            }
-            idMap.get(d.getId()).sensorValue(ts, d);
+        if (!databaseCheck && arg0.size() != 0) {
+            connectionCheck = true;
+            if (ec != null)
+                ec.ready();
         }
+        if (flowing)
+            for (DQData d : arg0.values()) {
+                if (!idMap.containsKey(d.getId())) {
+                        if (namesMap.containsKey(d.getName())) {
+                            idMap.put(d.getId(), namesMap.get(d.getName()));
+                            idMap.get(d.getId()).sendMeta(d);
+                        }
+                        else
+                            Log.wtf(debugTAG, "Stream " + d.getId() + "-" + d.getName() + " was not put into the output sensors because was not in DQCar's DQData fields!");
+                }
+                idMap.get(d.getId()).sensorValue(ts, d);
+            }
 
         // TODO 7: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
+    }
+
+    // Firmware update button
+    protected void callFWUpdate(DQUtils.DQuidEnvs e) {
+        if (deviceToConnect != null){
+            firmwareUPDRequested = true;
+            DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+        }
+        else {
+            broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
+        }
     }
 
     private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
@@ -305,6 +320,16 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
                 i.sensorEvent(time, code, message);
         else
             Log.i(debugTAG, "event: " + time + ", " + code + ", " + message);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        close();
+    }
+
+    public void close() {
+        disconnect();
     }
 
     // unused

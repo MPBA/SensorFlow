@@ -62,19 +62,23 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
         }
 
         void sensorValue(Long timestamp, DQGpsData d) {
+            // TODO 5 ask and simplify
+            if (d.latitude_direction == 'S' && d.latitude > 0)
+                d.latitude *= -1;
+            if (d.longitude_direction == 'W' && d.longitude > 0)
+                d.longitude *= -1;
             if (debug)
-                sensorValue(timestamp, new double[]{ d.timestamp, d.latitude, d.longitude, d.altitude, d.heading, d.latitude_direction, d.longitude_direction, d.satellites });
+                sensorValue(timestamp, new double[]{ d.timestamp, d.latitude, d.longitude, d.altitude, d.heading, d.satellites });
             else
-                sensorValue(timestamp, new double[]{ d.latitude, d.longitude, d.altitude, d.heading, d.latitude_direction, d.longitude_direction, d.satellites });
-
+                sensorValue(timestamp, new double[]{ d.latitude, d.longitude, d.altitude, d.heading, d.satellites });
         }
 
         @Override
         public List<Object> getValueDescriptor() {
             if (debug)
-                return Arrays.asList((Object)"xee_timestamp", "latitude", "longitude", "altitude", "heading", "latitude_direction", "longitude_direction", "satellites");
+                return Arrays.asList((Object)"xee_timestamp", "latitude", "longitude", "altitude", "heading", "satellites");
             else
-                return Arrays.asList((Object)"latitude", "longitude", "altitude", "heading", "latitude_direction", "longitude_direction", "satellites");
+                return Arrays.asList((Object)"latitude", "longitude", "altitude", "heading", "satellites");
         }
 
     }

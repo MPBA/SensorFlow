@@ -1,3 +1,0 @@
-configurations.create("default")
-artifacts.add("default", file('DQuid_xee_driver.jar'))
-artifacts.add("default", file('libdquid_xee_driver_protocol_utils.so'))

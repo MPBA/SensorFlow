@@ -1,12 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '23.0.1'
+    compileSdkVersion 22
+    buildToolsVersion '22.0.1'
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 23
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
     }
@@ -16,12 +16,16 @@ android {
 
 dependencies {
     compile 'com.google.protobuf:protobuf-java:2.6.0'
+
     compile 'com.loopj.android:android-async-http:1.4.6'
     compile 'com.google.code.gson:gson:2.3'
-    compile project(':sensorsflows')
     compile project(':empalink-2.0')
+
     compile "commons-io:commons-io:2.4" // xee as armeabi jniLibs
-    compile project(':dquid_xee_driver')
-    compile project(':dquid_xee_sdk')
-    compile 'com.android.support:appcompat-v7:23.0.1'
+    compile files("libs/DQuid_xee_driver.jar")
+    compile files("libs/DQuid_xee_sdk.jar")
+
+    compile project(':sensorsflows')
+
+    compile 'com.android.support:appcompat-v7:22.2.1'
 }

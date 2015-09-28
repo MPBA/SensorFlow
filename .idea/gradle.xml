@@ -10,8 +10,6 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/dquid_xee_driver" />
-            <option value="$PROJECT_DIR$/dquid_xee_sdk" />
             <option value="$PROJECT_DIR$/empalink-2.0" />
             <option value="$PROJECT_DIR$/plugins" />
             <option value="$PROJECT_DIR$/sensorsflows" />

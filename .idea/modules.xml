@@ -3,9 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SensorsFlows.iml" filepath="$PROJECT_DIR$/SensorsFlows.iml" />
-      <module fileurl="file://$PROJECT_DIR$/DQuid_xee_driver/dquid_xee_driver.iml" filepath="$PROJECT_DIR$/DQuid_xee_driver/dquid_xee_driver.iml" />
       <module fileurl="file://$PROJECT_DIR$/dquid_xee_driver/dquid_xee_driver.iml" filepath="$PROJECT_DIR$/dquid_xee_driver/dquid_xee_driver.iml" />
-      <module fileurl="file://$PROJECT_DIR$/DQuid_xee_sdk/dquid_xee_sdk.iml" filepath="$PROJECT_DIR$/DQuid_xee_sdk/dquid_xee_sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/dquid_xee_sdk/dquid_xee_sdk.iml" filepath="$PROJECT_DIR$/dquid_xee_sdk/dquid_xee_sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/empalink-2.0/empalink-2.0.iml" filepath="$PROJECT_DIR$/empalink-2.0/empalink-2.0.iml" />
       <module fileurl="file://$PROJECT_DIR$/plugins/plugins.iml" filepath="$PROJECT_DIR$/plugins/plugins.iml" />

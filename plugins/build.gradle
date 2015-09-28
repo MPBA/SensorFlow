@@ -18,7 +18,10 @@ dependencies {
     compile 'com.google.protobuf:protobuf-java:2.6.0'
     compile 'com.loopj.android:android-async-http:1.4.6'
     compile 'com.google.code.gson:gson:2.3'
-    compile 'com.android.support:appcompat-v7:23.0.1'
     compile project(':sensorsflows')
     compile project(':empalink-2.0')
+    compile "commons-io:commons-io:2.4" // xee as armeabi jniLibs
+    compile project(':dquid_xee_driver')
+    compile project(':dquid_xee_sdk')
+    compile 'com.android.support:appcompat-v7:23.0.1'
 }

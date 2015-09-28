@@ -27,15 +27,20 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonoTimestampSource {
 
+    public static final int FIRMWARE_UPDATE = 1 << 5;
+    public static final int FIRMWARE_UPDATE_STARTED = FIRMWARE_UPDATE | 1;
+    public static final int FIRMWARE_UPDATE_PROGRESS = FIRMWARE_UPDATE | 1 << 1;
+
     private boolean receivingData;
     private BluetoothDevice deviceToConnect;
     private boolean firmwareUPDRequested;
     private boolean connectionRequested;
-    private boolean flowing = false;
-    private boolean connectionCheck = false;
-    private boolean databaseCheck = false;
+    private boolean active = false;
+    private boolean newDataCheck = false;
+    private final boolean simulation;
 
     protected boolean debug = true;
+    protected boolean heavy_debug = false;
     protected final String debugTAG = "XeeALE";
     protected DevicePlugin<Long, double[]> parent;
     protected XeeSensor.XeeAccelerometer xeeAcc;
@@ -47,6 +52,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     public interface ConnectionCallback {
         void error(int e, String message);
+        void warning(int e, String message);
         void connected();
         void streaming();
         void ready();
@@ -66,8 +72,10 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
      * -1. check the bluetooth presence (2.1)
      *  1. set the bt device and environment (?)
      *  2. connection true
+     *
+     *  Ex default constructor
      */
-    public XeeDevice() {
+    private void XeeDevice() {
         if (debug)
             Log.v(debugTAG, "XeeDevice construction");
 
@@ -95,11 +103,11 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     }
 
     public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
-        this();
+        XeeDevice();
         setDeviceToConnect(d);
         setEnvironment(e);
         ec = c;
-        connect(simulation);
+        connect(this.simulation = simulation);
     }
 
     public void inputPluginInitialize(){
@@ -107,19 +115,19 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             Log.v(debugTAG, "inputPluginInitialize");
 
         DQUnitManager.INSTANCE.addListener(this);
-        flowing = true;
+        active = true;
     }
 
     public void inputPluginFinalize() {
         if (debug)
             Log.v(debugTAG, "inputPluginFinalize");
         DQUnitManager.INSTANCE.removeListener(this);
-        flowing = false;
+        active = false;
     }
 
     @Override
     public String getName() {
-        return deviceToConnect != null ? deviceToConnect.getName() : "UnknownXee";
+        return simulation ? "SimulationTrace" : deviceToConnect != null ? deviceToConnect.getName() : "UnknownXee";
     }
 
     @Override
@@ -247,18 +255,18 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     @Override
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
         Long ts = getMonoUTCNanos(System.nanoTime());
-//        if(debug)
-//            Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
+        if(heavy_debug)
+            Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
         xeeAcc.sensorValue(ts, arg0);
     }
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
         Long ts = getMonoUTCNanos(System.nanoTime());
-//        if(debug)
-//            Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
-        if (!connectionCheck) {
-            connectionCheck = true;
+        if(heavy_debug)
+            Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
+        if (!newDataCheck) {
+            newDataCheck = true;
             if (ec != null)
                 ec.streaming();
         }
@@ -267,15 +275,15 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onNewData(HashMap<Long, DQData> arg0) {
-//        if(debug)
-//            Log.v(debugTAG, "onNewData - " + arg0.toString());
+        if(heavy_debug)
+            Log.v(debugTAG, "onNewData - " + arg0.toString());
         Long ts = getMonoUTCNanos(System.nanoTime());
-        if (!databaseCheck && arg0.size() != 0) {
-            connectionCheck = true;
+        if (!newDataCheck && arg0.size() != 0) {
+            newDataCheck = true;
             if (ec != null)
                 ec.ready();
         }
-        if (flowing)
+        if (active)
             for (DQData d : arg0.values()) {
                 if (!idMap.containsKey(d.getId())) {
                         if (namesMap.containsKey(d.getName())) {
@@ -287,8 +295,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
                 }
                 idMap.get(d.getId()).sensorValue(ts, d);
             }
-
-        // TODO 7: check the difference between arg0 and DQUnitManager.INSTANCE.getLastAvailable().
     }
 
     // Firmware update button
@@ -315,7 +321,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     }
 
     private void broadcastEvent(long time, int code, String message) {
-        if (flowing)
+        if (active)
             for (SensorComponent<Long, double[]> i : getSensors())
                 i.sensorEvent(time, code, message);
         else
@@ -356,6 +362,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onFirmwareUpdateIncrease(final double arg0) {
         if (debug)
             Log.v(debugTAG, "onFirmwareUpdateIncrease: " + arg0);
+        if (ec != null)
+            ec.warning(FIRMWARE_UPDATE_PROGRESS, "F/W: " + arg0);
     }
 
     @Override
@@ -377,6 +385,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onFirmwareUpdateStarted() {
         if(debug)
             Log.v(debugTAG, "onFirmwareUpdateStarted");
+        if (ec != null)
+            ec.warning(FIRMWARE_UPDATE_STARTED, "Started updating the DQuid Xee firmware.");
     }
 
     @Override

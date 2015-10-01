@@ -43,6 +43,18 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTime
     }
 
     @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    @Override
+    public void close() {
+        for (SensorComponent x : _sensors)
+            x.switchOffAsync();
+    }
+
+    @Override
     public void inputPluginInitialize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOnAsync();

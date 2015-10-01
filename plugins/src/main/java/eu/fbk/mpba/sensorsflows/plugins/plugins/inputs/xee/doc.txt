@@ -7,7 +7,6 @@ Test a Reggio Emilia
         - sorgente dev con stima statica tempo trasmissione
  - Eventuali fix
 
- - TODO 0 is present
  - Retap empatica to cancel discovery and reset plugin
  - Retap SQLite and File (CSV) to disable plugin
  - SQLite does not move <?< from OFF >?> sometimes (after CAN BUS init?)
@@ -20,6 +19,8 @@ Test a Reggio Emilia
      V/XeeALE﹕ onDriverDown - reason: 502 - I/O Error
      V/XeeALE﹕ onDriverDown - reason: 301 - DQuid Unit not connected
  - Su smartphone se TimeOffset disabilitato non salvarne le misurazioni
+ - Illegl click su next lo blocca
+ - Ritorno alla main activity va gestito
 
 
  - daemons do not die (e.g. empatica)
@@ -39,6 +40,9 @@ Done
  - This device's Time Offset checkbox disables the panel (OK era un id duplicato)
  - Controllare il passaggio di stati plugIn <--> enabled smartphone OK
  - Almeno un sensore in smartphone OK
+ - Scroll to next OK
+ - Stream to server error (OK wrong check (deprecable) )
+ - Load CSV LED
 
  Debug:
  09-18 13:37:21.091  14629-14700/eu.fbk.mpba.physiorec V/XeeALE﹕ onNewData - {2=Name: VehiculeSpeed - Category: 100 - Id: 2 - Value: 15.483600000000001 - Um:  - Timestamp: 1442576186266, 3=Name: FuelLevel - Category: 100 - Id: 3 - Value: 10.5 - Um:  - Timestamp: 1442576186266, 4=Name: EngineSpeed - Category: 100 - Id: 4 - Value: 1165.8400000000001 - Um:  - Timestamp: 1442576186264, 7=Name: FrontLeftWheelSpeed - Category: 100 - Id: 7 - Value: 15.575400000000002 - Um:  - Timestamp: 1442576186265, 8=Name: FrontRightWheelSpeed - Category: 100 - Id: 8 - Value: 15.483600000000001 - Um:  - Timestamp: 1442576186265, 9=Name: RearLeftWheelSpeed - Category: 100 - Id: 9 - Value: 15.402000000000001 - Um:  - Timestamp: 1442576186266, 10=Name: RearRightWheelSpeed - Category: 100 - Id: 10 - Value: 15.5448 - Um:  - Timestamp: 1442576186266, 13=Name: BrakePedalSts - Category: 100 - Id: 13 - Value: 0.0 - Um:  - Timestamp: 1442576186264, 23=Name: ThrottlePedalPosition - Category: 100 - Id: 23 - Value: 0.0 - Um:  - Timestamp: 1442576186264, 24=Name: ThrottlePedalSts - Category: 100 - Id: 24 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 26=Name: LowBeamSts - Category: 100 - Id: 26 - Value: 1.0 - Um:  - Timestamp: 1442576186266, 29=Name: HeadLightSts - Category: 100 - Id: 29 - Value: 1.0 - Um:  - Timestamp: 1442576186266, 28=Name: HighBeamSts - Category: 100 - Id: 28 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 31=Name: LeftIndicatorSts - Category: 100 - Id: 31 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 30=Name: TrunkSts - Category: 100 - Id: 30 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 34=Name: FrontLeftDoorSts - Category: 100 - Id: 34 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 35=Name: FrontRightDoorSts - Category: 100 - Id: 35 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 32=Name: RightIndicatorSts - Category: 100 - Id: 32 - Value: 0.0 - Um:  - Timestamp: 1442576186267, 33=Name: FrontFogLightSts - Category: 100 - Id: 33 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 38=Name: HandBrakeSts - Category: 100 - Id: 38 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 36=Name: RearLeftDoorSts - Category: 100 - Id: 36 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 37=Name: RearRightDoorSts - Category: 100 - Id: 37 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 43=Name: IntermittentWiperSts - Category: 100 - Id: 43 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 47=Name: ClutchPedalSts - Category: 100 - Id: 47 - Value: 1.0 - Um:  - Timestamp: 1442576186264, 44=Name: LowSpeedWiperSts - Category: 100 - Id: 44 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 45=Name: HighSpeedWiperSts - Category: 100 - Id: 45 - Value: 0.0 - Um:  - Timestamp: 1442576186266, 49=Name: ReverseGearSts - Category: 100 - Id: 49 - Value: 0.0 - Um:  - Timestamp: 1442576186265, 58=Name: IgnitionSts - Category: 100 - Id: 58 - Value: 1.0 - Um:  - Timestamp: 1442576186265}

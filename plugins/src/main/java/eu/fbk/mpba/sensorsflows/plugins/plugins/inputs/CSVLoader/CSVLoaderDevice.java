@@ -106,6 +106,17 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]>, IMonoTimes
     }
 
     @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
     public String getName() {
         return _name;
     }

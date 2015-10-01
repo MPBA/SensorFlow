@@ -14,6 +14,8 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
 
+    // TODO 4: replayable
+
     private String name;
     private EXLSensor monoSensor;
 
@@ -41,6 +43,17 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
         return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) er, pe, ma, on, ry).iterator());
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    @Override
+    public void close() {
+        monoSensor.disconnect();
     }
 
     @Override

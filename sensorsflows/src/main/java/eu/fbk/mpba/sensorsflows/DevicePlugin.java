@@ -9,4 +9,6 @@ public interface DevicePlugin<TimeT, ValueT> extends INamed {
     void inputPluginFinalize();
 
     Iterable<SensorComponent<TimeT, ValueT>> getSensors();
+
+    void close();
 }

@@ -29,27 +29,30 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     CsvDataSaver _savData;
     CsvDataSaver _savEvents;
     List<ISensor> _linkedSensors = new ArrayList<>();
+    Callback call;
 
-    public CsvOutput(String name, String path) {
-        this(name, path, "timestamp", ".csv", ";", "\n");
+    public interface Callback {
+        void finalization(CsvOutput sender);
     }
 
-    public CsvOutput(String name, String path, String timestampColumnName, String fileSuffix, String separator, String newLine) {
+    public CsvOutput(String name, String path) {
+        this(name, path, "timestamp", ".csv", ";", "\n", null);
+    }
+
+    public CsvOutput(String name, String path, String timestampColumnName, String fileSuffix, String separator, String newLine, Callback c) {
         mName = name;
         mPath = path;
         mTsCol = timestampColumnName;
         mExtension = fileSuffix;
         mSeparator = separator;
         mNewLine = newLine;
+        call = c;
     }
 
     public List<String> getFiles() {
-        List<File>
-        f = _savData.getSupports();
-        f.addAll(_savEvents.getSupports());
-        List<String> a = new ArrayList<>(f.size());
-        for (int i = 0; i < f.size(); i++)
-            a.add(f.get(i).getAbsolutePath());
+        List<String> a = new ArrayList<>();
+        for (File f : _savEvents.getSupports())
+            a.add(f.getAbsolutePath());
         return a;
     }
 
@@ -81,6 +84,8 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     public void outputPluginFinalize() {
         _savData.close();
         _savEvents.close();
+        if (call != null)
+            call.finalization(this);
     }
 
     public void newSensorEvent(SensorEventEntry event) {

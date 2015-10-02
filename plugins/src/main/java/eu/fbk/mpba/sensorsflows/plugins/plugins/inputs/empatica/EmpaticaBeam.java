@@ -25,7 +25,7 @@ import eu.fbk.mpba.sensorsflows.plugins.plugins.PingMan;
  *   - MAC connection
  *   - First found connection
  *   - Re-discovery on connection lost (last device's MAC used)
- *   - SensorStatus (we hope it will be used from them soon)
+ *   - SensorStatus (we hope they'll support it soon)
  *   - Transitory states events correction
  *   - Internet access detection
  *   - Splitted connection (authentication + connection)
@@ -81,6 +81,7 @@ public class EmpaticaBeam implements EmpaStatusDelegate {
         if (!_disconnectionPending) {
             try {
                 _disconnectionPending = true;
+                _device.stopScanning();
                 _device.disconnect();
                 _device.cleanUp();
             }

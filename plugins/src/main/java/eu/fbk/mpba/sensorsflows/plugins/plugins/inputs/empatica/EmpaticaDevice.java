@@ -27,7 +27,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
     final EmpaticaSensor.IBI mIbi;
     final EmpaticaSensor.Thermometer mTem;
 
-    // This two values to perform an approximation of the times of the events keeping the order safe
+    // This two value to perform an approximation of the times of the events keeping the order safe
     // also through the values.
     private Long mTimeToDevice = 0L;
 
@@ -52,12 +52,12 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
                 new EmpaDataDelegate() {
                     @Override
                     public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
+                        mAcc.sensorValue(proTime(timestamp), new double[]{x, y, z});
                         if (lastCheckTODO) {
                             lastCheckTODO = false;
                             if (connectedStreaming != null)
                                 new Thread(connectedStreaming).start();
                         }
-                        mAcc.sensorValue(proTime(timestamp), new double[]{x, y, z});
                     }
 
                     @Override

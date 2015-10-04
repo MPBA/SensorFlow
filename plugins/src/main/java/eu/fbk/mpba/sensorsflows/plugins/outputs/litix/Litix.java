@@ -3,7 +3,6 @@
 
 package eu.fbk.mpba.sensorsflows.plugins.outputs.litix;
 
-@SuppressWarnings("ALL")
 public final class Litix {
   private Litix() {}
   public static void registerAllExtensions(
@@ -14,11 +13,11 @@ public final class Litix {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     boolean hasSensorId();
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     int getSensorId();
 
@@ -98,7 +97,7 @@ public final class Litix {
             }
             case 8: {
               bitField0_ |= 0x00000001;
-              sensorId_ = input.readInt32();
+              sensorId_ = input.readSInt32();
               break;
             }
             case 16: {
@@ -173,13 +172,13 @@ public final class Litix {
     public static final int SENSOR_ID_FIELD_NUMBER = 1;
     private int sensorId_;
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     public boolean hasSensorId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     public int getSensorId() {
       return sensorId_;
@@ -250,7 +249,7 @@ public final class Litix {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, sensorId_);
+        output.writeSInt32(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt64(2, timestamp_);
@@ -273,7 +272,7 @@ public final class Litix {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, sensorId_);
+          .computeSInt32Size(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -523,19 +522,19 @@ public final class Litix {
 
       private int sensorId_ ;
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public boolean hasSensorId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public int getSensorId() {
         return sensorId_;
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public Builder setSensorId(int value) {
         bitField0_ |= 0x00000001;
@@ -544,7 +543,7 @@ public final class Litix {
         return this;
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public Builder clearSensorId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -667,13 +666,13 @@ public final class Litix {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>required int32 sensor_id_fk = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
-    boolean hasSensorIdFk();
+    boolean hasSensorId();
     /**
-     * <code>required int32 sensor_id_fk = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
-    int getSensorIdFk();
+    int getSensorId();
 
     /**
      * <code>required int64 timestamp = 2;</code>
@@ -685,11 +684,11 @@ public final class Litix {
     long getTimestamp();
 
     /**
-     * <code>required int32 code = 3;</code>
+     * <code>required sint32 code = 3;</code>
      */
     boolean hasCode();
     /**
-     * <code>required int32 code = 3;</code>
+     * <code>required sint32 code = 3;</code>
      */
     int getCode();
 
@@ -761,7 +760,7 @@ public final class Litix {
             }
             case 8: {
               bitField0_ |= 0x00000001;
-              sensorIdFk_ = input.readInt32();
+              sensorId_ = input.readSInt32();
               break;
             }
             case 16: {
@@ -771,7 +770,7 @@ public final class Litix {
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              code_ = input.readInt32();
+              code_ = input.readSInt32();
               break;
             }
             case 34: {
@@ -820,19 +819,19 @@ public final class Litix {
     }
 
     private int bitField0_;
-    public static final int SENSOR_ID_FK_FIELD_NUMBER = 1;
-    private int sensorIdFk_;
+    public static final int SENSOR_ID_FIELD_NUMBER = 1;
+    private int sensorId_;
     /**
-     * <code>required int32 sensor_id_fk = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
-    public boolean hasSensorIdFk() {
+    public boolean hasSensorId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required int32 sensor_id_fk = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
-    public int getSensorIdFk() {
-      return sensorIdFk_;
+    public int getSensorId() {
+      return sensorId_;
     }
 
     public static final int TIMESTAMP_FIELD_NUMBER = 2;
@@ -853,13 +852,13 @@ public final class Litix {
     public static final int CODE_FIELD_NUMBER = 3;
     private int code_;
     /**
-     * <code>required int32 code = 3;</code>
+     * <code>required sint32 code = 3;</code>
      */
     public boolean hasCode() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>required int32 code = 3;</code>
+     * <code>required sint32 code = 3;</code>
      */
     public int getCode() {
       return code_;
@@ -908,7 +907,7 @@ public final class Litix {
     }
 
     private void initFields() {
-      sensorIdFk_ = 0;
+      sensorId_ = 0;
       timestamp_ = 0L;
       code_ = 0;
       message_ = "";
@@ -919,7 +918,7 @@ public final class Litix {
       if (isInitialized == 1) return true;
       if (isInitialized == 0) return false;
 
-      if (!hasSensorIdFk()) {
+      if (!hasSensorId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -943,13 +942,13 @@ public final class Litix {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, sensorIdFk_);
+        output.writeSInt32(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt64(2, timestamp_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt32(3, code_);
+        output.writeSInt32(3, code_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getMessageBytes());
@@ -965,7 +964,7 @@ public final class Litix {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, sensorIdFk_);
+          .computeSInt32Size(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -973,7 +972,7 @@ public final class Litix {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(3, code_);
+          .computeSInt32Size(3, code_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1096,7 +1095,7 @@ public final class Litix {
 
       public Builder clear() {
         super.clear();
-        sensorIdFk_ = 0;
+        sensorId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000001);
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -1135,7 +1134,7 @@ public final class Litix {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.sensorIdFk_ = sensorIdFk_;
+        result.sensorId_ = sensorId_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
@@ -1164,8 +1163,8 @@ public final class Litix {
 
       public Builder mergeFrom(eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorEvent other) {
         if (other == eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorEvent.getDefaultInstance()) return this;
-        if (other.hasSensorIdFk()) {
-          setSensorIdFk(other.getSensorIdFk());
+        if (other.hasSensorId()) {
+          setSensorId(other.getSensorId());
         }
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
@@ -1183,7 +1182,7 @@ public final class Litix {
       }
 
       public final boolean isInitialized() {
-        if (!hasSensorIdFk()) {
+        if (!hasSensorId()) {
           
           return false;
         }
@@ -1221,34 +1220,34 @@ public final class Litix {
       }
       private int bitField0_;
 
-      private int sensorIdFk_ ;
+      private int sensorId_ ;
       /**
-       * <code>required int32 sensor_id_fk = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
-      public boolean hasSensorIdFk() {
+      public boolean hasSensorId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required int32 sensor_id_fk = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
-      public int getSensorIdFk() {
-        return sensorIdFk_;
+      public int getSensorId() {
+        return sensorId_;
       }
       /**
-       * <code>required int32 sensor_id_fk = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
-      public Builder setSensorIdFk(int value) {
+      public Builder setSensorId(int value) {
         bitField0_ |= 0x00000001;
-        sensorIdFk_ = value;
+        sensorId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required int32 sensor_id_fk = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
-      public Builder clearSensorIdFk() {
+      public Builder clearSensorId() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        sensorIdFk_ = 0;
+        sensorId_ = 0;
         onChanged();
         return this;
       }
@@ -1287,19 +1286,19 @@ public final class Litix {
 
       private int code_ ;
       /**
-       * <code>required int32 code = 3;</code>
+       * <code>required sint32 code = 3;</code>
        */
       public boolean hasCode() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required int32 code = 3;</code>
+       * <code>required sint32 code = 3;</code>
        */
       public int getCode() {
         return code_;
       }
       /**
-       * <code>required int32 code = 3;</code>
+       * <code>required sint32 code = 3;</code>
        */
       public Builder setCode(int value) {
         bitField0_ |= 0x00000004;
@@ -1308,7 +1307,7 @@ public final class Litix {
         return this;
       }
       /**
-       * <code>required int32 code = 3;</code>
+       * <code>required sint32 code = 3;</code>
        */
       public Builder clearCode() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -1409,11 +1408,11 @@ public final class Litix {
       com.google.protobuf.MessageOrBuilder {
 
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     boolean hasSensorId();
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     int getSensorId();
 
@@ -1532,7 +1531,7 @@ public final class Litix {
             }
             case 8: {
               bitField0_ |= 0x00000001;
-              sensorId_ = input.readInt32();
+              sensorId_ = input.readSInt32();
               break;
             }
             case 18: {
@@ -1608,13 +1607,13 @@ public final class Litix {
     public static final int SENSOR_ID_FIELD_NUMBER = 1;
     private int sensorId_;
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     public boolean hasSensorId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required int32 sensor_id = 1;</code>
+     * <code>required sint32 sensor_id = 1;</code>
      */
     public int getSensorId() {
       return sensorId_;
@@ -1804,7 +1803,7 @@ public final class Litix {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, sensorId_);
+        output.writeSInt32(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getDeviceBytes());
@@ -1829,7 +1828,7 @@ public final class Litix {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, sensorId_);
+          .computeSInt32Size(1, sensorId_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -2109,19 +2108,19 @@ public final class Litix {
 
       private int sensorId_ ;
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public boolean hasSensorId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public int getSensorId() {
         return sensorId_;
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public Builder setSensorId(int value) {
         bitField0_ |= 0x00000001;
@@ -2130,7 +2129,7 @@ public final class Litix {
         return this;
       }
       /**
-       * <code>required int32 sensor_id = 1;</code>
+       * <code>required sint32 sensor_id = 1;</code>
        */
       public Builder clearSensorId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5127,18 +5126,18 @@ public final class Litix {
   static {
     java.lang.String[] descriptorData = {
       "\n\013litix.proto\"E\n\nSensorData\022\021\n\tsensor_id" +
-      "\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\022\021\n\005value\030\003 \003(\001" +
-      "B\002\020\001\"U\n\013SensorEvent\022\024\n\014sensor_id_fk\030\001 \002(" +
-      "\005\022\021\n\ttimestamp\030\002 \002(\003\022\014\n\004code\030\003 \002(\005\022\017\n\007me" +
-      "ssage\030\004 \002(\t\"]\n\nSensorInfo\022\021\n\tsensor_id\030\001" +
-      " \002(\005\022\016\n\006device\030\002 \001(\t\022\014\n\004type\030\003 \001(\t\022\014\n\004na" +
-      "me\030\004 \002(\t\022\020\n\010channels\030\005 \003(\t\")\n\013SessionMet" +
-      "a\022\013\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\"\223\001\n\nTrackS" +
-      "plit\022\022\n\ntrack_name\030\001 \002(\t\022\034\n\007sensors\030\002 \003(" +
-      "\0132\013.SensorInfo\022\031\n\004data\030\003 \003(\0132\013.SensorDat",
-      "a\022\034\n\006events\030\004 \003(\0132\014.SensorEvent\022\032\n\004meta\030" +
-      "\005 \003(\0132\014.SessionMetaB0\n.eu.fbk.mpba.senso" +
-      "rsflows.plugins.outputs.litix"
+      "\030\001 \002(\021\022\021\n\ttimestamp\030\002 \002(\003\022\021\n\005value\030\003 \003(\001" +
+      "B\002\020\001\"R\n\013SensorEvent\022\021\n\tsensor_id\030\001 \002(\021\022\021" +
+      "\n\ttimestamp\030\002 \002(\003\022\014\n\004code\030\003 \002(\021\022\017\n\007messa" +
+      "ge\030\004 \002(\t\"]\n\nSensorInfo\022\021\n\tsensor_id\030\001 \002(" +
+      "\021\022\016\n\006device\030\002 \001(\t\022\014\n\004type\030\003 \001(\t\022\014\n\004name\030" +
+      "\004 \002(\t\022\020\n\010channels\030\005 \003(\t\")\n\013SessionMeta\022\013" +
+      "\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\t\"\223\001\n\nTrackSpli" +
+      "t\022\022\n\ntrack_name\030\001 \002(\t\022\034\n\007sensors\030\002 \003(\0132\013" +
+      ".SensorInfo\022\031\n\004data\030\003 \003(\0132\013.SensorData\022\034",
+      "\n\006events\030\004 \003(\0132\014.SensorEvent\022\032\n\004meta\030\005 \003" +
+      "(\0132\014.SessionMetaB0\n.eu.fbk.mpba.sensorsf" +
+      "lows.plugins.outputs.litix"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -5163,7 +5162,7 @@ public final class Litix {
     internal_static_SensorEvent_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_SensorEvent_descriptor,
-        new java.lang.String[] { "SensorIdFk", "Timestamp", "Code", "Message", });
+        new java.lang.String[] { "SensorId", "Timestamp", "Code", "Message", });
     internal_static_SensorInfo_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_SensorInfo_fieldAccessorTable = new

@@ -1,20 +1,20 @@
 option java_package = "eu.fbk.mpba.sensorsflows.plugins.outputs.litix";
 
 message SensorData {
-    required int32 sensor_id = 1;
+    required sint32 sensor_id = 1;
     required int64 timestamp = 2;
     repeated double value = 3 [packed=true];
 }
 
 message SensorEvent {
-    required int32 sensor_id_fk = 1;
+    required sint32 sensor_id = 1;
     required int64 timestamp = 2;
-    required int32 code = 3;
+    required sint32 code = 3;
     required string message = 4;
 }
 
 message SensorInfo {
-    required int32 sensor_id = 1;
+    required sint32 sensor_id = 1;
     optional string device = 2;
     optional string type = 3;
     required string name = 4;
@@ -34,4 +34,4 @@ message TrackSplit {
     repeated SessionMeta meta = 5;
 }
 
-# protoc.exe --java_out=SensorsFlows\plugins\src\main\java\ -I SensorsFlows\plugins\src\main\java\eu\fbk\mpba\sensorsflows\plugins\outputs\litix SensorsFlows\plugins\src\main\java\eu\fbk\mpba\sensorsflows\plugins\outputs\litix\litix.proto
+// protoc.exe --java_out=SensorsFlows\plugins\src\main\java\ -I SensorsFlows\plugins\src\main\java\eu\fbk\mpba\sensorsflows\plugins\outputs\litix SensorsFlows\plugins\src\main\java\eu\fbk\mpba\sensorsflows\plugins\outputs\litix\litix.proto

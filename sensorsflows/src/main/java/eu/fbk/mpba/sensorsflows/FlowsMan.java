@@ -547,6 +547,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void close() {
+        changeState(EngineStatus.FINALIZING);
         for (DeviceDecorator d : _userDevices) {
             // only if INITIALIZED: checked in the method
             finalize(d);

@@ -8,7 +8,7 @@ create table if not exists split (
 );
 
 create table if not exists track (
- started_ts INTEGER PRIMARY KEY,
+ started_ts INTEGER check(started_ts > 1443968369) PRIMARY KEY,
  name TEXT,
  status TEXT check(status in ("local", "pending", "commit")) NOT NULL DEFAULT "local",
  progress INTEGER check(progress >= 0 and (progress == 0 or status != "local")) NOT NULL DEFAULT 0,

@@ -114,6 +114,11 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
+    public void close() {
+
+    }
+
+    @Override
     public int getReceivedMessagesCount() {
         return mReceived;
     }

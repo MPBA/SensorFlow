@@ -97,7 +97,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         DQDriver.INSTANCE.setEventListener(this);
         DQUnitManager.INSTANCE.addListener(this);
 
-        setReceivingData(true);
+       // setReceivingData(true);
         if (debug)
             Log.v(debugTAG, "XeeDevice inner construction done");
     }
@@ -114,14 +114,15 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (debug)
             Log.v(debugTAG, "inputPluginInitialize");
 
-        DQUnitManager.INSTANCE.addListener(this);
+        setReceivingData(true);
         active = true;
     }
 
     public void inputPluginFinalize() {
         if (debug)
             Log.v(debugTAG, "inputPluginFinalize");
-        DQUnitManager.INSTANCE.removeListener(this);
+
+        setReceivingData(false);
         active = false;
     }
 
@@ -181,10 +182,17 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     private void disconnect() {
         if (debug)
-            Log.v(debugTAG, "disconnect");
-        // TODO Test
+            Log.v(debugTAG, "disconnecting");
+        // TODO Test, Non replayable
         setReceivingData(false);
-        DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+        try {
+            if (simulation)
+                DQDriver.INSTANCE.disableSource(DQSourceType.SIMULATOR_CAN_TRACE);
+            else
+                DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
+        } catch (StackOverflowError e) {
+            e.printStackTrace();
+        }
         DQUnitManager.INSTANCE.disconnect();
     }
 

@@ -2,6 +2,7 @@ package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
 
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Pair;
 
 import java.net.InetAddress;
@@ -103,6 +104,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public void sensorEvent(Long time, int type, String message) {
+        Log.d("TIME", "e:"+type+" -> " + message);
         if (forward)
             super.sensorEvent(time, type, message);
         else

@@ -39,7 +39,8 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        _handler.sensorStateChanged(this, null, mStatus = state);
+        if (_handler != null)
+            _handler.sensorStateChanged(this, null, mStatus = state);
     }
 
     // Managed Overrides

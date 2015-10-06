@@ -147,6 +147,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+        finalized = false;
         mSensors = streamingSensors;
         mSessionTag = sessionTag;
         mTrackID = getMonoTimeMillis();
@@ -167,26 +168,29 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         stmt.executeInsert();
     }
 
+    private boolean finalized = true;
+
     @Override
     public void outputPluginFinalize() {
         flushTrackSplit();
+        finalized = true;
     }
 
     @Override
     public void newSensorEvent(SensorEventEntry<Long> event) {
         mReceived++;
         mSensorEvent.add(Litix.SensorEvent.newBuilder()
-                .setTimestamp(event.timestamp)
+                        .setTimestamp(event.timestamp)
                         .setCode(event.code)
-                .setMessage(event.message)
-                .setSensorId(mSensors.indexOf(event.sensor)) // FIXME inefficient
-                .build()
+                        .setMessage(event.message)
+                        .setSensorId(mSensors.indexOf(event.sensor)) // FIXME inefficient
+                        .build()
         );
         if (currentBacklogSize() >= mFlushSize)
             flushTrackSplit();
     }
 
-    // TODO Remove timestamp freedom
+    // TODO Remove timestamp freedom degrees
     @Override
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
         mReceived++;
@@ -210,7 +214,14 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void close() {
+        if (!finalized)
+            outputPluginFinalize();
+    }
 
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
     }
 
     @Override

@@ -62,12 +62,7 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void outputPluginFinalize() {
-        if (mSock != null && !mSock.isClosed())
-            try {
-                mSock.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        close();
     }
 
     private List<ISensor> mSensors = null;
@@ -145,8 +140,19 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void close() {
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
 
+    @Override
+    public void close() {
+        if (mSock != null && !mSock.isClosed())
+            try {
+                mSock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 
     @Override

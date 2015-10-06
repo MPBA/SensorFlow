@@ -75,7 +75,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
      *
      *  Ex default constructor
      */
-    private void XeeDevice() {
+    private void XeeDeviceI() {
         if (debug)
             Log.v(debugTAG, "XeeDevice construction");
 
@@ -103,7 +103,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     }
 
     public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
-        XeeDevice();
+        XeeDeviceI();
         setDeviceToConnect(d);
         setEnvironment(e);
         ec = c;

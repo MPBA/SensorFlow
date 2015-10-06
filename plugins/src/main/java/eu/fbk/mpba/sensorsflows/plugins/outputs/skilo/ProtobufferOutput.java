@@ -140,11 +140,15 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     .setMeta("timestamp;code;message")
                     .build());
         }
+        finalized = false;
     }
+
+    private boolean finalized = false;
 
     @Override
     public void outputPluginFinalize() {
         flushTrackSplit(mSensorData, getTrackSplitNameForNow(), true);
+        finalized = true;
     }
 
     @Override
@@ -191,7 +195,14 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void close() {
+        if (!finalized)
+            outputPluginFinalize();
+    }
 
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
     }
 
     @Override

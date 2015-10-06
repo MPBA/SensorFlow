@@ -101,14 +101,7 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void outputPluginFinalize() {
-        if (mSTh != null && mSTh.isAlive())
-            mSTh.interrupt();
-        if (mSock != null && !mSock.isClosed())
-            try {
-                mSock.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        close();
     }
 
     @Override
@@ -160,8 +153,21 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void close() {
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
 
+    @Override
+    public void close() {
+        if (mSTh != null && mSTh.isAlive())
+            mSTh.interrupt();
+        if (mSock != null && !mSock.isClosed())
+            try {
+                mSock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
     }
 
     @Override

@@ -30,6 +30,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     CsvDataSaver _savEvents;
     List<ISensor> _linkedSensors = new ArrayList<>();
     Callback call;
+    private List<String> files;
 
     public interface Callback {
         void finalization(CsvOutput sender);
@@ -50,10 +51,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     public List<String> getFiles() {
-        List<String> a = new ArrayList<>();
-        for (File f : _savEvents.getSupports())
-            a.add(f.getAbsolutePath());
-        return a;
+        return files;
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
@@ -79,13 +77,14 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         }
         _savData.init(dataH);
         _savEvents.init(evtH);
+
+        files = new ArrayList<>(_savEvents.getSupports().size());
+        for (File f : _savEvents.getSupports())
+            files.add(f.getAbsolutePath());
     }
 
     public void outputPluginFinalize() {
-        _savData.close();
-        _savEvents.close();
-        if (call != null)
-            call.finalization(this);
+        close();
     }
 
     public void newSensorEvent(SensorEventEntry event) {
@@ -114,8 +113,25 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void close() {
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
 
+    @Override
+    public void close() {
+        if (call != null) {
+            call.finalization(this); // once!!
+            call = null;
+        }
+        if (_savData != null) {
+            _savData.close();
+            _savData = null;
+        }
+        if (_savEvents != null) {
+            _savEvents.close();
+            _savEvents = null;
+        }
     }
 
     @Override

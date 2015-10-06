@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
@@ -31,7 +32,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     public List<String> getFiles() {
-        return Arrays.asList(_sav.getPath());
+        return Collections.singletonList(_sav.getPath());
     }
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
@@ -59,7 +60,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     public void outputPluginFinalize() {
-        _sav.close();
+        close();
     }
 
     public void newSensorEvent(SensorEventEntry<Long> event) {
@@ -100,8 +101,15 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void close() {
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
 
+    @Override
+    public void close() {
+        if (_sav != null)
+            _sav.close();
     }
 
     @Override

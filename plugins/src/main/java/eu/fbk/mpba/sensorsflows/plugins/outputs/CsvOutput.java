@@ -120,11 +120,11 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void close() {
-        if (call != null) {
-            call.finalization(this); // once!!
-            call = null;
-        }
         if (_savData != null) {
+            if (call != null) {
+                call.finalization(this); // once!!
+                call = null;
+            }
             _savData.close();
             _savData = null;
         }

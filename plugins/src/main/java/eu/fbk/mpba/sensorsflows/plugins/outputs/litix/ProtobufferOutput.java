@@ -39,6 +39,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final static String s = "insert into split (first_ts, track_id, data) values(?, ?, ?)";
     }
 
+    private final SplitterParams mSplitter;
     protected final File mMainFolder;
     protected SQLiteDatabase buffer;
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
@@ -46,28 +47,52 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected List<Litix.SensorData> mSensorData = new ArrayList<>();
     protected List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
     protected List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
-    protected long mTrackID = 0;
     protected Object mSessionTag = "undefined";
+    protected long mTrackID = 0;
     protected int splits = 0;
+    protected int sampleSize = (Long.SIZE + 2 * Double.SIZE) / 8;
 
-    // Estimated manual initial parameters
-    private float flushTime = 5; // sec
-    private float flushMinUplink = 70 * 1024; // B/sec
-    private float flushSizeCompressed = flushMinUplink * flushTime; // bytes
-    private float sampleSize = (Long.SIZE + Double.SIZE * 2) / 8.0f;
-    private float compressionRatio = 0.22f;
+    public static class SplitterParams {
+        private final float targetCompressedSize;
+        private final float maxSplitTime;
+        private final float ratioBalancer = .7f;
+        private final float adjustBalancer = .4f;
+        private float compressionRatio = -1;
+        private float adjust = 1;
 
-    private float mFlushSize = flushSizeCompressed / compressionRatio / sampleSize;
+        public SplitterParams(float targetCompressedSize, float maxSplitTime, float initialCompressionRatio) {
+            this.targetCompressedSize = targetCompressedSize;
+            this.maxSplitTime = maxSplitTime;
+            compressionRatio = initialCompressionRatio;
+        }
+
+        public void updateCompressionRatio(float ratio) {
+            compressionRatio = compressionRatio * (1.f-ratioBalancer) + ratio * ratioBalancer;
+        }
+
+        public void updateCompressedSize(float bytes) {
+            adjust = adjust * (1-adjustBalancer) + adjustBalancer * targetCompressedSize / bytes;
+        }
+
+        public float getFlushSize() {
+            return targetCompressedSize / compressionRatio * adjust;
+        }
+
+        @Override
+        public String toString() {
+            return "maxSplitTime:"+maxSplitTime+"\ttargetCompressedSize:"+targetCompressedSize+"\t\n" +
+                    "ratio="+compressionRatio+"\tflushSize="+getFlushSize() + "\tadjust="+adjust;
+        }
+    }
 
     private String mName;
     private int mReceived = 0;
     private int mForwarded = 0;
 
-    public ProtobufferOutput(String name, File dir) {
-        Log.v("ProroOut", "ProtoLitixSplit initial parameters:\nflushTime:          "+flushTime+"\nflushMinUplink:     "+flushMinUplink+"\nflushSizeCompressed="+flushSizeCompressed+"\nsampleSize:         "+sampleSize+"\ncompressionRatio:   "+compressionRatio+"\nflushSamples=       "+mFlushSize);
-
+    public ProtobufferOutput(String name, File dir, SplitterParams params) {
         mName = name;
         mMainFolder = new File(dir, getName());
+        mSplitter = params;
 
         //noinspection ResultOfMethodCallIgnored
         mMainFolder.mkdirs();
@@ -107,7 +132,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                 debugTime += System.nanoTime();
                 Log.d("ProtoOut", "Async compressing " + debugPreSize + " (computed in " + debugTime/1000_000.0 + "ms)");
 
-                ByteArrayOutputStream b = new ByteArrayOutputStream((int)(mFlushSize * Long.SIZE / 8));
+                ByteArrayOutputStream b = new ByteArrayOutputStream((int)(mSplitter.getFlushSize() / sampleSize));
                 try {
                     debugTime = -System.nanoTime();
                     GZIPOutputStream zos = new GZIPOutputStream(b);
@@ -117,6 +142,11 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     debugTime += System.nanoTime();
 
                     Log.d("ProtoOut", "Async compressed " + ba.length + " (ratio " + (100.0 * ba.length / debugPreSize) + "%) in " + debugTime/1000_000.0 + "ms");
+
+                    Log.v("ProtoOut", mSplitter.toString());
+
+                    mSplitter.updateCompressedSize(ba.length);
+                    mSplitter.updateCompressionRatio(ba.length / debugPreSize);
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
@@ -186,7 +216,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                         .setSensorId(mSensors.indexOf(event.sensor)) // FIXME inefficient
                         .build()
         );
-        if (currentBacklogSize() >= mFlushSize)
+        if (currentBacklogSize() >= mSplitter.getFlushSize() / sampleSize)
             flushTrackSplit();
     }
 
@@ -203,7 +233,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                 .setSensorId(mSensors.indexOf(data.sensor)) // FIXME inefficient
                 .build()
         );
-        if (currentBacklogSize() >= mFlushSize)
+        if (currentBacklogSize() >= mSplitter.getFlushSize() / sampleSize)
             flushTrackSplit();
     }
 

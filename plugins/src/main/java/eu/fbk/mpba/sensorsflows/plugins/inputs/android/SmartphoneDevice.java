@@ -33,6 +33,17 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTime
         _textSensor.addText(text);
     }
 
+    public void setTimeServerEnabled(boolean enabled) {
+        if (enabled)
+            _timeOffsetSensor.startTimeServer();
+        else
+            _timeOffsetSensor.stopTimeServer();
+    }
+
+    public boolean isTimeServerEnabled() {
+        return _timeOffsetSensor.isTimeServerRunning();
+    }
+
     public void computeOffsetBroadcastedAsync(int passes, LanUdpTimeClient.TimeOffsetCallback cb) {
         _timeOffsetSensor.computeOnEveryServer(passes, cb);
     }
@@ -85,6 +96,10 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTime
     @Override
     public String getName() {
         return name;
+    }
+
+    public void clearTimeOffsets() {
+        _timeOffsetSensor.clear();
     }
 }
 

@@ -155,6 +155,7 @@ public class LanUdpTimeServer {
     }
 
     public void StopListening() {
+        Log.d("TIME", "Stopping server");
         close();
     }
 

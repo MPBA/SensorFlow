@@ -23,10 +23,10 @@ public class LanUdpTimeClient {
     final static byte REQ_TIME = 38;
     final static byte RES_TIME = 39;
 
-    final static long bootTime = System.currentTimeMillis() * 1_000_000 - System.nanoTime();
+    final static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
 
     protected static long getMonoTime() {
-        return System.nanoTime() + bootTime;
+        return (System.nanoTime() + bootTime);
     }
 
     public interface TimeOffsetCallback {
@@ -153,7 +153,6 @@ public class LanUdpTimeClient {
                 send(s, 0);
                 Thread.sleep(10);
             }
-            receiver.interrupt();
 
         } catch (SocketException e) {
             Log.d("ALE TIME", "S SocketException");
@@ -170,11 +169,12 @@ public class LanUdpTimeClient {
         } finally {
             if (s != null)
                 s.close();
+            receiver.interrupt();
         }
     }
 
     protected static OffsetInfo computeOffsetReceiver(InetAddress host, int passes) {
-        Log.v("ALE TIME", "computeOffsetReceiver");
+        Log.v("ALE TIME", "computeOffsetReceiver " + host);
         double[] res = new double[passes];
         DatagramSocket s = null;
         int times = 0;
@@ -182,14 +182,14 @@ public class LanUdpTimeClient {
         try {
             s = new DatagramSocket(DEF_UDP_PORT);
             s.connect(host, DEF_UDP_PORT);
-            s.setSoTimeout(500);
+            s.setSoTimeout(1000);
 
-            while (times < passes && !Thread.interrupted()) {
+            while (times < passes && !Thread.currentThread().isInterrupted()) {
                 long[] v = receive(s);
                 if (v != null) {
                     mean += res[times] = (v[2] - v[0] - v[1]) / 2.0 / 1000.0;
-                    Log.v("ALE TIMEX", "time " + times + ": " + res[times] + " tmp_mean " + times + ": " + mean);
                     times++;
+                    Log.v("ALE TIMEX", "time " + times + ": " + res[times-1] + " tmp_mean " + times + ": " + mean/1000000/times);
                 }
             }
 
@@ -211,9 +211,8 @@ public class LanUdpTimeClient {
         }
 
         double stdev = 0;
-        if (times > 0) {
+        if (times > 1) {
             mean /= times;
-
             for (int i = 0; i < times; i++) {
                 stdev += Math.pow(res[i] - mean, 2);
             }
@@ -222,7 +221,7 @@ public class LanUdpTimeClient {
         }
         else
             stdev = Double.POSITIVE_INFINITY;
-        return new OffsetInfo(mean, stdev, times);
+        return new OffsetInfo(mean / 1_000_000, stdev / 1_000_000, times);
     }
 
     protected static long send(DatagramSocket s, long sec) throws InterruptedException, IOException {
@@ -237,10 +236,10 @@ public class LanUdpTimeClient {
         DatagramPacket p = new DatagramPacket(new byte[TimePacket.SIZE], TimePacket.SIZE);
         long c;
         try {
-            Log.d("ALE TIME", "receivin V");
+            Log.v("ALE TIME", "receivin V");
             s.receive(p);
-            Log.d("ALE TIME", "received V");
             c = getMonoTime();
+            Log.v("ALE TIME", "received ^");
             byte[] d = p.getData();
             TimePacket y = new TimePacket(d);
             if (y.first != RES_TIME)

@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
@@ -83,18 +84,23 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
                 else
                     for (Pair<InetAddress, String> i : servers) {
                         sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
-                                2, "Computing: " + passes + " passes on " + i.first + "//" + i.second);
-
+                                2, "Computing: " + passes + " passes on " + i.first + " " + i.second);
+                        final Semaphore c = new Semaphore(0);
                         LanUdpTimeClient.computeOffsetAsync(new LanUdpTimeClient.TimeOffsetCallback() {
                                 @Override
                                 public void end(boolean error, InetAddress server, String serverName, LanUdpTimeClient.OffsetInfo offset) {
                                     sensorEvent(((SmartphoneDevice)getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
                                             error ? 4 : 3, server + ";" + serverName.replace("\\", "\\\\").replace(";", "\\,") + ";" + offset.average + ";" + offset.stDev + ";" + offset.passes);
-
+                                    c.release();
                                     if (cb != null)
                                         cb.end(error, server, serverName, offset);
                                 }
                             }, i.first, i.second, passes);
+                        try {
+                            c.acquire();
+                        } catch (InterruptedException e) {
+                            break;
+                        }
                     }
             }
         });

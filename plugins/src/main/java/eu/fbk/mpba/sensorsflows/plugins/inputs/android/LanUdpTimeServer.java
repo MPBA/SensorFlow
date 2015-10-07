@@ -51,7 +51,7 @@ public class LanUdpTimeServer {
     }
 
     protected long getMonoTime() {
-        return System.nanoTime() + _bootTime;
+        return (System.nanoTime() + _bootTime);
     }
 
     // 0 1 2 3 4  5 6 7 8
@@ -76,38 +76,31 @@ public class LanUdpTimeServer {
         byte[] b;
         // loop till stop
         while (!Thread.interrupted()) {
-            DatagramPacket p = new DatagramPacket(b = new byte[9], 9);
             try {
-                Log.v(T, "receiving");
+                DatagramPacket p = new DatagramPacket(b = new byte[9], 9);
                 r.receive(p);
                 t2 = getMonoTime();
-            } catch (IOException e) {
-                e.printStackTrace();
-                t2 = 0;
-            }
-            if (t2 > 0) {
                 if (b[0] == _reqTime) {
                     OnEventHappened(_reqTime, p.getAddress().toString());
                     long t1 = ByteBuffer.wrap(b).getLong(1);
-                    ByteBuffer x = ByteBuffer.wrap(b = new byte[17]);
+                    ByteBuffer x = ByteBuffer.wrap(new byte[17]);
                     x.put(_resTime);
                     x.putLong(t2 - t1);
 
-                    DatagramSocket so = null;
+                    //DatagramSocket so;
                     try {
-                        so = new DatagramSocket();
-                        so.connect(p.getAddress(), timePort);
-
                         DatagramPacket pp = new DatagramPacket(x.array(), 17);
-                        pp.setAddress(p.getAddress());
-                        pp.setPort(timePort);
+
+                        InetSocketAddress s = new InetSocketAddress(p.getAddress(), timePort);
+                        //so = new DatagramSocket();
+                        r.connect(s);
 
                         long t3 = getMonoTime();
                         x.putLong(t3);
 
-                        Log.v(T, "sending to " + p.getAddress() + ":" + so.getInetAddress() + ":" + so.getPort());
-                        so.send(pp);
-                        Log.v(T, "sent resTime" + (t2 - t1) + " " + t3);
+                        Log.v(T, "sending to " + r.getInetAddress() + ":" + r.getLocalPort() + ":" + r.getPort());
+                        r.send(pp);
+                        Log.v(T, "sent resTime " + (t2 - t1) + " " + t3);
 
                     } catch (SocketException e) {
                         Log.d("ALE TIME", "S SocketException");
@@ -120,8 +113,8 @@ public class LanUdpTimeServer {
                         Log.d("ALE TIME", "S IOException");
                         e.printStackTrace();
                     } finally {
-                        if (so != null)
-                            so.close();
+                        //if (so != null)
+                        //    so.close();
                         _pings++;
                     }
                 } else if (b[0] == _reqName) {
@@ -152,8 +145,17 @@ public class LanUdpTimeServer {
                 } else {
                     OnEventHappened(4, "Problem: received a " + b[0] + " there may be an other network application that works on the same channel.");
                 }
+            } catch (SocketException e) {
+                if (!e.getMessage().equals("Socket closed"))
+                    e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+    }
+
+    public void StopListening() {
+        close();
     }
 
     private class C {

@@ -13,6 +13,7 @@ import java.nio.charset.Charset;
 
 public class LanUdpTimeServer {
     public static final int timePort = 12865;
+    public static final int timeAnsPort = 12868;
     public static final int namePort = 12866;
     public static final int nameAnsPort = 12867;
 
@@ -87,19 +88,19 @@ public class LanUdpTimeServer {
                     x.put(_resTime);
                     x.putLong(t2 - t1);
 
-                    //DatagramSocket so;
+                    DatagramSocket so = null;
                     try {
                         DatagramPacket pp = new DatagramPacket(x.array(), 17);
 
-                        InetSocketAddress s = new InetSocketAddress(p.getAddress(), timePort);
-                        //so = new DatagramSocket();
-                        r.connect(s);
+                        InetSocketAddress s = new InetSocketAddress(p.getAddress(), timeAnsPort);
+                        so = new DatagramSocket();
+                        so.connect(s);
 
                         long t3 = getMonoTime();
                         x.putLong(t3);
 
-                        Log.v(T, "sending to " + r.getInetAddress() + ":" + r.getLocalPort() + ":" + r.getPort());
-                        r.send(pp);
+                        Log.v(T, "sending to " + so.getInetAddress() + ":" + so.getLocalPort() + ":" + so.getPort());
+                        so.send(pp);
                         Log.v(T, "sent resTime " + (t2 - t1) + " " + t3);
 
                     } catch (SocketException e) {
@@ -113,8 +114,8 @@ public class LanUdpTimeServer {
                         Log.d("ALE TIME", "S IOException");
                         e.printStackTrace();
                     } finally {
-                        //if (so != null)
-                        //    so.close();
+                        if (so != null)
+                            so.close();
                         _pings++;
                     }
                 } else if (b[0] == _reqName) {

@@ -16,7 +16,8 @@ import java.util.List;
 
 public class LanUdpTimeClient {
 
-    final static short DEF_UDP_PORT = 12865;
+    final static short timePort = 12865;
+    final static int timeAnsPort = 12868;
     final static short NAME_UDP_PORT = 12866;
     final static short NAME_ANS_UDP_PORT = 12867;
     final static byte REQ_NAME = 36;
@@ -147,7 +148,7 @@ public class LanUdpTimeClient {
         DatagramSocket s = null;
         try {
             s = new DatagramSocket();
-            s.connect(host, DEF_UDP_PORT);
+            s.connect(host, timePort);
 
             for (int i = 0; i < passes; i++) {
                 send(s, 0);
@@ -180,8 +181,8 @@ public class LanUdpTimeClient {
         int times = 0;
         double mean = 0;
         try {
-            s = new DatagramSocket(DEF_UDP_PORT);
-            s.connect(host, DEF_UDP_PORT);
+            s = new DatagramSocket(timeAnsPort);
+            s.connect(host, timeAnsPort);
             s.setSoTimeout(1000);
 
             while (times < passes && !Thread.currentThread().isInterrupted()) {

@@ -55,9 +55,9 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     public static class SplitterParams {
         private final float targetCompressedSize;
         private final float maxSplitTime;
-        private final float ratioBalancer = .7f;
-        private final float adjustBalancer = .4f;
-        private float compressionRatio = -1;
+        private final float ratioBalance = .35f;
+        private final float adjustBalance = .4f;
+        private float compressionRatio;
         private float adjust = 1;
 
         public SplitterParams(float targetCompressedSize, float maxSplitTime, float initialCompressionRatio) {
@@ -67,15 +67,17 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }
 
         public void updateCompressionRatio(float ratio) {
-            compressionRatio = compressionRatio * (1.f-ratioBalancer) + ratio * ratioBalancer;
+            Log.d("ProtoOut", "Updating CR: " + ratio);
+            compressionRatio = compressionRatio * (1 - ratioBalance) + ratio * ratioBalance;
         }
 
         public void updateCompressedSize(float bytes) {
-            adjust = adjust * (1-adjustBalancer) + adjustBalancer * targetCompressedSize / bytes;
+            Log.d("ProtoOut", "Updating CS: " + bytes);
+            adjust *= (float)Math.pow(targetCompressedSize / bytes, adjustBalance);
         }
 
         public float getFlushSize() {
-            return targetCompressedSize / compressionRatio * adjust;
+            return targetCompressedSize * adjust / compressionRatio;
         }
 
         @Override
@@ -146,7 +148,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     Log.v("ProtoOut", mSplitter.toString());
 
                     mSplitter.updateCompressedSize(ba.length);
-                    mSplitter.updateCompressionRatio(ba.length / debugPreSize);
+                    mSplitter.updateCompressionRatio((float)ba.length / debugPreSize);
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();

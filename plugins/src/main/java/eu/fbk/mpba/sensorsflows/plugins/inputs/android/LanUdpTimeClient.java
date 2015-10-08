@@ -17,7 +17,7 @@ import java.util.List;
 public class LanUdpTimeClient {
 
     final static short timePort = 12865;
-    final static int timeAnsPort = 12868;
+    final static int timeAnsPort = timePort;
     final static short NAME_UDP_PORT = 12866;
     final static short NAME_ANS_UDP_PORT = 12867;
     final static byte REQ_NAME = 36;

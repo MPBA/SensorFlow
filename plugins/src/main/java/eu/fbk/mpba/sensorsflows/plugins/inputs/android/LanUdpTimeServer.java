@@ -13,7 +13,7 @@ import java.nio.charset.Charset;
 
 public class LanUdpTimeServer {
     public static final int timePort = 12865;
-    public static final int timeAnsPort = 12868;
+    public static final int timeAnsPort = timePort;
     public static final int namePort = 12866;
     public static final int nameAnsPort = 12867;
 

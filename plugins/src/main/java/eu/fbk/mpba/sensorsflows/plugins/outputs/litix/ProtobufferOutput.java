@@ -190,6 +190,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     .setName(mSensors.get(s).getName());
             for (Object x : mSensors.get(s).getValueDescriptor())
                 db.addChannels(x.toString());
+            mSensorInfo.add(db.build());
         }
 
         SQLiteStatement stmt = buffer.compileStatement(Queries.t);

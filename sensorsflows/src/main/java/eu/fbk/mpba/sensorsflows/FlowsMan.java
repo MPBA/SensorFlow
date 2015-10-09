@@ -143,8 +143,11 @@ public class FlowsMan<TimeT, ValueT> implements
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
 
-    protected List<DeviceDecorator<TimeT, ValueT>> _userDevices = new ArrayList<>();
-    protected List<OutputDecorator<TimeT, ValueT>> _userOutputs = new ArrayList<>();
+    protected List<DeviceDecorator<TimeT, ValueT>> _decDevices = new ArrayList<>();
+    protected List<OutputDecorator<TimeT, ValueT>> _decOutputs = new ArrayList<>();
+
+    protected List<DevicePlugin<TimeT, ValueT>> _userDevices = new ArrayList<>();
+    protected List<OutputPlugin<TimeT, ValueT>> _userOutputs = new ArrayList<>();
 
     protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null
@@ -175,9 +178,12 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addDevice(DevicePlugin<TimeT, ValueT> device) {
         if (_status == EngineStatus.STANDBY) {
-            for (SensorComponent<TimeT, ValueT> s : device.getSensors())
-                s.setManager(this);
-            _userDevices.add(new DeviceDecorator<>(device, this));
+            if (!_userDevices.contains(device)) {
+                _userDevices.add(device);
+                for (SensorComponent<TimeT, ValueT> s : device.getSensors())
+                    s.setManager(this);
+                _decDevices.add(new DeviceDecorator<>(device, this));
+            }
         }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -193,7 +199,7 @@ public class FlowsMan<TimeT, ValueT> implements
     public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPlugin<TimeT, ValueT> toOutput) {
         // TODO N1 Remember enabling/disabling each link
         // Manual indexOf for performance
-        for (OutputDecorator<TimeT, ValueT> outMan : _userOutputs)
+        for (OutputDecorator<TimeT, ValueT> outMan : _decOutputs)
             if (toOutput == outMan.getPlugIn()) { // for reference, safe
                 addLink(fromSensor, outMan);
                 break;
@@ -222,7 +228,10 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addOutput(OutputPlugin<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY) {
-            _userOutputs.add(new OutputDecorator<>(output, this));
+            if (!_userOutputs.contains(output)){
+                _userOutputs.add(output);
+                _decOutputs.add(new OutputDecorator<>(output, this));
+            }
         }
         else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -240,7 +249,7 @@ public class FlowsMan<TimeT, ValueT> implements
         return new Iterable<DevicePlugin<TimeT, ValueT>>() {
             @Override
             public Iterator<DevicePlugin<TimeT, ValueT>> iterator() {
-                final Iterator<DeviceDecorator<TimeT, ValueT>> i = _userDevices.iterator();
+                final Iterator<DeviceDecorator<TimeT, ValueT>> i = _decDevices.iterator();
                 return new Iterator<DevicePlugin<TimeT, ValueT>>() {
 
                     @Override
@@ -272,7 +281,7 @@ public class FlowsMan<TimeT, ValueT> implements
         return new Iterable<OutputPlugin<TimeT, ValueT>>() {
             @Override
             public Iterator<OutputPlugin<TimeT, ValueT>> iterator() {
-                final Iterator<OutputDecorator<TimeT, ValueT>> i = _userOutputs.iterator();
+                final Iterator<OutputDecorator<TimeT, ValueT>> i = _decOutputs.iterator();
                 return new Iterator<OutputPlugin<TimeT, ValueT>>() {
 
                     @Override
@@ -305,7 +314,7 @@ public class FlowsMan<TimeT, ValueT> implements
     void initialize(DeviceDecorator device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
-        if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
             device.initializeDevice();
         } else {
 //            Log.w(LOG_TAG, "IDevice not NOT_INITIALIZED: " + device.toString());
@@ -320,7 +329,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void initialize(OutputDecorator<TimeT, ValueT> output, String sessionName) {
         //noinspection StatementWithEmptyBody
-        if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
             output.initializeOutput(sessionName);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
@@ -336,7 +345,7 @@ public class FlowsMan<TimeT, ValueT> implements
     void finalize(DeviceDecorator device) {
         // The connection state is not checked
         //noinspection StatementWithEmptyBody
-        if (/*_userDevices.contains(device) &&  */device.getState() == DeviceStatus.INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getState() == DeviceStatus.INITIALIZED) {
             device.finalizeDevice();
         } else {
 //            Log.w(LOG_TAG, "IDevice not INITIALIZED: " + device.toString());
@@ -351,7 +360,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void finalize(IOutput<TimeT, ValueT> output) {
         //noinspection StatementWithEmptyBody
-        if (/*_userOutputs.contains(output) &&  */output.getState() == OutputStatus.INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getState() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
         } else {
 //            Log.w(LOG_TAG, "IOutput not INITIALIZED: " + output.toString());
@@ -371,7 +380,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOn(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevicePlugIn())) {
+        /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
             */sensor.switchOnAsync();/*
         } else {
@@ -390,7 +399,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void switchOff(SensorComponent<TimeT, ValueT> sensor) {
         // Note the difference with the set streaming
-        /*if (mStatus == EngineStatus.STREAMING && _userDevices.contains(sensor.getParentDevice())) {
+        /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
             */sensor.switchOffAsync();/*
         } else {
@@ -411,7 +420,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Deprecated
     @Override
     public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
-        /*if (_userDevices.contains(sensor.getParentDevice()))
+        /*if (_decDevices.contains(sensor.getParentDevice()))
             */sensor.setListened(streaming);/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
@@ -428,7 +437,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Deprecated
     @Override
     public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
-        /*if (_userDevices.contains(sensor.getParentDevice()))
+        /*if (_decDevices.contains(sensor.getParentDevice()))
             */return sensor.isListened();/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
@@ -474,28 +483,28 @@ public class FlowsMan<TimeT, ValueT> implements
             switch (_linkMode) {
                 case PRODUCT:
                     // SENSORS x OUTPUTS
-                    for (DeviceDecorator<TimeT, ValueT> d : _userDevices)
+                    for (DeviceDecorator<TimeT, ValueT> d : _decDevices)
                         for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
-                            for (OutputDecorator<TimeT, ValueT> o : _userOutputs)    // LINK TO EACH OUTPUT
+                            for (OutputDecorator<TimeT, ValueT> o : _decOutputs)    // LINK TO EACH OUTPUT
                                 addLink(s, o);
                     break;
                 case NTH_TO_NTH:
                     // max SENSORS, OUTPUTS
-                    int maxi = Math.max(_userDevices.size(), _userOutputs.size());
+                    int maxi = Math.max(_decDevices.size(), _decOutputs.size());
                     for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-                        for (SensorComponent<TimeT, ValueT> s : _userDevices.get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
-                            addLink(s, _userOutputs.get(i % _userOutputs.size()));
+                        for (SensorComponent<TimeT, ValueT> s : _decDevices.get(i % _decDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+                            addLink(s, _decOutputs.get(i % _decOutputs.size()));
                     break;
             }
             changeState(EngineStatus.PREPARING);
-            _devicesToInit.addAll(_userDevices);
+            _devicesToInit.addAll(_decDevices);
             // Launches the initializations
-            for (DeviceDecorator d : _userDevices) {
+            for (DeviceDecorator d : _decDevices) {
                 // only if NOT_INITIALIZED: checked in the initializeDevice method
                 initialize(d);
             }
-            _outputsToInit.addAll(_userOutputs);
-            for (OutputDecorator<TimeT, ValueT> o : _userOutputs) {
+            _outputsToInit.addAll(_decOutputs);
+            for (OutputDecorator<TimeT, ValueT> o : _decOutputs) {
                 // only if NOT_INITIALIZED: checked in the initializeDevice method
                 initialize(o, sessionName);
             }
@@ -548,11 +557,11 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void close() {
         changeState(EngineStatus.FINALIZING);
-        for (DeviceDecorator d : _userDevices) {
+        for (DeviceDecorator d : _decDevices) {
             // only if INITIALIZED: checked in the method
             finalize(d);
         }
-        for (IOutput<TimeT, ValueT> o : _userOutputs) {
+        for (IOutput<TimeT, ValueT> o : _decOutputs) {
             // only if INITIALIZED: checked in the method
             finalize(o);
         }

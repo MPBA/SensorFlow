@@ -25,6 +25,7 @@ public class LanUdpTimeClient {
     final static byte RES_TIME = 39;
 
     final static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+    private static boolean enetunreach = false;
 
     protected static long getMonoTime() {
         return (System.nanoTime() + bootTime);
@@ -35,7 +36,7 @@ public class LanUdpTimeClient {
     }
 
     public interface ServersCallback {
-        void end(List<Pair<InetAddress, String>> servers);
+        void end(List<Pair<InetAddress, String>> servers, boolean networkUnreachable);
     }
 
     public static void searchForServersAsync(final ServersCallback end) {
@@ -45,7 +46,8 @@ public class LanUdpTimeClient {
                     public void run() {
                         // receiver
                         List<Pair<InetAddress, String>> o = receiveServers();
-                        end.end(o);
+                        end.end(o, enetunreach);
+                        enetunreach = false;
                     }
                 });
         t.start();
@@ -129,6 +131,8 @@ public class LanUdpTimeClient {
             s.setBroadcast(true);
             s.send(new DatagramPacket(new TimePacket(REQ_NAME, 0, 0).bytes(), TimePacket.SIZE));
         } catch (SocketException e) {
+            if (e.getMessage().contains("ENETUNREACH"))
+                enetunreach = true;
             Log.d("ALE TIME", "S SocketException");
             e.printStackTrace();
         } catch (UnknownHostException e) {

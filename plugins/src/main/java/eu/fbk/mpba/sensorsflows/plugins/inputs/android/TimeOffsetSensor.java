@@ -62,7 +62,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
         LanUdpTimeClient.searchForServersAsync(new LanUdpTimeClient.ServersCallback() {
             @Override
-            public void end(List<Pair<InetAddress, String>> servers) {
+            public void end(List<Pair<InetAddress, String>> servers, boolean networkUnreachable) {
 
                 StringBuilder x = new StringBuilder(60);
                 x.append(", [");
@@ -79,7 +79,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
                 if (servers.size() == 0) {
                     if (cb != null)
-                        cb.end(true, null, "SERVER NOT FOUND", null);
+                        cb.end(true, null, networkUnreachable ? "No connection" : "SERVER NOT FOUND", null);
                 } else
                     for (Pair<InetAddress, String> i : servers) {
                         sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),

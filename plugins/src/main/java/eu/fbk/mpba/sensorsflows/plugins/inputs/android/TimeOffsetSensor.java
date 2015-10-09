@@ -7,7 +7,7 @@ import android.util.Pair;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -40,11 +40,7 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public List<Object> getValueDescriptor() {
-        return Arrays.asList((Object)
-                        "Longitude",
-                "Latitude",
-                "Altitude",
-                "Accuracy");
+        return Collections.emptyList();
     }
 
     @Override

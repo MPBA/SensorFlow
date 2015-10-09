@@ -19,28 +19,33 @@ import eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
+    private long mSessionID;
+    private long mTrackID;
+
     private class Queries {
         final static String i1 =
                 "create table if not exists split (\n" +
                         " first_ts INTEGER PRIMARY KEY,\n" +
-                        " track_id INTEGER,\n" +
+                        " start_ts INTEGER,\n" +
                         " data BLOB NOT NULL,\n" +
-                        " foreign key (track_id) references track(started_ts)\n" +
+                        " foreign key (start_ts) references track(start_ts)\n" +
                         ");";
         final static String i2 =
                 "create table if not exists track (\n" +
-                        " started_ts INTEGER check(started_ts > 1443968369) PRIMARY KEY,\n" +
+                        " start_ts INTEGER check(start_ts > 1444430000) PRIMARY KEY,\n" +
+                        " session_id INTEGER\n" +
+                        " track_id INTEGER\n" +
                         " name TEXT,\n" +
-                        " status TEXT check(status in (\"local\", \"pending\", \"commit\")) NOT NULL DEFAULT \"local\",\n" +
+                        " status TEXT check(status in (\"local\", \"pending\", \"committed\")) NOT NULL DEFAULT \"local\",\n" +
                         " progress INTEGER check(progress >= 0 and (progress == 0 or status != \"local\")) NOT NULL DEFAULT 0,\n" +
-                        " committed_ts INTEGER check(committed_ts > started_ts or status != \"committed\") NOT NULL DEFAULT 0\n" +
+                        " committed_ts INTEGER check(committed_ts > start_ts or status != \"committed\") NOT NULL DEFAULT 0\n" +
                         ");";
-        final static String t = "insert into track (started_ts, name) values(?, ?)";
-        final static String s = "insert into split (first_ts, track_id, data) values(?, ?, ?)";
+        final static String t = "insert into track (start_ts, session_id, track_id, name) values(?, ?, ?, ?)";
+        final static String s = "insert into split (first_ts, start_ts, data) values(?, ?, ?)";
     }
 
     private final SplitterParams mSplitter;
-    protected final File mMainFolder;
+    protected final File mDatabaseFile = null;
     protected SQLiteDatabase buffer;
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
     protected List<ISensor> mSensors = new ArrayList<>();
@@ -48,7 +53,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
     protected List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
     protected Object mSessionTag = "undefined";
-    protected long mTrackID = 0;
+    protected long mTrackStart = 0;
     protected int splits = 0;
     protected int sampleSize = (Long.SIZE + 2 * Double.SIZE) / 8;
 
@@ -91,20 +96,29 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private int mReceived = 0;
     private int mForwarded = 0;
 
-    public ProtobufferOutput(String name, File dir, SplitterParams params) {
+    public ProtobufferOutput(String name, SQLiteDatabase database, SplitterParams params) {
         mName = name;
-        mMainFolder = new File(dir, getName());
+        buffer = database;
         mSplitter = params;
 
         //noinspection ResultOfMethodCallIgnored
-        mMainFolder.mkdirs();
-        buffer = SQLiteDatabase.openOrCreateDatabase(new File(mMainFolder, "__buffers.db"), null);
+//        mDatabaseFile.mkdirs();
+//        buffer = SQLiteDatabase.openOrCreateDatabase(mDatabaseFile, null);
         buffer.execSQL(Queries.i1);
         buffer.execSQL(Queries.i2);
     }
 
     public long currentBacklogSize() {
         return mSensorData.size() + mSensorEvent.size() + mSessionMeta.size();
+    }
+
+    public void setLitixID(long session, long track) {
+        if (finalized) {
+            mTrackID = track;
+            mSessionID = session;
+        }
+        else
+            throw new NullPointerException("ProtobufferOutput already initialized.");
     }
 
     public void flushTrackSplit() {
@@ -153,7 +167,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
                     s.bindLong(1, split_id);
-                    s.bindLong(2, mTrackID);
+                    s.bindLong(2, mTrackStart);
                     s.bindBlob(3, ba);
                     s.executeInsert();
 
@@ -182,7 +196,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         finalized = false;
         mSensors = streamingSensors;
         mSessionTag = sessionTag;
-        mTrackID = getMonoTimeMillis();
+        mTrackStart = getMonoTimeMillis();
 
         for (int s = 0; s < mSensors.size(); s++) {
             SensorInfo.Builder db = SensorInfo.newBuilder()
@@ -196,8 +210,10 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }
 
         SQLiteStatement stmt = buffer.compileStatement(Queries.t);
-        stmt.bindLong(1, mTrackID);
-        stmt.bindString(2, mSessionTag.toString());
+        stmt.bindLong(1, mTrackStart);
+        stmt.bindLong(2, mSessionID);
+        stmt.bindLong(3, mTrackID);
+        stmt.bindString(4, mSessionTag.toString());
         stmt.executeInsert();
     }
 

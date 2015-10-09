@@ -1,8 +1,14 @@
-package eu.fbk.mpba.sensorsflows.plugins.outputs.litixcommanager;
+package eu.fbk.mpba.sensorsflows.plugins.litixcommanager;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import java.io.File;
@@ -11,20 +17,91 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 import eu.fbk.mpba.litixcom.core.LitixCom;
+import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.eccezioni.ConnectionException;
 import eu.fbk.mpba.litixcom.core.eccezioni.LoginException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
 
 public class LitixComManager {
+    private final SQLiteDatabase buffer;
+    private final Thread th;
     protected LitixCom com;
 
-    public LitixComManager(final Context context, final String xdid, InetSocketAddress address) {
+    public class Session {
+        private final Integer ID;
+        public int getSessionID() {
+            return ID;
+        }
+        Session(Integer id) {
+            ID = id;
+        }
+    }
+
+    private Track track;
+
+    public int newTrack(Session s) throws ConnectionException, LoginException {
+        this.track = com.newTrack(s.ID);
+        return track.getTrackId();
+    }
+
+    final Queue<Integer> queue = new ArrayDeque<>();
+    final Semaphore queueSemaphore = new Semaphore(0);
+    byte[] lastSplit = null;
+
+    public synchronized void notifySplit(int id) {
+        if (!commitPending) {
+            queue.add(id);
+            queueSemaphore.release();
+        }
+        else
+            throw new NullPointerException("Track already committed.");
+    }
+
+    public byte[] loadSplit() {
+        if (lastSplit == null) {
+            Cursor x = buffer.query("split", new String[]{"data"}, "first_ts == " + queue.peek(), null, null, null, null);
+            if (x.getCount() == 0)
+                Log.e("DBReader", "Split ID not found in database!");
+            else
+                lastSplit = x.getBlob(0);
+            x.close();
+        }
+        return lastSplit;
+    }
+
+    private synchronized void processSplitsQueue() {
+        try {
+            while (true) {
+                try {
+                    queueSemaphore.acquire();
+                    track.put(loadSplit());
+
+                    queue.remove();
+                    // Uploaded, cleaning cache
+                    lastSplit = null;
+
+                    if (readyToClose()) {
+                        track.commit();
+                        break;
+                    }
+                } catch (ConnectionException | LoginException ignored) {
+                    queueSemaphore.release();
+                    Thread.sleep(5000);
+                }
+            }
+        } catch (InterruptedException ignored) { }
+    }
+
+    public LitixComManager(final Activity context, InetSocketAddress address, SQLiteDatabase database) {
+        buffer = database;
         com = new LitixCom(address, new Credenziali() {
 
             final AtomicReference<String> username = new AtomicReference<>(null);
@@ -43,7 +120,7 @@ public class LitixComManager {
                     public void cancel() {
                         semaphore.release();
                     }
-                }, "Physiolitix - Login", "Master's username");
+                }, "Physiolitix - Login", "Master's username").show();
                 try {
                     semaphore.acquire();
                     return username.get();
@@ -67,7 +144,8 @@ public class LitixComManager {
                     public void cancel() {
                         semaphore.release();
                     }
-                }, "Physiolitix - Login", String.format("Password for %s", username.get()));
+                },
+                "Physiolitix - Login", String.format("Password for %s", username.get())).show();
                 try {
                     semaphore.acquire();
                     return password.get();
@@ -139,28 +217,57 @@ public class LitixComManager {
 
             @Override
             public String getDeviceId() {
-                return xdid;
+                return getXDID(context);
             }
         });
+        th = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                processSplitsQueue();
+            }
+        }, "LitixCom uploader");
+        th.setDaemon(true);
+        th.start();
     }
 
-    public class Session {
-        public final Integer ID;
-        Session(Integer id) {
-            ID = id;
-        }
+    public List<Session> getAuthorizedSessions() throws ConnectionException, LoginException {
+        List<Integer> s = com.getSessionsList();
+        List<Session> r = new ArrayList<>(s.size());
+        for (Integer i : s)
+            r.add(new Session(i));
+        return r;
     }
 
-    public List<Session> getAuthorizedSessions() {
-        try {
-            List<Integer> s = com.getSessionsList();
-            List<Session> r = new ArrayList<>(s.size());
-            for (Integer i : s)
-                r.add(new Session(i));
-            return r;
-        } catch (ConnectionException | LoginException e) {
-            e.printStackTrace();
-        }
-        return new ArrayList<>();
+    @NonNull
+    private String getXDID(Context context) {
+        String a = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
+        if (a == null)
+            a = "a-" + Settings.Secure.ANDROID_ID;
+        else
+            a = "u-" + a;
+        return a;
+    }
+
+    public synchronized int queuedUploads() {
+        return queue.size();
+    }
+
+    private boolean commitPending = false;
+
+    public void enqueueCommit() {
+        commitPending = true;
+    }
+
+    public synchronized boolean readyToClose() {
+        return queue.size() == 0 && commitPending;
+    }
+
+    public boolean close() {
+        if (readyToClose()) {
+            th.interrupt();
+            buffer.close();
+            return true;
+        } else
+            return false;
     }
 }

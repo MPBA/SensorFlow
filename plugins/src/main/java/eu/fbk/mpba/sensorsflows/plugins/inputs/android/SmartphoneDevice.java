@@ -8,11 +8,10 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.plugins.inputs.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
+public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
 
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
@@ -21,7 +20,6 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTime
 
     public SmartphoneDevice(Context context, String name) {
         this.name = name;
-        setBootUTCNanos();
         _sensors = new ArrayList<>();
         _sensors.add(new GpsSensor(this, context, 0, 0));
         _sensors.add(new AccelerometerSensor(this, context, SensorManager.SENSOR_DELAY_FASTEST));
@@ -77,20 +75,6 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]>, IMonoTime
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOffAsync();
         }
-    }
-
-    private long refUTCNanos;
-
-    public void setBootUTCNanos() {
-        refUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
-    }
-
-    public long getMonoUTCNanos() {
-        return System.nanoTime() + refUTCNanos;
-    }
-
-    public long getMonoUTCNanos(long realTimeNanos) {
-        return realTimeNanos + refUTCNanos;
     }
 
     @Override

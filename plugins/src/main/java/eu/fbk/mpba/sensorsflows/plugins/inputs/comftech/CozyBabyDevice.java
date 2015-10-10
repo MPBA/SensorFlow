@@ -9,10 +9,9 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class CozyBabyDevice implements DevicePlugin<Long, double[]>, IMonoTimestampSource {
+public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     // TODO 4: replayable
 
@@ -29,7 +28,6 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]>, IMonoTimest
 
     public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
         this.name = name;
-        setBootUTCNanos();
         er = new EXLAccelerometer(this);
         ry = new EXLBattery(this);
         pe = new EXLGyroscope(this);
@@ -65,21 +63,6 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]>, IMonoTimest
     @Override
     public void inputPluginFinalize() {
         monoSensor.disconnect();
-    }
-
-    private long bootUTCNanos;
-
-    public void setBootUTCNanos() {
-        bootUTCNanos = System.currentTimeMillis() * 1000000 - System.nanoTime();
-    }
-
-    @Override
-    public long getMonoUTCNanos() {
-        return System.nanoTime() + bootUTCNanos;
-    }
-
-    public long getMonoUTCNanos(long realTimeNanos) {
-        return realTimeNanos + bootUTCNanos;
     }
 
     @Override
@@ -145,22 +128,22 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]>, IMonoTimest
         private final CozyBabyManager.StatusDelegate btsStatus = new CozyBabyManager.StatusDelegate() {
 
             public void idle(CozyBabyReceiver sender) {
-                sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
+                sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                         READY, "idle");
             }
 
             public void connecting(CozyBabyReceiver sender, BluetoothDevice device, boolean secureMode) {
-                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
+                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                         CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
             public void connected(CozyBabyReceiver sender, String deviceName) {
-                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
+                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                         CONNECTED, "connected to " + deviceName);
             }
 
             public void disconnected(CozyBabyReceiver sender, DisconnectionCause cause) {
-                parent.er.sensorEvent(parent.getMonoUTCNanos(System.nanoTime()),
+                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                         DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
             }
         };
@@ -179,7 +162,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]>, IMonoTimest
             @Override
             public void received(CozyBabyManager sender, CozyBabyManager.Packet p) {
                 // TODO! check timestamp calc
-                now = parent.getMonoUTCNanos(p.receptionTime);
+                now = getTime().getMonoUTCNanos(p.receptionTime);
                 if (ref < 0) {
                     pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
                 }

@@ -1,9 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -18,9 +16,6 @@ import java.util.List;
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
-
-import static android.support.v4.app.ActivityCompat.requestPermissions;
-import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 /**
  * Nanosecond monotonic precision
@@ -58,7 +53,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
     public void onLocationChanged(Location location) {
         long suppNTime = timeFallback ?
                 location.getTime() * 1000_000
-                : ((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(location.getElapsedRealtimeNanos() - sysToSysClockNanoOffset);
+                : (getTime().getMonoUTCNanos(location.getElapsedRealtimeNanos() - sysToSysClockNanoOffset));
         sensorValue(suppNTime,
                 new double[]{
                         location.getLongitude(),
@@ -70,14 +65,14 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public void onProviderDisabled(String provider) {
-        sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                 102, "disabled provider=" + provider);
         Toast.makeText(context, "Switch on the gps please", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                 101, "enabled provider=" + provider);
     }
 
@@ -90,29 +85,25 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
                     .append("=")
                     .append(extras.get(i))
                     .append(']');
-        sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+        sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                 status + 200, "provider=" + provider + x);
     }
 
     @Override
     public List<Object> getValueDescriptor() {
-        return Arrays.asList((Object)
-                        "Longitude",
-                "Latitude",
-                "Altitude",
-                "Accuracy");
+        return Arrays.asList((Object) "Longitude", "Latitude", "Altitude", "Accuracy");
     }
 
     @Override
     public void switchOnAsync() {
         if (timeFallback)
-            sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+            sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                     404, "NO_MONO_TS Could not have monotonic timestamp on the gps fixes.");
         try {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, this);
             changeStatus(SensorStatus.ON);
         } catch (SecurityException e) {
-            sensorEvent(((SmartphoneDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()),
+            sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
                     403, "NO_USER_PERMIT Could not have permission from the user for fine location.");
             changeStatus(SensorStatus.ERROR);
             e.printStackTrace();

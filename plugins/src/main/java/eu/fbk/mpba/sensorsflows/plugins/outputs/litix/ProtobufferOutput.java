@@ -2,10 +2,10 @@ package eu.fbk.mpba.sensorsflows.plugins.outputs.litix;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +19,7 @@ import eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
+    private final SplitEvent mOnSplit;
     private long mSessionID;
     private long mTrackID;
 
@@ -33,8 +34,8 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final static String i2 =
                 "create table if not exists track (\n" +
                         " start_ts INTEGER check(start_ts > 1444430000) PRIMARY KEY,\n" +
-                        " session_id INTEGER\n" +
-                        " track_id INTEGER\n" +
+                        " session_id INTEGER,\n" +
+                        " track_id INTEGER,\n" +
                         " name TEXT,\n" +
                         " status TEXT check(status in (\"local\", \"pending\", \"committed\")) NOT NULL DEFAULT \"local\",\n" +
                         " progress INTEGER check(progress >= 0 and (progress == 0 or status != \"local\")) NOT NULL DEFAULT 0,\n" +
@@ -45,7 +46,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     private final SplitterParams mSplitter;
-    protected final File mDatabaseFile = null;
     protected SQLiteDatabase buffer;
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
     protected List<ISensor> mSensors = new ArrayList<>();
@@ -60,8 +60,8 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     public static class SplitterParams {
         private final float targetCompressedSize;
         private final float maxSplitTime;
-        private final float ratioBalance = .35f;
-        private final float adjustBalance = .4f;
+        private final float ratioBalance = .3f;
+        private final float adjustBalance = .7f;
         private float compressionRatio;
         private float adjust = 1;
 
@@ -96,10 +96,16 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private int mReceived = 0;
     private int mForwarded = 0;
 
-    public ProtobufferOutput(String name, SQLiteDatabase database, SplitterParams params) {
+    public interface SplitEvent {
+        void newSplit(ProtobufferOutput sender, Long id, SplitterParams params);
+        void noMoreBuffers(ProtobufferOutput sender, SplitterParams params);
+    }
+
+    public ProtobufferOutput(String name, SQLiteDatabase database, SplitterParams params, @Nullable SplitEvent callback) {
         mName = name;
         buffer = database;
         mSplitter = params;
+        mOnSplit = callback;
 
         //noinspection ResultOfMethodCallIgnored
 //        mDatabaseFile.mkdirs();
@@ -134,6 +140,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             sb.addAllSensors(mSensorInfo);
 
         final Litix.TrackSplit ts = sb.build();
+        final long bks = currentBacklogSize();
 
         // TODO test
         mSensorData.clear();
@@ -174,7 +181,13 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     b.close();
 
                     splits++;
-                    ProtobufferOutput.this.mForwarded += currentBacklogSize();
+                    ProtobufferOutput.this.mForwarded += bks;
+
+                    if (mOnSplit != null) {
+                        mOnSplit.newSplit(ProtobufferOutput.this, split_id, mSplitter);
+                        if (lastFlush)
+                            mOnSplit.noMoreBuffers(ProtobufferOutput.this, mSplitter);
+                    }
                 } catch (Exception e) {
                     Log.e("ProtoOut", "Flush error");
                     e.printStackTrace();
@@ -183,7 +196,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }, "Flush").start();
     }
 
-    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L + System.nanoTime();
+    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
 
     private long getMonoTimeMillis() {
         return (System.nanoTime() + bootUTCNanos) / 1_000_000L;
@@ -193,6 +206,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     @Override
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+        lastFlush = false;
         finalized = false;
         mSensors = streamingSensors;
         mSessionTag = sessionTag;
@@ -218,9 +232,11 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     private boolean finalized = true;
+    private boolean lastFlush = false;
 
     @Override
     public void outputPluginFinalize() {
+        lastFlush = true;
         flushTrackSplit();
         finalized = true;
     }

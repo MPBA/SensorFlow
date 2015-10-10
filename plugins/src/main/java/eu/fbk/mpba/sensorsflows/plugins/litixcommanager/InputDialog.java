@@ -10,6 +10,7 @@ import android.widget.EditText;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class InputDialog {
@@ -21,16 +22,17 @@ public class InputDialog {
     private AlertDialog.Builder alert;
     private Activity context;
 
-    InputDialog(Activity context, String title, String message) {
-        alert = new AlertDialog.Builder(context);
+    InputDialog(Activity context, String title) {
         this.context = context;
+        alert = new AlertDialog.Builder(context);
         alert.setTitle(title);
-        alert.setMessage(message);
+        alert.setCancelable(false);
     }
 
     // TODO: MRU strings
     public static InputDialog makeText(Activity context, final ResultCallback<String> result, String title, String message) {
-        InputDialog i = new InputDialog(context, title, message);
+        InputDialog i = new InputDialog(context, title);
+        i.alert.setMessage(message);
 
         final EditText input = new EditText(context);
         i.alert.setView(input);
@@ -50,7 +52,8 @@ public class InputDialog {
     }
 
     public static InputDialog makePassword(Activity context, final ResultCallback<String> result, String title, String message) {
-        InputDialog i = new InputDialog(context, title, message);
+        InputDialog i = new InputDialog(context, title);
+        i.alert.setMessage(message);
 
         final EditText input = new EditText(context);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -70,55 +73,59 @@ public class InputDialog {
         return i;
     }
 
-    public static <T> InputDialog makeChooser(final Activity context, final ResultCallback<T> result, String title, String message,
-                                          final List<T> choices) {
-        InputDialog i = new InputDialog(context, title, message);
+    public static <T> T getChoose(final Activity context, String message, final List<T> choices) {
+        final AtomicBoolean repeat = new AtomicBoolean(true);
+        final AtomicReference<Integer> result = new AtomicReference<>(-2);
 
-        List<String> x = new ArrayList<>(choices.size());
-        for (Object j : choices)
-            x.add(j.toString());
+        while (repeat.get()) {
+            final InputDialog i = new InputDialog(context, message);
 
-        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context,
-                android.R.layout.select_dialog_singlechoice, x);
+            List<String> x = new ArrayList<>(choices.size());
+            for (Object j : choices)
+                x.add(j.toString());
 
-        i.alert.setNegativeButton(
-                "Cancel",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        result.cancel();
-                    }
-                });
+            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context,
+                    android.R.layout.select_dialog_singlechoice, x);
 
-        i.alert.setAdapter(arrayAdapter,
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, final int which) {
-                        String strName = arrayAdapter.getItem(which);
-                        AlertDialog.Builder builderInner = new AlertDialog.Builder(context);
-                        builderInner.setMessage(strName);
-                        builderInner.setTitle("Confirm");
-                        builderInner.setPositiveButton("Ok",
-                                new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int whichOne) {
-                                        result.ok(choices.get(which));
-                                    }
-                                });
-                        builderInner.setNegativeButton("Cancel",
-                                new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                    }
-                                });
-                        builderInner.show();
-                    }
-                });
-        return i;
+            final Semaphore s = new Semaphore(0);
+
+            i.alert.setNegativeButton(
+                    "Cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            result.set(-1);
+                            s.release();
+                        }
+                    });
+
+            i.alert.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    result.set(which);
+                    s.release();
+                }
+            });
+
+            i.show();
+
+            try {
+                s.acquire();
+            } catch (InterruptedException ignore) {
+            }
+
+            if (result.get() < 0)
+                return null;
+
+            if (getBool(context, "Confirm selection", choices.get(result.get()).toString(), "Ok", "No, change"))
+                repeat.set(false);
+        }
+        return choices.get(result.get());
     }
 
     public static boolean getBool(final Activity context, String title, String message, String trueOne, String falseOne) {
-        InputDialog i = new InputDialog(context, title, message);
+        final InputDialog i = new InputDialog(context, title);
+        i.alert.setMessage(message);
         final Semaphore s = new Semaphore(0);
         final AtomicReference<Boolean> r = new AtomicReference<>(false);
         i.alert.setPositiveButton(trueOne, new DialogInterface.OnClickListener() {
@@ -134,7 +141,9 @@ public class InputDialog {
                 s.release();
             }
         });
+
         i.show();
+
         try {
             s.acquire();
         } catch (InterruptedException ignore) { }
@@ -145,7 +154,9 @@ public class InputDialog {
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                alert.show();
+                try {
+                    alert.show();
+                } catch (Exception e) { e.printStackTrace(); }
             }
         });
     }

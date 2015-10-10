@@ -18,79 +18,79 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.fbk.mpba.litixcom.core.LitixCom;
 import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.eccezioni.ConnectionException;
 import eu.fbk.mpba.litixcom.core.eccezioni.LoginException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
+import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 
 public class LitixComManager {
     private final SQLiteDatabase buffer;
     private final Thread th;
-    protected LitixCom com;
-
-    public class Session {
-        private final Integer ID;
-        public int getSessionID() {
-            return ID;
-        }
-        Session(Integer id) {
-            ID = id;
-        }
-    }
+    protected LitixComWrapper com;
 
     private Track track;
 
-    public int newTrack(Session s) throws ConnectionException, LoginException {
-        this.track = com.newTrack(s.ID);
+    public int newTrack(Sessione s) throws ConnectionException, LoginException {
+        this.track = com.newTrack(s);
         return track.getTrackId();
     }
 
-    final Queue<Integer> queue = new ArrayDeque<>();
+    final Queue<Long> queue = new ArrayDeque<>();
     final Semaphore queueSemaphore = new Semaphore(0);
     byte[] lastSplit = null;
 
-    public synchronized void notifySplit(int id) {
+    public synchronized void notifySplit(Long id) {
+        Log.v("Man", "Enq split nr. " + id);
         if (!commitPending) {
-            queue.add(id);
+            synchronized (queue) {
+                queue.add(id);
+            }
             queueSemaphore.release();
+            Log.v("Man", "added " + id);
         }
         else
             throw new NullPointerException("Track already committed.");
     }
 
-    public byte[] loadSplit() {
-        if (lastSplit == null) {
-            Cursor x = buffer.query("split", new String[]{"data"}, "first_ts == " + queue.peek(), null, null, null, null);
-            if (x.getCount() == 0)
-                Log.e("DBReader", "Split ID not found in database!");
-            else
-                lastSplit = x.getBlob(0);
-            x.close();
+    private byte[] loadSplit() {
+        synchronized (queue) {
+            if (lastSplit == null) {
+                Cursor x = buffer.query("split", new String[]{"data"}, "first_ts == " + queue.peek(), null, null, null, null);
+                if (x.moveToLast()) {
+                    lastSplit = x.getBlob(0);
+                } else {
+                    Log.e("DBReader", "Split ID not found in database!");
+                }
+                x.close();
+            }
         }
         return lastSplit;
     }
 
-    private synchronized void processSplitsQueue() {
+    private void processSplitsQueue() {
         try {
             while (true) {
                 try {
                     queueSemaphore.acquire();
-                    track.put(loadSplit());
-
-                    queue.remove();
-                    // Uploaded, cleaning cache
-                    lastSplit = null;
 
                     if (readyToClose()) {
                         track.commit();
                         break;
+                    }
+                    else {
+                        track.put(loadSplit());
+
+                        synchronized (queue) {
+                            queue.remove();
+                        }
+                        // Uploaded, cleaning cache
+                        lastSplit = null;
                     }
                 } catch (ConnectionException | LoginException ignored) {
                     queueSemaphore.release();
@@ -102,7 +102,7 @@ public class LitixComManager {
 
     public LitixComManager(final Activity context, InetSocketAddress address, SQLiteDatabase database) {
         buffer = database;
-        com = new LitixCom(address, new Credenziali() {
+        com = new LitixComWrapper(address, new Credenziali() {
 
             final AtomicReference<String> username = new AtomicReference<>(null);
 
@@ -230,12 +230,34 @@ public class LitixComManager {
         th.start();
     }
 
-    public List<Session> getAuthorizedSessions() throws ConnectionException, LoginException {
-        List<Integer> s = com.getSessionsList();
-        List<Session> r = new ArrayList<>(s.size());
-        for (Integer i : s)
-            r.add(new Session(i));
-        return r;
+    public List<Sessione> getAuthorizedSessions() throws ConnectionException, LoginException {
+        return com.getSessionsList();
+    }
+
+    public int queuedUploads() {
+        synchronized (queue) {
+            return queue.size();
+        }
+    }
+
+    private boolean commitPending = false;
+
+    public void enqueueCommit() {
+        commitPending = true;
+        queueSemaphore.release();
+    }
+
+    public synchronized boolean readyToClose() {
+        return queuedUploads() == 0 && commitPending;
+    }
+
+    public boolean close() {
+        if (readyToClose()) {
+            th.interrupt();
+            buffer.close();
+            return true;
+        } else
+            return false;
     }
 
     @NonNull
@@ -246,28 +268,5 @@ public class LitixComManager {
         else
             a = "u-" + a;
         return a;
-    }
-
-    public synchronized int queuedUploads() {
-        return queue.size();
-    }
-
-    private boolean commitPending = false;
-
-    public void enqueueCommit() {
-        commitPending = true;
-    }
-
-    public synchronized boolean readyToClose() {
-        return queue.size() == 0 && commitPending;
-    }
-
-    public boolean close() {
-        if (readyToClose()) {
-            th.interrupt();
-            buffer.close();
-            return true;
-        } else
-            return false;
     }
 }

@@ -8,7 +8,6 @@ import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
 import eu.fbk.mpba.sensorsflows.base.EventCallback;
 import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
-import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
@@ -27,8 +26,7 @@ public class FlowsMan<TimeT, ValueT> implements
         IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
         IDeviceCallback<DeviceDecorator<TimeT, ValueT>>,
         ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>,
-        IOutputCallback<TimeT, ValueT>,
-        IMonoTimestampSource{
+        IOutputCallback<TimeT, ValueT> {
 
     // Status Interface
 
@@ -156,8 +154,6 @@ public class FlowsMan<TimeT, ValueT> implements
             , EngineStatus> _onStateChanged = null;                   // null
     protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
     protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
-
-    private long bootNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
 
     // Engine implementation
 
@@ -608,15 +604,5 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void setOnOutputStateChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
-    }
-
-    @Override
-    public long getMonoUTCNanos() {
-        return System.nanoTime() + bootNanos;
-    }
-
-    @Override
-    public long getMonoUTCNanos(long nanoTime) {
-        return nanoTime + bootNanos;
     }
 }

@@ -24,12 +24,7 @@ public class LanUdpTimeClient {
     final static byte REQ_TIME = 38;
     final static byte RES_TIME = 39;
 
-    final static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
     private static boolean enetunreach = false;
-
-    protected static long getMonoTime() {
-        return (System.nanoTime() + bootTime);
-    }
 
     public interface TimeOffsetCallback {
         void end(boolean error, InetAddress server, String serverName, OffsetInfo offset);
@@ -61,7 +56,7 @@ public class LanUdpTimeClient {
                 }).start();
     }
 
-    public static void computeOffsetAsync(final TimeOffsetCallback end, final InetAddress host, final String serverName, final int passes) {
+    public static void computeOffsetAsync(final TimeOffsetCallback end, final InetAddress host, final String serverName, final int passes, final long bootNanos) {
         Log.v("ALE TIME", "computeOffsetAsync");
         final Thread t = new Thread(
                 new Runnable() {
@@ -70,7 +65,7 @@ public class LanUdpTimeClient {
                         // receiver
                         OffsetInfo o = null;
                         try {
-                            o = computeOffsetReceiver(host == null ? InetAddress.getByName(serverName) : host, passes);
+                            o = computeOffsetReceiver(host == null ? InetAddress.getByName(serverName) : host, passes, bootNanos);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -84,12 +79,28 @@ public class LanUdpTimeClient {
                     public void run() {
                         // sender
                         try {
-                            computeOffsetSender(host == null ? InetAddress.getByName(serverName) : host, passes, t);
+                            computeOffsetSender(host == null ? InetAddress.getByName(serverName) : host, passes, t, bootNanos);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                 }).start();
+    }
+
+    public static class OffsetInfo {
+        public double average;
+        public double stDev;
+        public int passes;
+
+        public OffsetInfo(double avg, double std, int passes) {
+            average = avg;
+            stDev = std;
+            this.passes = passes;
+        }
+    }
+
+    protected static long getMonoTime(long bootNanos) {
+        return (System.nanoTime() + bootNanos);
     }
 
     protected static List<Pair<InetAddress, String>> receiveServers() {
@@ -147,7 +158,7 @@ public class LanUdpTimeClient {
         }
     }
 
-    protected static void computeOffsetSender(InetAddress host, int passes, Thread receiver) {
+    protected static void computeOffsetSender(InetAddress host, int passes, Thread receiver, final long bootNanos) {
         Log.v("ALE TIME", "computeOffsetSender");
         DatagramSocket s = null;
         try {
@@ -155,7 +166,7 @@ public class LanUdpTimeClient {
             s.connect(host, timePort);
 
             for (int i = 0; i < passes; i++) {
-                send(s, 0);
+                send(s, 0, bootNanos);
                 Thread.sleep(10);
             }
 
@@ -178,7 +189,7 @@ public class LanUdpTimeClient {
         }
     }
 
-    protected static OffsetInfo computeOffsetReceiver(InetAddress host, int passes) {
+    protected static OffsetInfo computeOffsetReceiver(InetAddress host, int passes, final long bootNanos) {
         Log.v("ALE TIME", "computeOffsetReceiver " + host);
         double[] res = new double[passes];
         DatagramSocket s = null;
@@ -190,7 +201,7 @@ public class LanUdpTimeClient {
             s.setSoTimeout(1000);
 
             while (times < passes && !Thread.currentThread().isInterrupted()) {
-                long[] v = receive(s);
+                long[] v = receive(s, bootNanos);
                 if (v != null) {
                     mean += res[times] = (v[2] - v[0] - v[1]) / 2.0 / 1000.0;
                     times++;
@@ -229,21 +240,21 @@ public class LanUdpTimeClient {
         return new OffsetInfo(mean / 1_000_000, stdev / 1_000_000, times);
     }
 
-    protected static long send(DatagramSocket s, long sec) throws InterruptedException, IOException {
+    protected static long send(DatagramSocket s, long sec, long bootNanos) throws InterruptedException, IOException {
         //Log.d("ALE TIME", "send");
-        long c = getMonoTime();
+        long c = getMonoTime(bootNanos);
         s.send(new DatagramPacket(new TimePacket(REQ_TIME, c, sec).bytes(), TimePacket.SIZE));
         //Log.v("TIMEX", "send " + (c - __init));
         return c;
     }
 
-    protected static long[] receive(DatagramSocket s) throws InterruptedException, IOException {
+    protected static long[] receive(DatagramSocket s, final long bootNanos) throws InterruptedException, IOException {
         DatagramPacket p = new DatagramPacket(new byte[TimePacket.SIZE], TimePacket.SIZE);
         long c;
         try {
             Log.v("ALE TIME", "receivin V");
             s.receive(p);
-            c = getMonoTime();
+            c = getMonoTime(bootNanos);
             Log.v("ALE TIME", "received ^");
             byte[] d = p.getData();
             TimePacket y = new TimePacket(d);
@@ -287,18 +298,6 @@ public class LanUdpTimeClient {
             buffer.putLong(t2t1);
             buffer.putLong(t3);
             return buffer.array();
-        }
-    }
-
-    public static class OffsetInfo {
-        public double average;
-        public double stDev;
-        public int passes;
-
-        public OffsetInfo(double avg, double std, int passes) {
-            average = avg;
-            stDev = std;
-            this.passes = passes;
         }
     }
 }

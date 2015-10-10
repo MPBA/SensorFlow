@@ -5,7 +5,6 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 
 public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
@@ -15,13 +14,13 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
     @Override
     public void switchOnAsync() {
-        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
+        sensorEvent(getTime().getMonoUTCNanos(),
                 1, "Switched on");
     }
 
     @Override
     public void switchOffAsync() {
-        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
+        sensorEvent(getTime().getMonoUTCNanos(),
                 2, "Switched off");
     }
 
@@ -31,7 +30,7 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
     }
 
     public void addText(CharSequence text) {
-        sensorEvent(((IMonoTimestampSource)getParentDevicePlugin()).getMonoUTCNanos(),
+        sensorEvent(getTime().getMonoUTCNanos(),
                 0, text.toString());
     }
 

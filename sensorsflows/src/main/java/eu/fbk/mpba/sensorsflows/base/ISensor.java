@@ -22,4 +22,6 @@ public interface ISensor extends ISampleCounter {
     List<Object> getValueDescriptor();
 
     String getName();
+
+    IMonoTimestampSource getTime();
 }

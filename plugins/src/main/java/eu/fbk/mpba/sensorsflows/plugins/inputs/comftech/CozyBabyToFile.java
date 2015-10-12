@@ -31,10 +31,10 @@ public class CozyBabyToFile extends CozyBabyReceiver {
         connect();
         if (getState() == BTSrvState.CONNECTED) {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
-                    + "/eu.fbk.mpba.sensorsflows/");
+                    + "/eu.fbk.mpba.physiorec/");
             if (x.mkdirs() || x.isDirectory())
                 try {
-                    mOut = new FileOutputStream(new File(x, "stream_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));
+                    mOut = new FileOutputStream(new File(x, "cozybaby_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));
                     command(Commands.startStreaming);
                     return;
                 } catch (FileNotFoundException e) {
@@ -58,7 +58,7 @@ public class CozyBabyToFile extends CozyBabyReceiver {
         }
     }
 
-    public void received(int[] buffer, int bytes) {
+    public void received(byte[] buffer, int bytes) {
         try {
             for (int i = 0; i < bytes; i++) {
                 mOut.write(buffer[i]);

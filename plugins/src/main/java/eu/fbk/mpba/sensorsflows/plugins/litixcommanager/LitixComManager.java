@@ -25,8 +25,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.eccezioni.ConnectionException;
+import eu.fbk.mpba.litixcom.core.eccezioni.DeadDatabaseServerException;
 import eu.fbk.mpba.litixcom.core.eccezioni.LoginException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
+import eu.fbk.mpba.litixcom.core.mgrs.connection.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 
 public class LitixComManager {
@@ -36,7 +38,7 @@ public class LitixComManager {
 
     private Track track;
 
-    public int newTrack(Sessione s) throws ConnectionException, LoginException {
+    public int newTrack(Sessione s) throws ConnectionException, LoginException, DeadDatabaseServerException {
         this.track = com.newTrack(s);
         return track.getTrackId();
     }
@@ -46,13 +48,12 @@ public class LitixComManager {
     byte[] lastSplit = null;
 
     public synchronized void notifySplit(Long id) {
-        Log.v("Man", "Enq split nr. " + id);
         if (!commitPending) {
             synchronized (queue) {
                 queue.add(id);
             }
             queueSemaphore.release();
-            Log.v("Man", "added " + id);
+            Log.v("notifySplit", "added " + id);
         }
         else
             throw new NullPointerException("Track already committed.");
@@ -74,16 +75,21 @@ public class LitixComManager {
     }
 
     private void processSplitsQueue() {
+        Log.d("Man", Thread.currentThread().getName());
         try {
             while (true) {
                 try {
+                    Log.d("Man", "Waiting for permits:" + queueSemaphore.availablePermits());
                     queueSemaphore.acquire();
 
                     if (readyToClose()) {
+                        Log.d("Man", "Committing");
                         track.commit();
+                        Log.d("Man", "Committed");
                         break;
                     }
                     else {
+                        Log.d("Man", "Pushing");
                         track.put(loadSplit());
 
                         synchronized (queue) {
@@ -91,16 +97,22 @@ public class LitixComManager {
                         }
                         // Uploaded, cleaning cache
                         lastSplit = null;
+                        Log.d("Man", "Pushed");
                     }
-                } catch (ConnectionException | LoginException ignored) {
+                } catch (ConnectionException | LoginException e) {
+                    Log.d("Man", "Push failed, releasing once, sleeping 13375ms", e);
                     queueSemaphore.release();
-                    Thread.sleep(5000);
+                    Thread.sleep(13375);
+                } catch (DeadDatabaseServerException e) {
+                    e.printStackTrace();
                 }
             }
-        } catch (InterruptedException ignored) { }
+        } catch (InterruptedException ignored) {
+            Log.d("Man", Thread.currentThread().getName() + " interrupted, exiting processSplitsQueue");
+        }
     }
 
-    public LitixComManager(final Activity context, InetSocketAddress address, SQLiteDatabase database) {
+    public LitixComManager(final Activity activity, InetSocketAddress address, SQLiteDatabase database, Certificati c) {
         buffer = database;
         com = new LitixComWrapper(address, new Credenziali() {
 
@@ -109,7 +121,7 @@ public class LitixComManager {
             @Override
             public String getUsername() {
                 final Semaphore semaphore = new Semaphore(0);
-                InputDialog.makeText(context, new InputDialog.ResultCallback<String>() {
+                InputDialog.makeText(activity, new InputDialog.ResultCallback<String>() {
                     @Override
                     public void ok(String result) {
                         username.set(result);
@@ -133,19 +145,19 @@ public class LitixComManager {
             public String getPassword() {
                 final Semaphore semaphore = new Semaphore(0);
                 final AtomicReference<String> password = new AtomicReference<>(null);
-                InputDialog.makePassword(context, new InputDialog.ResultCallback<String>() {
-                    @Override
-                    public void ok(String result) {
-                        password.set(result);
-                        semaphore.release();
-                    }
+                InputDialog.makePassword(activity, new InputDialog.ResultCallback<String>() {
+                            @Override
+                            public void ok(String result) {
+                                password.set(result);
+                                semaphore.release();
+                            }
 
-                    @Override
-                    public void cancel() {
-                        semaphore.release();
-                    }
-                },
-                "Physiolitix - Login", String.format("Password for %s", username.get())).show();
+                            @Override
+                            public void cancel() {
+                                semaphore.release();
+                            }
+                        },
+                        "Physiolitix - Login", String.format("Password for %s", username.get())).show();
                 try {
                     semaphore.acquire();
                     return password.get();
@@ -156,7 +168,7 @@ public class LitixComManager {
 
             @Override
             public void setToken(String token) {
-                File d = context.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
+                File d = activity.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
                 File t = new File(d, "halo_memory");
                 try {
                     FileOutputStream o = new FileOutputStream(t);
@@ -170,13 +182,13 @@ public class LitixComManager {
 
             @Override
             public String getToken() {
-                File d = context.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
+                File d = activity.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
                 File t = new File(d, "halo_memory");
                 String token = null;
                 try {
                     FileInputStream o = new FileInputStream(t);
                     byte[] buf = new byte[512];
-                    if (o.read(buf,0,512) > 0)
+                    if (o.read(buf, 0, 512) > 0)
                         token = new String(buf);
                 } catch (FileNotFoundException ignore) {
                 } catch (IOException e) {
@@ -186,27 +198,33 @@ public class LitixComManager {
             }
 
             @Override
-            public boolean onErrorGetRetry(Exception e) {
+            public boolean onErrorGetRetry(final Exception e) {
                 final AtomicReference<Boolean> r = new AtomicReference<>(false);
                 final Semaphore semaphore = new Semaphore(0);
-                new AlertDialog.Builder(context)
-                        .setTitle("Phisiolitix - Login")
-                        .setMessage(e == null ?
-                                "Login error, wrong name or password." :
-                                String.format("Login error.\n(Error: %s)", e.getMessage()))
-                        .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                r.set(true);
-                                semaphore.release();
-                            }
-                        })
-                        .setNegativeButton("Retry", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                semaphore.release();
-                            }
-                        }).show();
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        new AlertDialog.Builder(activity)
+                                .setTitle("Phisiolitix - Login")
+                                .setMessage(e == null ?
+                                        "Login error, wrong name or password." :
+                                        String.format("Login error.\n(Error: %s)", e.getMessage()))
+                                .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        r.set(true);
+                                        semaphore.release();
+                                    }
+                                })
+                                .setNegativeButton("Retry", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        semaphore.release();
+                                    }
+                                }).show();
+
+                    }
+                });
                 try {
                     semaphore.acquire();
                 } catch (InterruptedException e1) {
@@ -217,9 +235,9 @@ public class LitixComManager {
 
             @Override
             public String getDeviceId() {
-                return getXDID(context);
+                return getXDID(activity);
             }
-        });
+        }, c);
         th = new Thread(new Runnable() {
             @Override
             public void run() {

@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.text.InputType;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,6 +122,43 @@ public class InputDialog {
                 repeat.set(false);
         }
         return choices.get(result.get());
+    }
+
+    public static int getChoose(final Activity context, String message, ListAdapter adapter) {
+        final AtomicBoolean repeat = new AtomicBoolean(true);
+        final AtomicReference<Integer> result = new AtomicReference<>(-2);
+
+        while (repeat.get()) {
+            final InputDialog i = new InputDialog(context, message);
+
+            final Semaphore s = new Semaphore(0);
+
+            i.alert.setNegativeButton(
+                    "Cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            result.set(-1);
+                            s.release();
+                        }
+                    });
+
+            i.alert.setAdapter(adapter, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    result.set(which);
+                    s.release();
+                }
+            });
+
+            i.show();
+
+            try {
+                s.acquire();
+            } catch (InterruptedException ignore) {
+            }
+        }
+        return result.get();
     }
 
     public static boolean getBool(final Activity context, String title, String message, String trueOne, String falseOne) {

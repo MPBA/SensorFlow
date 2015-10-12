@@ -123,9 +123,9 @@ public abstract class CozyBabyReceiver {
 
     protected void close() {
         Log.d(TAG, "close");
+        dispatch = false;
         command(Commands.stopStreaming);
         setState(BTSrvState.DISCONNECTED); // Need this to handle the IOException
-        dispatch = false;
         try {
             if(mInput != null) {
                 mInput.close();
@@ -152,8 +152,6 @@ public abstract class CozyBabyReceiver {
     }
 
     private void dispatch() {
-        // In uno dei percorsi scarta bytes,
-        // utilizzabile solo per controllare il packet counter
         Log.i(TAG, "Started dispatching...");
         int lostBytes = 0;
         try {
@@ -268,8 +266,8 @@ public abstract class CozyBabyReceiver {
                         //    checkSum = 0
                         //    while index <msgLen
                         //        checkSum = checkSum + message[index]
-                        //        checkSum = checkSum AND 0b11010110 // (215-1) == (214) == 0b11010110
-                        //        incrementindex
+                        //        checkSum = checkSum AND 0b11010110 // as (215-1) is (214) that is 0b11010110
+                        //        increment index
 
                         int myCS = 0, rcCS = 0;
                         if (useCheckSum) {
@@ -295,19 +293,20 @@ public abstract class CozyBabyReceiver {
                                 if (checkSumErrors > 0)
                                     checkSumErrors--;
                             } else {
-                                Log.d(TAG, "EDCPositive pack kept (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
+                                Log.d(TAG, "EDC positive pack kept (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
                                 if (checkSumErrors++ > 128) {
                                     useCheckSum = false;
                                     Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 256).");
                                 }
                             }
                             // This is a full kept packet
-                            int[] result = new int[length];
-                            System.arraycopy(pack, 4, result, 0, length);
+                            byte[] result = new byte[length];
+                            for (int j = 0; j < length; j++)
+                                result[i] = (byte)pack[j];
                             received(result, length);
                             i = 0;
                         } else {
-                            Log.d(TAG, "EDCPositive pack discarded (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
+                            Log.d(TAG, "EDC positive pack discarded (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
                             if (checkSumErrors++ > 16) {
                                 hardCheckSum = false;
                                 Log.d(TAG, "Hard checkSum check disabled (checkSumErrors - packets > 64).");
@@ -414,7 +413,7 @@ public abstract class CozyBabyReceiver {
 
     // To implement
 
-    protected abstract void received(int[] buffer, int bytes);
+    protected abstract void received(byte[] buffer, int bytes);
 
     // Subclasses
 

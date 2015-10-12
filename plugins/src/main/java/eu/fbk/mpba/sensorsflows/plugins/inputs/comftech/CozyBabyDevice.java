@@ -24,18 +24,9 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
     EXLMagnetometer ma;
     EXLQuaternion on;
 
-    protected final int qDS, bDS;
-
-    public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
+    public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
         this.name = name;
-        er = new EXLAccelerometer(this);
-        ry = new EXLBattery(this);
-        pe = new EXLGyroscope(this);
-        ma = new EXLMagnetometer(this);
-        on = new EXLQuaternion(this);
         monoSensor = new EXLSensor(this, realDevice, adapter);
-        qDS = quaternionDecimation;
-        bDS = batteryDecimation;
     }
 
     @Override
@@ -54,9 +45,21 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         monoSensor.disconnect();
     }
 
+    private boolean connected = false;
+
+    public void connect() {
+        if (!connected)
+            monoSensor.connect();
+    }
+
+    public CozyBabyReceiver.BTSrvState getConnectionState() {
+        return monoSensor.manager.getState();
+    }
+
     @Override
     public void inputPluginInitialize() {
-        monoSensor.connect();
+        if (!connected)
+            monoSensor.connect();
         monoSensor.switchDevOnAsync();
     }
 
@@ -161,28 +164,28 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
             @Override
             public void received(CozyBabyManager sender, CozyBabyManager.Packet p) {
-                // TODO! check timestamp calc
-                now = getTime().getMonoUTCNanos(p.receptionTime);
-                if (ref < 0) {
-                    pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
-                }
-
-                long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;
-
-                received++;
-
-                if (parent.er.streaming)
-                    parent.er.sensorValue(now, new double[]{p.ax, p.ay, p.az});
-                if (parent.pe.streaming)
-                    parent.pe.sensorValue(now, new double[]{p.gx, p.gy, p.gz});
-                if (parent.ma.streaming)
-                    parent.ma.sensorValue(now, new double[]{p.mx, p.my, p.mz});
-                if (parent.on.streaming && (qd++ % parent.qDS) == 0)
-                    parent.on.sensorValue(now, new double[]{p.q1, p.q2, p.q3, p.q4});
-                if (parent.ry.streaming && (bd++ % parent.bDS) == 0)
-                    parent.ry.sensorValue(now, new double[]{p.vbatt});
-
-                last = p.counter;
+//                // TODO! check timestamp calc
+//                now = getTime().getMonoUTCNanos(p.receptionTime);
+//                if (ref < 0) {
+//                    pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
+//                }
+//
+//                long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;
+//
+//                received++;
+//
+//                if (parent.er.streaming)
+//                    parent.er.sensorValue(now, new double[]{p.ax, p.ay, p.az});
+//                if (parent.pe.streaming)
+//                    parent.pe.sensorValue(now, new double[]{p.gx, p.gy, p.gz});
+//                if (parent.ma.streaming)
+//                    parent.ma.sensorValue(now, new double[]{p.mx, p.my, p.mz});
+//                if (parent.on.streaming && (qd++ % parent.qDS) == 0)
+//                    parent.on.sensorValue(now, new double[]{p.q1, p.q2, p.q3, p.q4});
+//                if (parent.ry.streaming && (bd++ % parent.bDS) == 0)
+//                    parent.ry.sensorValue(now, new double[]{p.vbatt});
+//
+//                last = p.counter;
             }
 
             @Override

@@ -296,8 +296,10 @@ public abstract class CozyBabyReceiver {
                                     checkSumErrors--;
                             } else {
                                 Log.d(TAG, "EDCPositive pack kept (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
-                                if (checkSumErrors++ > 128)
+                                if (checkSumErrors++ > 128) {
+                                    useCheckSum = false;
                                     Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 256).");
+                                }
                             }
                             // This is a full kept packet
                             int[] result = new int[length];

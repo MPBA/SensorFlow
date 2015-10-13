@@ -31,6 +31,21 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
         _textSensor.addText(text);
     }
 
+    public interface Note {
+        void commit(String text);
+    }
+
+    public Note newNote() {
+        return new Note() {
+            long time = _textSensor.getTime().getMonoUTCNanos();
+
+            @Override
+            public void commit(String text) {
+                _textSensor.addTimedText(time, text);
+            }
+        };
+    }
+
     public void setTimeServerEnabled(boolean enabled) {
         if (enabled)
             _timeOffsetSensor.startTimeServer();

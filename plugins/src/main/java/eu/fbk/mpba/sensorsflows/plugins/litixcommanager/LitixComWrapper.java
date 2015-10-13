@@ -11,8 +11,8 @@ import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.eccezioni.ConnectionException;
 import eu.fbk.mpba.litixcom.core.eccezioni.DeadDatabaseServerException;
 import eu.fbk.mpba.litixcom.core.eccezioni.LoginException;
+import eu.fbk.mpba.litixcom.core.mgrs.auth.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
-import eu.fbk.mpba.litixcom.core.mgrs.connection.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 
 public class LitixComWrapper {

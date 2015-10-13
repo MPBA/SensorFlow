@@ -29,12 +29,14 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
         return Collections.emptyList();
     }
 
+    private long lastNoteTS = 0;
+
     public void addText(CharSequence text) {
-        sensorEvent(getTime().getMonoUTCNanos(),
-                0, text.toString());
+        addTimedText(getTime().getMonoUTCNanos(), text.toString());
     }
 
     public void addTimedText(long timestamp, CharSequence text) {
-        sensorEvent(timestamp, 0, text.toString());
+        sensorEvent(timestamp, (lastNoteTS < timestamp) ? 100 : 101, text.toString());
+        lastNoteTS = timestamp;
     }
 }

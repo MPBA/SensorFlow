@@ -27,8 +27,8 @@ import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.eccezioni.ConnectionException;
 import eu.fbk.mpba.litixcom.core.eccezioni.DeadDatabaseServerException;
 import eu.fbk.mpba.litixcom.core.eccezioni.LoginException;
+import eu.fbk.mpba.litixcom.core.mgrs.auth.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
-import eu.fbk.mpba.litixcom.core.mgrs.connection.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 
 public class LitixComManager {
@@ -118,7 +118,6 @@ public class LitixComManager {
 
             final AtomicReference<String> username = new AtomicReference<>(null);
 
-            @Override
             public String getUsername() {
                 final Semaphore semaphore = new Semaphore(0);
                 InputDialog.makeText(activity, new InputDialog.ResultCallback<String>() {
@@ -141,7 +140,6 @@ public class LitixComManager {
                 }
             }
 
-            @Override
             public String getPassword() {
                 final Semaphore semaphore = new Semaphore(0);
                 final AtomicReference<String> password = new AtomicReference<>(null);
@@ -164,6 +162,10 @@ public class LitixComManager {
                 } catch (InterruptedException e) {
                     return null;
                 }
+            }
+
+            public String getDeviceId() {
+                return getXDID(activity);
             }
 
             @Override
@@ -195,6 +197,20 @@ public class LitixComManager {
                     Log.e(LitixComManager.class.getSimpleName(), "Cannot read a private file.");
                 }
                 return token;
+            }
+
+            @Override
+            public Triple getUsernamePasswordDeviceId() {
+                String name, surname, address;
+                name = getUsername();
+                if (name != null) {
+                    surname = getPassword();
+                    if (surname != null) {
+                        address = getDeviceId();
+                        return new Triple(name, surname, address);
+                    }
+                }
+                return new Triple(null, null, null); // FIXME return null
             }
 
             @Override
@@ -231,11 +247,6 @@ public class LitixComManager {
                     return false;
                 }
                 return r.get();
-            }
-
-            @Override
-            public String getDeviceId() {
-                return getXDID(activity);
             }
         }, c);
         th = new Thread(new Runnable() {

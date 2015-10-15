@@ -8,7 +8,6 @@ import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.plugins.inputs.TextEventsSensor;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class SmartphoneDevice implements DevicePlugin<Long, double[]> {

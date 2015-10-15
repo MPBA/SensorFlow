@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.plugins.inputs;
+package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
 
 import java.util.Collections;
 import java.util.List;

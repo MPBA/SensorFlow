@@ -74,6 +74,69 @@ public class InputDialog {
         return i;
     }
 
+    public static <T> InputDialog makeChoose(final Activity context, String message, final List<T> choices, final ResultCallback<T> res) {
+        final AtomicBoolean repeat = new AtomicBoolean(true);
+        InputDialog ret = null;
+
+        while (repeat.get()) {
+            final InputDialog i = ret = new InputDialog(context, message);
+
+            List<String> x = new ArrayList<>(choices.size());
+            for (Object j : choices)
+                x.add(j.toString());
+
+            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context,
+                    android.R.layout.select_dialog_singlechoice, x);
+
+            i.alert.setNegativeButton(
+                    "Cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            res.cancel();
+                        }
+                    });
+
+            i.alert.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    res.ok(choices.get(which));
+                }
+            });
+        }
+        return ret;
+    }
+
+    public static <T> InputDialog makeChooseI(final Activity context, String message, final List<T> choices, final ResultCallback<Integer> res) {
+        InputDialog ret = null;
+
+        final InputDialog i = ret = new InputDialog(context, message);
+
+        List<String> x = new ArrayList<>(choices.size());
+        for (Object j : choices)
+            x.add(j.toString());
+
+        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context,
+                android.R.layout.select_dialog_singlechoice, x);
+
+        i.alert.setNegativeButton(
+                "Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        res.cancel();
+                    }
+                });
+
+        i.alert.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                res.ok(which);
+            }
+        });
+        return ret;
+    }
+
     public static <T> T getChoose(final Activity context, String message, final List<T> choices) {
         final AtomicBoolean repeat = new AtomicBoolean(true);
         final AtomicReference<Integer> result = new AtomicReference<>(-2);

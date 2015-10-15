@@ -3,6 +3,8 @@ package eu.fbk.mpba.sensorsflows;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
@@ -144,8 +146,8 @@ public class FlowsMan<TimeT, ValueT> implements
     protected List<DeviceDecorator<TimeT, ValueT>> _decDevices = new ArrayList<>();
     protected List<OutputDecorator<TimeT, ValueT>> _decOutputs = new ArrayList<>();
 
-    protected List<DevicePlugin<TimeT, ValueT>> _userDevices = new ArrayList<>();
-    protected List<OutputPlugin<TimeT, ValueT>> _userOutputs = new ArrayList<>();
+    protected Set<DevicePlugin<TimeT, ValueT>> _userDevices = new TreeSet<>();
+    protected Set<OutputPlugin<TimeT, ValueT>> _userOutputs = new TreeSet<>();
 
     protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null

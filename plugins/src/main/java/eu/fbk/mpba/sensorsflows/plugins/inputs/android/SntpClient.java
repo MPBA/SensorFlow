@@ -43,6 +43,7 @@ public class SntpClient
     private static final int NTP_PORT = 123;
     private static final int NTP_MODE_CLIENT = 3;
     private static final int NTP_VERSION = 3;
+    private static final long mBootTime = System.currentTimeMillis() * 1_000_000L - SystemClock.elapsedRealtimeNanos();
     // Number of seconds between Jan 1, 1900 and Jan 1, 1970
     // 70 years plus 17 leap days
     private static final long OFFSET_1900_TO_1970 = ((365L * 70L) + 17L) * 24L * 60L * 60L;
@@ -72,19 +73,19 @@ public class SntpClient
             // version is in bits 3-5 of first byte
             buffer[0] = NTP_MODE_CLIENT | (NTP_VERSION << 3);
             // get current time and write it to the request packet
-            long requestTime = System.currentTimeMillis();
-            long requestTicks = SystemClock.elapsedRealtime();
-            writeTimeStamp(buffer, TRANSMIT_TIME_OFFSET, requestTime);
+            long requestTime = SystemClock.elapsedRealtimeNanos() + mBootTime;
+            long requestTicks = SystemClock.elapsedRealtimeNanos();
+            writeTimeStamp(buffer, TRANSMIT_TIME_OFFSET, requestTime / 1_000_000L);
             socket.send(request);
             // read the response
             DatagramPacket response = new DatagramPacket(buffer, buffer.length);
             socket.receive(response);
-            long responseTicks = SystemClock.elapsedRealtime();
+            long responseTicks = SystemClock.elapsedRealtimeNanos();
             long responseTime = requestTime + (responseTicks - requestTicks);
             // extract the results
-            long originateTime = readTimeStamp(buffer, ORIGINATE_TIME_OFFSET);
-            long receiveTime = readTimeStamp(buffer, RECEIVE_TIME_OFFSET);
-            long transmitTime = readTimeStamp(buffer, TRANSMIT_TIME_OFFSET);
+            long originateTime = readTimeStamp(buffer, ORIGINATE_TIME_OFFSET) * 1_000_000L;
+            long receiveTime = readTimeStamp(buffer, RECEIVE_TIME_OFFSET) * 1_000_000L;
+            long transmitTime = readTimeStamp(buffer, TRANSMIT_TIME_OFFSET) * 1_000_000L;
             long roundTripTime = responseTicks - requestTicks - (transmitTime - receiveTime);
             // receiveTime = originateTime + transit + skew
             // responseTime = transmitTime + transit - skew
@@ -136,6 +137,11 @@ public class SntpClient
      */
     public long getRoundTripTime() {
         return mRoundTripTime;
+    }
+    /**
+     */
+    public long getNanoOffset() {
+        return getNtpTime() - getNtpTimeReference();
     }
     /**
      * Reads an unsigned 32 bit big endian number from the given offset in the buffer.

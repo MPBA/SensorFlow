@@ -30,7 +30,7 @@ import eu.fbk.mpba.litixcom.core.exceptions.InternalException;
 import eu.fbk.mpba.litixcom.core.exceptions.LoginCancelledException;
 import eu.fbk.mpba.litixcom.core.exceptions.MurphySyndromeException;
 import eu.fbk.mpba.litixcom.core.exceptions.SecurityException;
-import eu.fbk.mpba.litixcom.core.exceptions.TooManyUsersException;
+import eu.fbk.mpba.litixcom.core.exceptions.TooManyUsersOnServerException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
@@ -42,7 +42,7 @@ public class LitixComManager {
 
     private Track track;
 
-    public int newTrack(Sessione s) throws ConnectionException, DeadServerDatabaseException, InternalException, MurphySyndromeException, eu.fbk.mpba.litixcom.core.exceptions.SecurityException, TooManyUsersException, LoginCancelledException {
+    public int newTrack(Sessione s) throws ConnectionException, DeadServerDatabaseException, InternalException, MurphySyndromeException, eu.fbk.mpba.litixcom.core.exceptions.SecurityException, TooManyUsersOnServerException, LoginCancelledException {
         this.track = com.newTrack(s);
         return track.getTrackId();
     }
@@ -107,7 +107,7 @@ public class LitixComManager {
                     Log.d("Man", "Push failed L1, releasing once, sleeping 13370ms", e);
                     queueSemaphore.release();
                     Thread.sleep(13370);
-                } catch (DeadServerDatabaseException | TooManyUsersException | MurphySyndromeException e) {
+                } catch (DeadServerDatabaseException | TooManyUsersOnServerException | MurphySyndromeException e) {
                     Log.d("Man", String.format("Push failed L2, %s, releasing once, sleeping 1337000/2ms\n%s", e.getClass().getName(), e.getMessage()));
                     queueSemaphore.release();
                     Thread.sleep(1337000 / 2);
@@ -278,7 +278,7 @@ public class LitixComManager {
         th.start();
     }
 
-    public List<Sessione> getAuthorizedSessions() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersException {
+    public List<Sessione> getAuthorizedSessions() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersOnServerException {
         return com.getSessionsList();
     }
 

@@ -33,7 +33,7 @@ public class LitixComWrapper {
             Log.i("LitixComWrapper", "Simulation: ctor");
     }
 
-    public List<Sessione> getSessionsList() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersException {
+    public List<Sessione> getSessionsList() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersOnServerException {
         if (!simulation)
             return instance.getSessionsList();
         else {
@@ -42,7 +42,7 @@ public class LitixComWrapper {
         }
     }
 
-    public Track newTrack(Sessione sessione) throws ConnectionException, LoginCancelledException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersException, DeadServerDatabaseException {
+    public Track newTrack(Sessione sessione) throws ConnectionException, LoginCancelledException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersOnServerException, DeadServerDatabaseException {
         if (!simulation)
             return instance.newTrack(sessione);
         else {
@@ -84,14 +84,14 @@ public class LitixComWrapper {
         }
 
         @Override
-        public void put(byte[] data) throws DeadServerDatabaseException, ConnectionException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersException, LoginCancelledException {
+        public void put(byte[] data) throws DeadServerDatabaseException, ConnectionException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersOnServerException, LoginCancelledException {
             Log.i("LitixComWrapper", "Simulation: FakeTrack.put " + data.length + " bytes");
             if (comm)
                 Log.e("LitixComWrapper", "Simulation: FakeTrack illegal after-commit put call.");
         }
 
         @Override
-        public void commit() throws DeadServerDatabaseException, ConnectionException, SecurityException, LoginCancelledException, InternalException, MurphySyndromeException, TooManyUsersException {
+        public void commit() throws DeadServerDatabaseException, ConnectionException, SecurityException, LoginCancelledException, InternalException, MurphySyndromeException, TooManyUsersOnServerException {
             Log.i("LitixComWrapper", "Simulation: FakeTrack.commit");
             comm = true;
         }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.hardware.SensorManager;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,6 +91,10 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
                 cb.end(_sntpClient.compute());
             }
         }, "AsyncNtpCompute-"+System.currentTimeMillis()).start();
+    }
+
+    public void setNtpServers(Collection<String> servers) {
+        _sntpClient.setServers(servers);
     }
 
     // Ov

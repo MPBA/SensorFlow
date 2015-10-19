@@ -16,7 +16,7 @@ package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
  */
 
 import android.os.SystemClock;
-import android.util.Log;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -60,12 +60,11 @@ public class SntpClient
      * @param timeout network timeout in milliseconds.
      * @return true if the transaction was successful.
      */
-    public boolean requestTime(String host, int timeout) {
+    public boolean requestTime(InetAddress address, int timeout) {
         DatagramSocket socket = null;
         try {
             socket = new DatagramSocket();
             socket.setSoTimeout(timeout);
-            InetAddress address = InetAddress.getByName(host);
             byte[] buffer = new byte[NTP_PACKET_SIZE];
             DatagramPacket request = new DatagramPacket(buffer, buffer.length, address, NTP_PORT);
             // set mode = 3 (client) and version = 3
@@ -83,9 +82,9 @@ public class SntpClient
             long responseTicks = SystemClock.elapsedRealtimeNanos();
             long responseTime = requestTime + (responseTicks - requestTicks);
             // extract the results
-            long originateTime = readTimeStamp(buffer, ORIGINATE_TIME_OFFSET) * 1_000_000L;
-            long receiveTime = readTimeStamp(buffer, RECEIVE_TIME_OFFSET) * 1_000_000L;
-            long transmitTime = readTimeStamp(buffer, TRANSMIT_TIME_OFFSET) * 1_000_000L;
+            long originateTime = readTimeStamp(buffer, ORIGINATE_TIME_OFFSET);
+            long receiveTime = readTimeStamp(buffer, RECEIVE_TIME_OFFSET);
+            long transmitTime = readTimeStamp(buffer, TRANSMIT_TIME_OFFSET);
             long roundTripTime = responseTicks - requestTicks - (transmitTime - receiveTime);
             // receiveTime = originateTime + transit + skew
             // responseTime = transmitTime + transit - skew
@@ -104,7 +103,7 @@ public class SntpClient
             mNtpTimeReference = responseTicks;
             mRoundTripTime = roundTripTime;
         } catch (Exception e) {
-            Log.d(TAG, "request time failed: " + e);
+            //Log.d(TAG, "request time failed: " + e);
             return false;
         } finally {
             if (socket != null) {
@@ -122,7 +121,7 @@ public class SntpClient
         return mNtpTime;
     }
     /**
-     * Returns the reference clock value (value of SystemClock.elapsedRealtime())
+     * Returns the reference clock value (value of SystemClock.elapsedRealtimeNanos())
      * corresponding to the NTP time.
      *
      * @return reference clock corresponding to the NTP time.
@@ -133,15 +132,18 @@ public class SntpClient
     /**
      * Returns the round trip time of the NTP transaction
      *
-     * @return round trip time in milliseconds.
+     * @return round trip time in nanos.
      */
     public long getRoundTripTime() {
         return mRoundTripTime;
     }
     /**
+     * Returns the round trip time of the NTP transaction
+     *
+     * @return round trip time in nanos.
      */
-    public long getNanoOffset() {
-        return getNtpTime() - getNtpTimeReference();
+    public long getBootTime() {
+        return mBootTime;
     }
     /**
      * Reads an unsigned 32 bit big endian number from the given offset in the buffer.
@@ -160,12 +162,12 @@ public class SntpClient
     }
     /**
      * Reads the NTP time stamp at the given offset in the buffer and returns
-     * it as a system time (milliseconds since January 1, 1970).
+     * it as a system time (nanos since January 1, 1970).
      */
     private long readTimeStamp(byte[] buffer, int offset) {
         long seconds = read32(buffer, offset);
         long fraction = read32(buffer, offset + 4);
-        return ((seconds - OFFSET_1900_TO_1970) * 1000) + ((fraction * 1000L) / 0x100000000L);
+        return ((seconds - OFFSET_1900_TO_1970) * 1000000000) + ((fraction * 1000000000L) / 0x100000000L);
     }
     /**
      * Writes system time (milliseconds since January 1, 1970) as an NTP time stamp

@@ -6,12 +6,15 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.security.auth.login.LoginException;
-
 import eu.fbk.mpba.litixcom.core.LitixCom;
 import eu.fbk.mpba.litixcom.core.Track;
-import eu.fbk.mpba.litixcom.core.exceptions.*;
+import eu.fbk.mpba.litixcom.core.exceptions.ConnectionException;
+import eu.fbk.mpba.litixcom.core.exceptions.DeadServerDatabaseException;
+import eu.fbk.mpba.litixcom.core.exceptions.InternalException;
+import eu.fbk.mpba.litixcom.core.exceptions.LoginCancelledException;
+import eu.fbk.mpba.litixcom.core.exceptions.MurphySyndromeException;
 import eu.fbk.mpba.litixcom.core.exceptions.SecurityException;
+import eu.fbk.mpba.litixcom.core.exceptions.TooManyUsersOnServerException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
@@ -51,15 +54,6 @@ public class LitixComWrapper {
         }
     }
 
-    public void InvalidateToken() throws ConnectionException, LoginException {
-        if (!simulation)
-            //instance.inv();
-            Log.i("LitixComWrapper", "InvalidateToken: not implemented for now");
-        else {
-            Log.i("LitixComWrapper", "Simulation: InvalidateToken");
-        }
-    }
-
     public static class FakeTrack extends Track {
 
         private static int tid = 0;
@@ -72,13 +66,13 @@ public class LitixComWrapper {
         }
 
         @Override
-        public int getSessionId() {
+        public Integer getSessionId() {
             Log.i("LitixComWrapper", "Simulation: FakeTrack.getSessionId");
             return sessione.id;
         }
 
         @Override
-        public int getTrackId() {
+        public Integer getTrackId() {
             Log.i("LitixComWrapper", "Simulation: FakeTrack.getTrackId");
             return trackID;
         }

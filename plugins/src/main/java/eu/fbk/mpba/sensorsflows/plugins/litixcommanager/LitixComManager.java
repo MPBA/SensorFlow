@@ -36,7 +36,7 @@ import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 
 public class LitixComManager {
-    private final SQLiteDatabase buffer;
+    private SQLiteDatabase buffer = null;
     private final Thread th;
     protected LitixComWrapper com;
 
@@ -122,8 +122,7 @@ public class LitixComManager {
         }
     }
 
-    public LitixComManager(final Activity activity, InetSocketAddress address, SQLiteDatabase database, Certificati c) {
-        buffer = database;
+    public LitixComManager(final Activity activity, InetSocketAddress address, Certificati c) {
         com = new LitixComWrapper(address, new Credenziali() {
 
             final AtomicReference<String> username = new AtomicReference<>(null);
@@ -144,7 +143,7 @@ public class LitixComManager {
                             public void cancel() {
                                 semaphore.release();
                             }
-                        }, "Physiolitix - Login\nMaster's username", null).show();
+                        }, "Physiolitix - Login\nMaster's username", false).show();
                     }
                 });
                 try {
@@ -301,7 +300,6 @@ public class LitixComManager {
 
     public boolean close() {
         th.interrupt();
-        buffer.close();
         return readyToClose();
     }
 
@@ -313,5 +311,12 @@ public class LitixComManager {
         else
             a = "u-" + a;
         return a;
+    }
+
+    public void setBufferOnce(SQLiteDatabase buffer) {
+        if (this.buffer == null)
+            this.buffer = buffer;
+        else
+            throw new RuntimeException("Already set buffer!");
     }
 }

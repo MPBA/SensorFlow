@@ -12,6 +12,10 @@ android {
     }
     productFlavors {
     }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+    }
 }
 
 dependencies {
@@ -19,7 +23,7 @@ dependencies {
     compile 'com.loopj.android:android-async-http:1.4.6'
     compile 'com.google.code.gson:gson:2.3'
     compile project(':empalink-2.0')
-    // FIXME compile 'commons-io:commons-io:2.4'
+    compile 'commons-io:commons-io:2.4'
     // xee as armeabi jniLibs
     compile files('libs/DQuid_xee_driver.jar')
     compile files('libs/DQuid_xee_sdk.jar')

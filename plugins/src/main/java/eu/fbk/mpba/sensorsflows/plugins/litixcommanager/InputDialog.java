@@ -31,11 +31,13 @@ public class InputDialog {
     }
 
     // TODO: MRU strings
-    public static InputDialog makeText(Activity context, final ResultCallback<String> result, String title, String message) {
+    public static InputDialog makeText(Activity context, final ResultCallback<String> result, String title, boolean multiline) {
         InputDialog i = new InputDialog(context, title);
-        i.alert.setMessage(message);
 
         final EditText input = new EditText(context);
+        if (!multiline)
+            input.setMaxLines(1);
+
         i.alert.setView(input);
 
         i.alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {

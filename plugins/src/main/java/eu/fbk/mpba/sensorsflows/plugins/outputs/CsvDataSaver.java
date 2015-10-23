@@ -91,10 +91,18 @@ public class CsvDataSaver {
             length--;
         if (length == _csvCard[file])
             try {
-                _writs[file].write(data.get(0).toString());
+                String s = data.get(0).toString()
+                        .replace("\\", "\\\\")
+                        .replace(_sep, "\\t")
+                        .replace(_nl, "\\n");
+                _writs[file].write(s);
                 for (int i = 1; i < length; i++) {
                     _writs[file].write(_sep);
-                    _writs[file].write(data.get(i).toString());
+                    s = data.get(0).toString()
+                            .replace("\\", "\\\\")
+                            .replace(_sep, "\\t")
+                            .replace(_nl, "\\n");
+                    _writs[file].write(s);
                 }
                 _writs[file].write(_nl);
                 _writs[file].flush();

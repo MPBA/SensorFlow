@@ -3,6 +3,7 @@ package eu.fbk.mpba.sensorsflows.plugins.outputs;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
@@ -28,7 +29,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     String mPath;
     CsvDataSaver _savData;
     CsvDataSaver _savEvents;
-    List<ISensor> _linkedSensors = new ArrayList<>();
+    HashMap<ISensor, Integer> _reverseSensors = new HashMap<>();
     Callback call;
     private List<String> files;
 
@@ -56,16 +57,18 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
 
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
         List<String> nn = new ArrayList<>(streamingSensors.size());
-        for (ISensor s : streamingSensors)
-            nn.add( s.getParentDevicePlugin().getClass().getSimpleName() +
-                    "-" + s.getParentDevicePlugin().getName() +
-                    "/" + s.getClass().getSimpleName() +
-                    "-" + s.getName() );
+        _reverseSensors = new HashMap<>(streamingSensors.size(), 1f);
+        for (int i = 0; i < streamingSensors.size(); i++) {
+            nn.add(streamingSensors.get(i).getParentDevicePlugin().getClass().getSimpleName() +
+                    "-" + streamingSensors.get(i).getParentDevicePlugin().getName() +
+                    "/" + streamingSensors.get(i).getClass().getSimpleName() +
+                    "-" + streamingSensors.get(i).getName());
+            _reverseSensors.put(streamingSensors.get(i), i);
+        }
         String p = mPath + "/" + sessionTag.toString() + "/"
                 + CsvOutput.class.getSimpleName() + "-" + getName();
         _savData = new CsvDataSaver(p + "/data_", nn.toArray(), mExtension, mSeparator, mNewLine);
         _savEvents = new CsvDataSaver(p + "/events_", nn.toArray(), mExtension, mSeparator, mNewLine);
-        _linkedSensors.addAll(streamingSensors);
         List<List<Object>> dataH = new ArrayList<>();
         List<List<Object>> evtH = new ArrayList<>();
         for (ISensor l : streamingSensors) {
@@ -93,7 +96,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         line.add(event.timestamp.toString());
         line.add(event.code);
         line.add(event.message);
-        _savEvents.save(_linkedSensors.indexOf(event.sensor), line);
+        _savEvents.save(_reverseSensors.get(event.sensor), line);
         mForwarded++;
     }
 
@@ -103,7 +106,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         line.add(data.timestamp.toString());
         for (int i = 0; i < data.value.length; i++)
             line.add(data.value[i]);
-        _savData.save(_linkedSensors.indexOf(data.sensor), line);
+        _savData.save(_reverseSensors.get(data.sensor), line);
         mForwarded++;
     }
 

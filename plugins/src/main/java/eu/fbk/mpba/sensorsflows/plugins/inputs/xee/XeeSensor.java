@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.inputs.xee;
 
+import android.os.SystemClock;
+
 import com.dquid.xee.sdk.DQAccelerometerData;
 import com.dquid.xee.sdk.DQData;
 import com.dquid.xee.sdk.DQGpsData;
@@ -16,9 +18,13 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 public abstract class XeeSensor extends SensorComponent<Long, double[]> {
 
     protected boolean streaming = true;
-    protected boolean debug = true;
+    protected boolean debug = false;
     public static final int EC_CONNECTION = 0;
     public static final int EC_META = 1;
+    public static final int EC_OFFSET = 2;
+
+    protected int n = 0;
+    protected float avgdiff = 0;
 
     protected XeeSensor(DevicePlugin<Long, double[]> parent) {
         super(parent);
@@ -34,6 +40,20 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
         streaming = false;
     }
 
+    long lastDiffSave = 0;
+
+    protected void updateAvgDiff(Long timestamp, long timestamp2) {
+        avgdiff = (avgdiff * n + (timestamp - timestamp2 * 1_000_000)) / ++n;
+        if (SystemClock.elapsedRealtime() - lastDiffSave > 10_000 || n % 1000 == 1) {
+            saveAvgSmartphoneDiff();
+            lastDiffSave = SystemClock.elapsedRealtime();
+        }
+    }
+
+    public void saveAvgSmartphoneDiff() {
+        sensorEvent(getTime().getMonoUTCNanos(), EC_OFFSET, String.valueOf(avgdiff));
+    }
+
     public static class XeeAccelerometer extends XeeSensor {
         protected XeeAccelerometer(DevicePlugin<Long, double[]> parent) {
             super(parent);
@@ -42,8 +62,10 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
         void sensorValue(Long timestamp, DQAccelerometerData d) {
             if (debug)
                 sensorValue(timestamp, new double[]{d.timestamp, d.x, d.y, d.z, d.nda});
-            else
-                sensorValue(timestamp, new double[]{d.x, d.y, d.z, d.nda});
+            else {
+                updateAvgDiff(timestamp, d.timestamp);
+                sensorValue(d.timestamp, new double[]{d.x, d.y, d.z, d.nda});
+            }
         }
 
         @Override
@@ -69,8 +91,10 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
                 d.longitude *= -1;
             if (debug)
                 sensorValue(timestamp, new double[]{ d.timestamp, d.latitude, d.longitude, d.altitude, d.heading, d.satellites });
-            else
-                sensorValue(timestamp, new double[]{ d.latitude, d.longitude, d.altitude, d.heading, d.satellites });
+            else {
+                updateAvgDiff(timestamp, d.timestamp);
+                sensorValue(d.timestamp, new double[]{d.latitude, d.longitude, d.altitude, d.heading, d.satellites});
+            }
         }
 
         @Override
@@ -94,8 +118,10 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
         void sensorValue(Long timestamp, DQData d) {
             if (debug)
                 sensorValue(timestamp, new double[]{d.getTimestamp(), d.getValue()});
-            else
-                sensorValue(timestamp, new double[]{d.getValue()});
+            else {
+                updateAvgDiff(timestamp, d.getTimestamp());
+                sensorValue(d.getTimestamp(), new double[]{d.getValue()});
+            }
         }
 
         void sendMeta(DQData d) {

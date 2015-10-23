@@ -22,10 +22,9 @@ import java.util.Map;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
-import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener, IMonoTimestampSource {
+public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener {
 
     public static final int FIRMWARE_UPDATE = 1 << 5;
     public static final int FIRMWARE_UPDATE_STARTED = FIRMWARE_UPDATE | 1;
@@ -110,6 +109,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         connect(this.simulation = simulation);
     }
 
+    @Override
     public void inputPluginInitialize(){
         if (debug)
             Log.v(debugTAG, "inputPluginInitialize");
@@ -118,6 +118,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         active = true;
     }
 
+    @Override
     public void inputPluginFinalize() {
         if (debug)
             Log.v(debugTAG, "inputPluginFinalize");
@@ -208,7 +209,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onDisconnection() {
         if (debug)
             Log.v(debugTAG, "Disconnected");
-        broadcastEvent(getMonoUTCNanos(System.nanoTime()), XeeSensor.EC_CONNECTION, "disconnected");
+        broadcastEvent(XeeSensor.EC_CONNECTION, "disconnected");
     }
 
     @Override
@@ -220,7 +221,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             Log.e(debugTAG, "ERROR 401!!!! " + arg1);
             DQUnitManager.INSTANCE.disconnect();
         }
-        broadcastEvent(getMonoUTCNanos(System.nanoTime()), arg0, arg1);
+        broadcastEvent(arg0, arg1);
     }
 
     @Override
@@ -262,7 +263,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onNewAccelerometerData(DQAccelerometerData arg0) {
-        Long ts = getMonoUTCNanos(System.nanoTime());
+        Long ts = xeeAcc.getTime().getMonoUTCNanos();
         if(heavy_debug)
             Log.v(debugTAG, "onNewAccelerometerData - " + arg0.toString());
         xeeAcc.sensorValue(ts, arg0);
@@ -270,7 +271,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onNewGpsData(DQGpsData arg0) {
-        Long ts = getMonoUTCNanos(System.nanoTime());
+        Long ts = xeeGPS.getTime().getMonoUTCNanos();
         if(heavy_debug)
             Log.v(debugTAG, "onNewGpsData - " + arg0.toString());
         if (!newDataCheck) {
@@ -285,7 +286,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onNewData(HashMap<Long, DQData> arg0) {
         if(heavy_debug)
             Log.v(debugTAG, "onNewData - " + arg0.toString());
-        Long ts = getMonoUTCNanos(System.nanoTime());
+        Long ts = xeeGPS.getTime().getMonoUTCNanos();
         if (!newDataCheck && arg0.size() != 0) {
             newDataCheck = true;
             if (ec != null)
@@ -312,28 +313,16 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
         }
         else {
-            broadcastEvent(getMonoUTCNanos(System.nanoTime()), 0, "disconnected");
+            broadcastEvent(0, "disconnected");
         }
     }
 
-    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-
-    @Override
-    public long getMonoUTCNanos() {
-        return System.nanoTime() + bootUTCNanos;
-    }
-
-    @Override
-    public long getMonoUTCNanos(long realTimeNanos) {
-        return bootUTCNanos + realTimeNanos;
-    }
-
-    private void broadcastEvent(long time, int code, String message) {
+    private void broadcastEvent(int code, String message) {
         if (active)
             for (SensorComponent<Long, double[]> i : getSensors())
-                i.sensorEvent(time, code, message);
+                i.sensorEvent(i.getTime().getMonoUTCNanos(), code, message);
         else
-            Log.i(debugTAG, "event: " + time + ", " + code + ", " + message);
+            Log.i(debugTAG, "event: " + xeeAcc.getTime().getMonoUTCNanos() + ", " + code + ", " + message);
     }
 
     @Override
@@ -342,6 +331,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         close();
     }
 
+    @Override
     public void close() {
         disconnect();
     }

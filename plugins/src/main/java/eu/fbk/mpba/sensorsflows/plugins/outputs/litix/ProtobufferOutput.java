@@ -2,12 +2,14 @@ package eu.fbk.mpba.sensorsflows.plugins.outputs.litix;
 
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
@@ -48,47 +50,59 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private final SplitterParams mSplitter;
     protected SQLiteDatabase buffer;
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
-    protected List<ISensor> mSensors = new ArrayList<>();
+    protected HashMap<ISensor, Integer> mReverseSensors = new HashMap<>();
     protected List<Litix.SensorData> mSensorData = new ArrayList<>();
     protected List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
     protected List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
     protected Object mSessionTag = "undefined";
     protected long mTrackStart = 0;
     protected int splits = 0;
-    protected int sampleSize = (Long.SIZE + 2 * Double.SIZE) / 8;
 
     public static class SplitterParams {
         private final float targetCompressedSize;
         private final float maxSplitTime;
+        private final float minSplitSize;
         private final float ratioBalance = .3f;
         private final float adjustBalance = .7f;
         private float compressionRatio;
         private float adjust = 1;
+        private long lastSplitTime;
+        private int size = 0;
+        private boolean timeout = false;
 
-        public SplitterParams(float targetCompressedSize, float maxSplitTime, float initialCompressionRatio) {
+        public SplitterParams(float targetCompressedSize, float maxSplitTime, float minSplitSize, float initialCompressionRatio) {
             this.targetCompressedSize = targetCompressedSize;
-            this.maxSplitTime = maxSplitTime;
+            this.minSplitSize = minSplitSize;
+            this.maxSplitTime = maxSplitTime * 1000f;
             compressionRatio = initialCompressionRatio;
+            lastSplitTime = SystemClock.elapsedRealtime();
         }
 
-        public void updateCompressionRatio(float ratio) {
-            Log.d("ProtoOut", "Updating CR: " + ratio);
-            compressionRatio = compressionRatio * (1 - ratioBalance) + ratio * ratioBalance;
-        }
-
-        public void updateCompressedSize(float bytes) {
-            Log.d("ProtoOut", "Updating CS: " + bytes);
-            adjust *= (float)Math.pow(targetCompressedSize / bytes, adjustBalance);
+        public void updateSize(float compressed, float raw) {
+            Log.d("ProtoOut", "Updating size" + (timeout ? " after timeout" : ""));
+            if (!timeout)
+                adjust *= (float) Math.pow(targetCompressedSize / compressed, adjustBalance);
+            compressionRatio = Math.min(1.f, compressionRatio * (1 - ratioBalance) + ratioBalance * compressed / raw);
         }
 
         public float getFlushSize() {
             return targetCompressedSize * adjust / compressionRatio;
         }
 
+        public boolean addAndPopFlushSuggested(int newSize) {
+            size += newSize;
+            if (size >= getFlushSize() || size >= minSplitSize && SystemClock.elapsedRealtime() - lastSplitTime > maxSplitTime) {
+                size = 0;
+                timeout = SystemClock.elapsedRealtime() - lastSplitTime > maxSplitTime;
+                lastSplitTime = SystemClock.elapsedRealtime();
+                return true;
+            } else
+                return false;
+        }
+
         @Override
         public String toString() {
-            return "maxSplitTime:"+maxSplitTime+"\ttargetCompressedSize:"+targetCompressedSize+"\t\n" +
-                    "ratio="+compressionRatio+"\tflushSize="+getFlushSize() + "\tadjust="+adjust;
+            return "-\nratio=" + compressionRatio + "\nflushSize=" + getFlushSize() + "\nadjust=" + adjust;
         }
     }
 
@@ -98,6 +112,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     public interface SplitEvent {
         void newSplit(ProtobufferOutput sender, Long id, SplitterParams params);
+
         void noMoreBuffers(ProtobufferOutput sender, SplitterParams params);
     }
 
@@ -122,8 +137,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         if (finalized) {
             mTrackID = track;
             mSessionID = session;
-        }
-        else
+        } else
             throw new NullPointerException("ProtobufferOutput already initialized.");
     }
 
@@ -142,7 +156,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final Litix.TrackSplit ts = sb.build();
         final long bks = currentBacklogSize();
 
-        // TODO test
         mSensorData.clear();
         mSensorEvent.clear();
         mSessionMeta.clear();
@@ -150,35 +163,35 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                long debugPreSize, debugTime = -System.nanoTime();
-                debugPreSize = ts.getSerializedSize();
-                debugTime += System.nanoTime();
-                Log.d("ProtoOut", "Async compressing " + debugPreSize + " (computed in " + debugTime/1000_000.0 + "ms)");
-
-                ByteArrayOutputStream b = new ByteArrayOutputStream((int)(mSplitter.getFlushSize() / sampleSize));
+                ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+                ByteArrayOutputStream raw = new ByteArrayOutputStream();
                 try {
-                    debugTime = -System.nanoTime();
-                    GZIPOutputStream zos = new GZIPOutputStream(b);
-                    ts.writeTo(zos);
-                    zos.close();
-                    byte[] ba = b.toByteArray();
+                    long debugTime = -System.nanoTime();
+                    ts.writeTo(raw);
                     debugTime += System.nanoTime();
 
-                    Log.d("ProtoOut", "Async compressed " + ba.length + " (ratio " + (100.0 * ba.length / debugPreSize) + "%) in " + debugTime/1000_000.0 + "ms");
+                    Log.d("ProtoOut", "Async serialized " + raw.size() / 1000f + "K in " + debugTime / 1000_000.0 + "ms");
 
-                    Log.v("ProtoOut", mSplitter.toString());
+                    debugTime = -System.nanoTime();
+                    GZIPOutputStream zos = new GZIPOutputStream(compressed);
+                    raw.writeTo(zos);
+                    zos.close();
+                    debugTime += System.nanoTime();
 
-                    mSplitter.updateCompressedSize(ba.length);
-                    mSplitter.updateCompressionRatio((float)ba.length / debugPreSize);
+                    Log.d("ProtoOut", "Async compressed " + compressed.size() / 1000f + "K (ratio " + (100.0 * compressed.size() / raw.size()) + "%) in " + debugTime / 1000_000.0 + "ms");
+
+                    mSplitter.updateSize(compressed.size(), raw.size());
+
+                    Log.v("ProtoOut", "\n" + mSplitter.toString());
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
                     s.bindLong(1, split_id);
                     s.bindLong(2, mTrackStart);
-                    s.bindBlob(3, ba);
+                    s.bindBlob(3, compressed.toByteArray());
                     s.executeInsert();
 
-                    b.close();
+                    compressed.close();
 
                     splits++;
                     ProtobufferOutput.this.mForwarded += bks;
@@ -208,19 +221,20 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
         lastFlush = false;
         finalized = false;
-        mSensors = streamingSensors;
+        mReverseSensors = new HashMap<>(streamingSensors.size(), 1);
         mSessionTag = sessionTag;
         mTrackStart = getMonoTimeMillis();
 
-        for (int s = 0; s < mSensors.size(); s++) {
+        for (int s = 0; s < streamingSensors.size(); s++) {
             SensorInfo.Builder db = SensorInfo.newBuilder()
                     .setSensorId(s)
-                    .setDevice(mSensors.get(s).getParentDevicePlugin().getClass().getName())
+                    .setDevice(streamingSensors.get(s).getParentDevicePlugin().getClass().getName())
                     .setType(getClass().getName())
-                    .setName(mSensors.get(s).getName());
-            for (Object x : mSensors.get(s).getValueDescriptor())
+                    .setName(streamingSensors.get(s).getName());
+            for (Object x : streamingSensors.get(s).getValueDescriptor())
                 db.addChannels(x.toString());
             mSensorInfo.add(db.build());
+            mReverseSensors.put(streamingSensors.get(s), s);
         }
 
         SQLiteStatement stmt = buffer.compileStatement(Queries.t);
@@ -248,10 +262,10 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                         .setTimestamp(event.timestamp)
                         .setCode(event.code)
                         .setMessage(event.message)
-                        .setSensorId(mSensors.indexOf(event.sensor)) // FIXME inefficient
+                        .setSensorId(mReverseSensors.get(event.sensor))
                         .build()
         );
-        if (currentBacklogSize() >= mSplitter.getFlushSize() / sampleSize)
+        if (mSplitter.addAndPopFlushSuggested((Long.SIZE + Integer.SIZE + Character.SIZE * event.message.length()) / 8))
             flushTrackSplit();
     }
 
@@ -263,12 +277,12 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         for (int i = 0; i < data.value.length; i++)
             boxed[i] = data.value[i];
         mSensorData.add(Litix.SensorData.newBuilder()
-                .setTimestamp(data.timestamp)
-                .addAllValue(Arrays.asList(boxed))
-                .setSensorId(mSensors.indexOf(data.sensor)) // FIXME inefficient
-                .build()
+                        .setTimestamp(data.timestamp)
+                        .addAllValue(Arrays.asList(boxed))
+                        .setSensorId(mReverseSensors.get(data.sensor))
+                        .build()
         );
-        if (currentBacklogSize() >= mSplitter.getFlushSize() / sampleSize)
+        if (mSplitter.addAndPopFlushSuggested((Long.SIZE + Double.SIZE * data.value.length) / 8))
             flushTrackSplit();
     }
 

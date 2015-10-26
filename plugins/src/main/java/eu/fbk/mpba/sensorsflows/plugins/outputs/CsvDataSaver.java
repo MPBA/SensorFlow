@@ -98,7 +98,7 @@ public class CsvDataSaver {
                 _writs[file].write(s);
                 for (int i = 1; i < length; i++) {
                     _writs[file].write(_sep);
-                    s = data.get(0).toString()
+                    s = data.get(i).toString()
                             .replace("\\", "\\\\")
                             .replace(_sep, "\\t")
                             .replace(_nl, "\\n");

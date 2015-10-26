@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.util.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -127,62 +128,6 @@ public class LitixComManager {
 
             final AtomicReference<String> username = new AtomicReference<>(null);
 
-            public String getUsername() {
-                final Semaphore semaphore = new Semaphore(0);
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        InputDialog.makeText(activity, new InputDialog.ResultCallback<String>() {
-                            @Override
-                            public void ok(String result) {
-                                username.set(result);
-                                semaphore.release();
-                            }
-
-                            @Override
-                            public void cancel() {
-                                semaphore.release();
-                            }
-                        }, "Physiolitix - Login\nMaster's username", false).show();
-                    }
-                });
-                try {
-                    semaphore.acquire();
-                    return username.get();
-                } catch (InterruptedException e) {
-                    return null;
-                }
-            }
-
-            public String getPassword() {
-                final Semaphore semaphore = new Semaphore(0);
-                final AtomicReference<String> password = new AtomicReference<>(null);
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        InputDialog.makePassword(activity, new InputDialog.ResultCallback<String>() {
-                                    @Override
-                                    public void ok(String result) {
-                                        password.set(result);
-                                        semaphore.release();
-                                    }
-
-                                    @Override
-                                    public void cancel() {
-                                        semaphore.release();
-                                    }
-                                },
-                                String.format("Physiolitix - Login\nPassword for %s", username.get()), null).show();
-                    }
-                });
-                try {
-                    semaphore.acquire();
-                    return password.get();
-                } catch (InterruptedException e) {
-                    return null;
-                }
-            }
-
             public String getDeviceId() {
                 return getXDID(activity);
             }
@@ -240,16 +185,34 @@ public class LitixComManager {
 
             @Override
             public Triple getUsernamePasswordDeviceId() {
-                String name, surname, address;
-                name = getUsername();
-                if (name != null) {
-                    surname = getPassword();
-                    if (surname != null) {
-                        address = getDeviceId();
-                        return new Triple(name, surname, address);
+                final Semaphore semaphore = new Semaphore(0);
+                final String[] name = new String[1];
+                final String[] surname = new String[1];
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        InputDialog.makeLogIn(activity, new InputDialog.ResultCallback<Pair<String, String>>() {
+                            @Override
+                            public void ok(Pair<String, String> result) {
+                                name[0] = result.first;
+                                surname[0] = result.second;
+                                semaphore.release();
+                            }
+
+                            @Override
+                            public void cancel() {
+                                semaphore.release();
+                            }
+                        }, "Physiolitix - Login", "Sign in", "Cancel").show();
                     }
+                });
+                try {
+                    semaphore.acquire();
+                    String address = getDeviceId() + "-" + activity.getApplicationInfo().packageName;
+                    return new Triple(name[0], surname[0], address);
+                } catch (InterruptedException e) {
+                    return null;
                 }
-                return new Triple(null, null, null); // FIXME return null
             }
 
             @Override

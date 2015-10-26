@@ -55,12 +55,12 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
     public class NtpResp {
         public final int n;
         public final double avg;
-        public final double sqsum;
+        public final double sqavg;
 
-        public NtpResp(int n, double avg, double sqsum) {
+        public NtpResp(int n, double avg, double sqavg) {
             this.n = n;
             this.avg = avg;
-            this.sqsum = sqsum;
+            this.sqavg = sqavg;
         }
     }
 

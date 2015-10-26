@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.text.InputType;
+import android.util.Pair;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 
 import java.util.ArrayList;
@@ -43,6 +45,35 @@ public class InputDialog {
         i.alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 result.ok(input.getText().toString());
+            }
+        });
+
+        i.alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                result.cancel();
+            }
+        });
+        return i;
+    }
+
+    public static InputDialog makeLogIn(Activity context, final ResultCallback<Pair<String, String>> result, String title, String ok, String no) {
+        InputDialog i = new InputDialog(context, title);
+        final EditText input = new EditText(context);
+        input.setHint("Username");
+        final EditText passw = new EditText(context);
+        input.setHint("Password");
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        final LinearLayout m = new LinearLayout(context);
+        m.addView(input);
+        m.addView(passw);
+
+        input.setMaxLines(1);
+
+        i.alert.setView(m);
+
+        i.alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                result.ok(new Pair<>(input.getText().toString(), passw.getText().toString()));
             }
         });
 

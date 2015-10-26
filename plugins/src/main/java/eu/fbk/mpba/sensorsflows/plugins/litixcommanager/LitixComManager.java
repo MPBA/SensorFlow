@@ -191,14 +191,65 @@ public class LitixComManager {
             public void setToken(String token) {
                 File d = activity.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
                 File t = new File(d, "halo_memory");
+                FileOutputStream o = null;
                 try {
-                    FileOutputStream o = new FileOutputStream(t);
+                    o = new FileOutputStream(t);
                     o.write(token.getBytes());
                 } catch (FileNotFoundException e) {
                     Log.e(LitixComManager.class.getSimpleName(), "Cannot create a private file.");
                 } catch (IOException e) {
                     Log.e(LitixComManager.class.getSimpleName(), "Cannot write a private file.");
                 }
+                finally {
+                    if (o != null)
+                        try {
+                            o.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                }
+            }
+
+            @Override
+            public String getToken() {
+                File d = activity.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
+                File t = new File(d, "halo_memory");
+                StringBuilder token = new StringBuilder();
+                FileInputStream i = null;
+                try {
+                    i = new FileInputStream(t);
+                    byte[] buf = new byte[512];
+                    int n;
+                    while ((n = i.read(buf, 0, 512)) > 0)
+                        token.append(new String(buf, 0, n));
+                } catch (FileNotFoundException e) {
+                    Log.d(LitixComManager.class.getSimpleName(), "No token private file.");
+                } catch (IOException e) {
+                    Log.e(LitixComManager.class.getSimpleName(), "Cannot read a private file.");
+                }
+                finally {
+                    if (i != null)
+                        try {
+                            i.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                }
+                return token.toString();
+            }
+
+            @Override
+            public Triple getUsernamePasswordDeviceId() {
+                String name, surname, address;
+                name = getUsername();
+                if (name != null) {
+                    surname = getPassword();
+                    if (surname != null) {
+                        address = getDeviceId();
+                        return new Triple(name, surname, address);
+                    }
+                }
+                return new Triple(null, null, null); // FIXME return null
             }
 
             @Override
@@ -233,37 +284,6 @@ public class LitixComManager {
                     return false;
                 }
                 return r.get();
-            }
-
-            @Override
-            public String getToken() {
-                File d = activity.getDir(LitixComManager.class.getSimpleName(), Context.MODE_PRIVATE);
-                File t = new File(d, "halo_memory");
-                String token = null;
-                try {
-                    FileInputStream o = new FileInputStream(t);
-                    byte[] buf = new byte[512];
-                    if (o.read(buf, 0, 512) > 0)
-                        token = new String(buf);
-                } catch (FileNotFoundException ignore) {
-                } catch (IOException e) {
-                    Log.e(LitixComManager.class.getSimpleName(), "Cannot read a private file.");
-                }
-                return token;
-            }
-
-            @Override
-            public Triple getUsernamePasswordDeviceId() {
-                String name, surname, address;
-                name = getUsername();
-                if (name != null) {
-                    surname = getPassword();
-                    if (surname != null) {
-                        address = getDeviceId();
-                        return new Triple(name, surname, address);
-                    }
-                }
-                return new Triple(null, null, null); // FIXME return null
             }
 
         }, c);

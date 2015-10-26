@@ -25,10 +25,6 @@ public class LitixComWrapper {
 
     private LitixCom instance = null;
 
-    public LitixComWrapper(InetSocketAddress endpoint, Credenziali crendenziali) {
-        this(endpoint, crendenziali, null);
-    }
-
     public LitixComWrapper(InetSocketAddress endpoint, Credenziali crendenziali, Certificati certificati) {
         if (!simulation)
             instance = new LitixCom(endpoint, crendenziali, certificati);

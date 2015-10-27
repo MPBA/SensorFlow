@@ -1,7 +1,6 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -14,7 +13,7 @@ import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
-import eu.fbk.mpba.sensorsflows.base.IStandard;
+import eu.fbk.mpba.sensorsflows.base.IStandardComparator;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
@@ -181,7 +180,7 @@ public class FlowsMan<TimeT, ValueT> implements
             if (!_userDevices.contains(device)) {
                 _userDevices.add(device);
                 for (SensorComponent<TimeT, ValueT> s : device.getSensors())
-                    s.setManager(this);
+                    s.registerManager(this);
                 _decDevices.add(new DeviceDecorator<>(device, this));
             }
         }
@@ -565,6 +564,10 @@ public class FlowsMan<TimeT, ValueT> implements
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
+        for (DeviceDecorator<TimeT, ValueT> d : _decDevices) {
+            for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
+                s.unregisterManager(this);
+        }
         changeState(EngineStatus.CLOSED);
     }
 
@@ -608,38 +611,5 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void setOnOutputStateChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
         _onOutputStateChanged = callback;
-    }
-
-    static class IStandardComparator implements Comparator<IStandard> {
-        @Override
-        public int compare(IStandard o, IStandard t1) {
-            int y = System.identityHashCode(o) - System.identityHashCode(t1);
-            if (y == 0)
-                if (o != t1) {
-                    if (o != null && t1 != null) {
-                        int y2 = System.identityHashCode(o.getClass()) - System.identityHashCode(t1.getClass());
-                        if (y2 == 0) {
-                            int y3 = System.identityHashCode(o.getName()) - System.identityHashCode(t1.getName());
-                            if (y3 == 0) {
-                                throw new IndistinguishableObjectsException(String.format(
-                                        "Found two object with same class, same name and same hash that do not equal (==):%s, %s, %s",
-                                        o.getClass().getName(), o.getName(), System.identityHashCode(o)));
-                            } else
-                                return y3;
-                        } else
-                            return y2;
-                    } else
-                        throw new NullPointerException("Tried to add null device/output");
-                } else
-                    return 0;
-            else
-                return y;
-        }
-
-        static class IndistinguishableObjectsException extends RuntimeException {
-            IndistinguishableObjectsException(String message) {
-                super(message);
-            }
-        }
     }
 }

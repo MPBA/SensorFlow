@@ -56,8 +56,8 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
                 : (getTime().getMonoUTCNanos(location.getElapsedRealtimeNanos() - sysToSysClockNanoOffset));
         sensorValue(suppNTime,
                 new double[]{
-                        location.getLongitude(),
                         location.getLatitude(),
+                        location.getLongitude(),
                         location.getAltitude(),
                         location.getAccuracy()
                 });
@@ -91,7 +91,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
 
     @Override
     public List<Object> getValueDescriptor() {
-        return Arrays.asList((Object) "Longitude", "Latitude", "Altitude", "Accuracy");
+        return Arrays.asList((Object) "Latitude", "Longitude", "Altitude", "Accuracy");
     }
 
     @Override

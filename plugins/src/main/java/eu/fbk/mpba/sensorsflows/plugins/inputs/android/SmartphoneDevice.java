@@ -18,16 +18,27 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
     private TextEventsSensor<double[]> _textSensor;
-    private TimeOffsetSensor _timeOffsetSensor;
+    private UdpTimeOffsetSensor _udpTimeOffsetSensor;
 
     public SmartphoneDevice(Context context, String name) {
+        this(context, name, true, true, true, true, true, SensorManager.SENSOR_DELAY_FASTEST);
+    }
+
+    public SmartphoneDevice(Context context, String name, boolean text, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
         this.name = name;
         _sensors = new ArrayList<>();
-        _sensors.add(new GpsSensor(this, context, 0, 0));
-        _sensors.add(new AccelerometerSensor(this, context, SensorManager.SENSOR_DELAY_FASTEST));
-        _sensors.add(_textSensor = new TextEventsSensor<>(this));
-        _sensors.add(_timeOffsetSensor = new TimeOffsetSensor(this));
-        _sensors.add(_sntpClient = new SntpSensor(this, Collections.singletonList("pool.ntp.org")));
+        if (gps)
+            _sensors.add(new GpsSensor(this, context, 0, 0));
+        if (accelerometer)
+            _sensors.add(new AccelerometerSensor(this, context, accSensorDelay));
+        if (text)
+            _sensors.add(_textSensor = new TextEventsSensor<>(this));
+        if (udpTime)
+            _sensors.add(_udpTimeOffsetSensor = new UdpTimeOffsetSensor(this));
+        if (sntp)
+            _sensors.add(_sntpClient = new SntpSensor(this, Collections.singletonList("pool.ntp.org")));
+        else
+            _sntpClient = null;
     }
 
     // Time markers
@@ -55,23 +66,23 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
 
     public void setTimeServerEnabled(boolean enabled) {
         if (enabled)
-            _timeOffsetSensor.startTimeServer();
+            _udpTimeOffsetSensor.startTimeServer();
         else
-            _timeOffsetSensor.stopTimeServer();
+            _udpTimeOffsetSensor.stopTimeServer();
     }
 
     public boolean isTimeServerEnabled() {
-        return _timeOffsetSensor.isTimeServerRunning();
+        return _udpTimeOffsetSensor.isTimeServerRunning();
     }
 
     // Time client
 
     public void computeOffsetBroadcastedAsync(int passes, LanUdpTimeClient.TimeOffsetCallback cb) {
-        _timeOffsetSensor.computeOnEveryServer(passes, cb);
+        _udpTimeOffsetSensor.computeOnEveryServer(passes, cb);
     }
 
     public void clearTimeOffsets() {
-        _timeOffsetSensor.clear();
+        _udpTimeOffsetSensor.clear();
     }
 
     // SNTP client

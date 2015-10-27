@@ -1,6 +1,5 @@
 package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
 
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
@@ -114,11 +113,6 @@ public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     @Override
     public void switchOffAsync() {
-    }
-
-    @Override
-    public String getName() {
-        return LocationManager.GPS_PROVIDER;
     }
 
     public void clear() {

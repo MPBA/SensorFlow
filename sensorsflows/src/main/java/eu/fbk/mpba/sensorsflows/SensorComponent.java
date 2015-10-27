@@ -2,11 +2,13 @@ package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
+import eu.fbk.mpba.sensorsflows.base.StrongerComparator;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 /**
@@ -14,7 +16,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  */
 public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     protected DevicePlugin<TimeT, ValueT> _parent = null;
-    protected ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> _handler;
+    protected TreeSet<ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>> _handler = new TreeSet<>(new StrongerComparator());
     protected ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
 
     protected SensorComponent(DevicePlugin<TimeT, ValueT> parent) {
@@ -44,8 +46,12 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         _outputs.add(_output);
     }
 
-    void setManager(ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> man) {
-        _handler = man;
+    void registerManager(ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> man) {
+        _handler.add(man);
+    }
+
+    void unregisterManager(ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> man) {
+        _handler.remove(man);
     }
 
     Iterable<OutputDecorator<TimeT, ValueT>> getOutputs() {
@@ -55,8 +61,11 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        if (_handler != null)
-            _handler.sensorStateChanged(this, null, mStatus = state);
+        for (ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+//            if (i instanceof FlowsMan && ((FlowsMan)i).getStatus() == EngineStatus.CLOSED)
+//                _handler.remove(i);
+            i.sensorStateChanged(this, null, mStatus = state);
+        }
     }
 
     // Managed Overrides
@@ -89,17 +98,21 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     // Notify methods
 
     public void sensorValue(TimeT time, ValueT value) {
-        if (_handler != null) {
-            _handler.sensorValue(this, time, value);
-            mForwardedMessages++;
+        for (ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+//            if (i instanceof FlowsMan && ((FlowsMan)i).getStatus() == EngineStatus.CLOSED)
+//                _handler.remove(i);
+            i.sensorValue(this, time, value);
         }
+        mForwardedMessages++;
     }
 
     public void sensorEvent(TimeT time, int type, String message) {
-        if (_handler != null) {
-            _handler.sensorEvent(this, time, type, message);
-            mForwardedMessages++;
+        for (ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+//            if (i instanceof FlowsMan && ((FlowsMan)i).getStatus() == EngineStatus.CLOSED)
+//                _handler.remove(i);
+            i.sensorEvent(this, time, type, message);
         }
+        mForwardedMessages++;
     }
 
     // Listenage

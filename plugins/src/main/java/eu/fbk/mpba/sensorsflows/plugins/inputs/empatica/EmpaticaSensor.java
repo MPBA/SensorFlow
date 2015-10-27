@@ -1,6 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.inputs.empatica;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.SensorComponent;
@@ -34,7 +35,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "Battery");
+            return Collections.singletonList((Object) "Battery");
         }
     }
 
@@ -56,7 +57,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "IBI");
+            return Collections.singletonList((Object) "IBI");
         }
     }
 
@@ -67,7 +68,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "Temperature");
+            return Collections.singletonList((Object) "Temperature");
         }
     }
 
@@ -78,7 +79,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "GSR");
+            return Collections.singletonList((Object) "GSR");
         }
     }
 
@@ -89,7 +90,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "BVP");
+            return Collections.singletonList((Object) "BVP");
         }
     }
 }

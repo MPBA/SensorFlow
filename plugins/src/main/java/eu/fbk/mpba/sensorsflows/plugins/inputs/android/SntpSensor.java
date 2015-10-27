@@ -94,7 +94,6 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
         std = Math.sqrt(sqavg - Math.pow(avg, 2));
 
         sensorValue(getTime().getMonoUTCNanos(), new double[] { avg, std, n });
-        sensorEvent(getTime().getMonoUTCNanos(), 1, "avg:"+avg+", std:"+std+", hits:"+n);
 
         return new NtpResp(n, avg, sqavg);
     }

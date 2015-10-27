@@ -97,7 +97,9 @@
     <orderEntry type="library" exported="" name="support-v4-23.0.1" level="project" />
     <orderEntry type="library" exported="" name="appcompat-v7-23.0.1" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-23.0.1" level="project" />
+    <orderEntry type="module" module-name="empalink-2.0" exported="" />
     <orderEntry type="module" module-name="litixcom" exported="" />
     <orderEntry type="module" module-name="sensorsflows" exported="" />
+    <orderEntry type="library" exported="" name="empalink-2.0-unspecified" level="project" />
   </component>
 </module>

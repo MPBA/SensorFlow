@@ -17,11 +17,11 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 /**
  * Nanosecond monotonic precision
  */
-public class TimeOffsetSensor extends SensorComponent<Long, double[]> {
+public class UdpTimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     private boolean forward = false;
 
-    public TimeOffsetSensor(DevicePlugin<Long, double[]> parent) {
+    public UdpTimeOffsetSensor(DevicePlugin<Long, double[]> parent) {
         super(parent);
     }
 

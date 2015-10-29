@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
@@ -57,6 +58,41 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected Object mSessionTag = "undefined";
     protected long mTrackStart = 0;
     protected int splits = 0;
+    private String mName;
+    private int mReceived = 0;
+    private int mForwarded = 0;
+    private long mForwardedBytes = 0;
+    private long mReceivedBytes = 0;
+
+    private TextStatusUpdater mUpd;
+    HashMap<String, Object> tsParams = new HashMap<>();
+    long tsLastUpd = 0;
+
+    public interface TextStatusUpdater {
+        void updateTextStatus(String text);
+    }
+
+    public void setTextStatusUpdater(TextStatusUpdater upd) {
+        this.mUpd = upd;
+    }
+
+    void textStatusPut(String k, Object v) {
+        if (mUpd != null) {
+            Object x = tsParams.put(k, v);
+            if (x != null &&  x != v)
+                if (SystemClock.elapsedRealtime() - tsLastUpd > 33) {
+                    tsLastUpd = SystemClock.elapsedRealtime();
+                    StringBuilder text = new StringBuilder();
+                    for (Map.Entry<String, Object> e : tsParams.entrySet())
+                        text
+                                .append(e.getKey())
+                                .append(": \t")
+                                .append(e.getValue())
+                                .append('\n');
+                    mUpd.updateTextStatus(text.toString());
+                }
+        }
+    }
 
     public static class SplitterParams {
         private final float targetCompressedSize;
@@ -106,10 +142,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }
     }
 
-    private String mName;
-    private int mReceived = 0;
-    private int mForwarded = 0;
-
     public interface SplitEvent {
         void newSplit(ProtobufferOutput sender, Long id, SplitterParams params);
 
@@ -156,6 +188,8 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final Litix.TrackSplit ts = sb.build();
         final long bks = currentBacklogSize();
 
+        textStatusPut("Packages      ", splits + 1);
+
         mSensorData.clear();
         mSensorEvent.clear();
         mSessionMeta.clear();
@@ -183,6 +217,10 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     mSplitter.updateSize(compressed.size(), raw.size());
 
                     Log.v("ProtoOut", "\n" + mSplitter.toString());
+
+                    textStatusPut("Total      [KB]", (mReceivedBytes+=raw.size())/1000.);
+                    textStatusPut("Compressed [KB]", (mForwardedBytes+=compressed.size())/1000.);
+                    textStatusPut("Compressed  (%)", Math.round((1.-mSplitter.compressionRatio)*100));
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
@@ -243,6 +281,11 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         stmt.bindLong(3, mTrackID);
         stmt.bindString(4, mSessionTag.toString());
         stmt.executeInsert();
+
+        textStatusPut("Packages", 0);
+        textStatusPut("Total [KB]", 0);
+        textStatusPut("Compressed [KB]", 0);
+        textStatusPut("Compressed (%)", 0);
     }
 
     private boolean finalized = true;

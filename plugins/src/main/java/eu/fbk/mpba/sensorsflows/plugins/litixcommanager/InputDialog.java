@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.text.InputType;
 import android.util.Pair;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -60,24 +61,32 @@ public class InputDialog {
         InputDialog i = new InputDialog(context, title);
         final EditText input = new EditText(context);
         input.setHint("Username");
+        input.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        input.setMaxLines(1);
+
         final EditText passw = new EditText(context);
-        input.setHint("Password");
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passw.setHint("Password");
+        passw.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passw.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        passw.setMaxLines(1);
+
         final LinearLayout m = new LinearLayout(context);
+        m.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        m.setOrientation(LinearLayout.VERTICAL);
+
         m.addView(input);
         m.addView(passw);
 
-        input.setMaxLines(1);
 
         i.alert.setView(m);
 
-        i.alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+        i.alert.setPositiveButton(ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 result.ok(new Pair<>(input.getText().toString(), passw.getText().toString()));
             }
         });
 
-        i.alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+        i.alert.setNegativeButton(no, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 result.cancel();
             }

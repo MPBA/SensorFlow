@@ -22,6 +22,11 @@ import eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
+    public static final String TS_PACKAGES =      "Packets         ";
+    public static final String TS_TOTAL_KB =      "Total       [KB]";
+    public static final String TS_COMPRESSED_KB = "Compressed  [KB]";
+    public static final String TS_COMPRESSED =    "Compressed   [%]";
+    public static final String TS_PACKTIMEOUT =   "Max buf time [s]";
     private final SplitEvent mOnSplit;
     private long mSessionID;
     private long mTrackID;
@@ -188,7 +193,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final Litix.TrackSplit ts = sb.build();
         final long bks = currentBacklogSize();
 
-        textStatusPut("Packages      ", splits + 1);
+        textStatusPut(TS_PACKAGES, splits + 1);
 
         mSensorData.clear();
         mSensorEvent.clear();
@@ -218,9 +223,9 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
                     Log.v("ProtoOut", "\n" + mSplitter.toString());
 
-                    textStatusPut("Total      [KB]", (mReceivedBytes+=raw.size())/1000.);
-                    textStatusPut("Compressed [KB]", (mForwardedBytes+=compressed.size())/1000.);
-                    textStatusPut("Compressed  (%)", Math.round((1.-mSplitter.compressionRatio)*100));
+                    textStatusPut(TS_TOTAL_KB, (mReceivedBytes+=raw.size())/1000.);
+                    textStatusPut(TS_COMPRESSED_KB, (mForwardedBytes+=compressed.size())/1000.);
+                    textStatusPut(TS_COMPRESSED, Math.round((1.-mForwardedBytes/(double)mReceivedBytes)*100));
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
@@ -282,10 +287,12 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         stmt.bindString(4, mSessionTag.toString());
         stmt.executeInsert();
 
-        textStatusPut("Packages", 0);
-        textStatusPut("Total [KB]", 0);
-        textStatusPut("Compressed [KB]", 0);
-        textStatusPut("Compressed (%)", 0);
+
+        textStatusPut(TS_PACKAGES, splits);
+        textStatusPut(TS_TOTAL_KB, 0);
+        textStatusPut(TS_COMPRESSED_KB, 0);
+        textStatusPut(TS_COMPRESSED, 0);
+        textStatusPut(TS_PACKTIMEOUT, mSplitter.maxSplitTime / 1000.);
     }
 
     private boolean finalized = true;

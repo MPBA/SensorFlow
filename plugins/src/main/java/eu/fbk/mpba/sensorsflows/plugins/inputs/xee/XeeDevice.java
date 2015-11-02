@@ -67,14 +67,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         DQUtils.setEnvironment(e);
     }
 
-    /**
-     * -1. check the bluetooth presence (2.1)
-     *  1. set the bt device and environment (?)
-     *  2. connection true
-     *
-     *  Ex default constructor
-     */
-    private void XeeDeviceI() {
+    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
         if (debug)
             Log.v(debugTAG, "XeeDevice construction");
 
@@ -88,25 +81,19 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         sensors.add(xeeGPS);
         for (Field i : f)
             if (i.getType().equals(DQData.class)) {
-                XeeSensor.CarData c = new XeeSensor.CarData(this, i.getName());
-                namesMap.put(i.getName(), c);
-                sensors.add(c);
+                XeeSensor.CarData carData = new XeeSensor.CarData(this, i.getName());
+                namesMap.put(i.getName(), carData);
+                sensors.add(carData);
             }
 
         DQDriver.INSTANCE.setEventListener(this);
         DQUnitManager.INSTANCE.addListener(this);
 
-       // setReceivingData(true);
-        if (debug)
-            Log.v(debugTAG, "XeeDevice inner construction done");
-    }
-
-    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
-        XeeDeviceI();
         setDeviceToConnect(d);
         setEnvironment(e);
         ec = c;
         connect(this.simulation = simulation);
+        setReceivingData(true);
     }
 
     @Override
@@ -114,7 +101,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (debug)
             Log.v(debugTAG, "inputPluginInitialize");
 
-        setReceivingData(true);
         active = true;
     }
 
@@ -123,13 +109,12 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (debug)
             Log.v(debugTAG, "inputPluginFinalize");
 
-        setReceivingData(false);
         active = false;
     }
 
     @Override
     public String getName() {
-        return simulation ? "SimulationTrace" : deviceToConnect != null ? deviceToConnect.getName() : "UnknownXee";
+        return simulation ? "SimulationTrace" : deviceToConnect != null ? deviceToConnect.getName() : "Error";
     }
 
     @Override
@@ -214,8 +199,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onError(int arg0, String arg1) {
-        if (debug)
-            Log.v(debugTAG, "onError: " + arg1);
+        if (ec != null)
+            ec.error(arg0, arg1);
 
         if(arg0 == 401){
             Log.e(debugTAG, "ERROR 401!!!! " + arg1);
@@ -398,8 +383,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     public void onSerialNumberObtained(final String arg0) {
         if(debug)
             Log.v(debugTAG, "onSerialNumberObtained: " + arg0);
-
-        // TODO 8: return it to the user/event
     }
 
     @Override

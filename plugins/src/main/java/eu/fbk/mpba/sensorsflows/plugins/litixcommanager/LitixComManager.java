@@ -18,12 +18,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import eu.fbk.mpba.litixcom.core.LitixCom;
 import eu.fbk.mpba.litixcom.core.Track;
 import eu.fbk.mpba.litixcom.core.exceptions.ConnectionException;
 import eu.fbk.mpba.litixcom.core.exceptions.DeadServerDatabaseException;
@@ -39,94 +41,12 @@ import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
 public class LitixComManager {
     private SQLiteDatabase buffer = null;
     private final Thread th;
-    protected LitixComWrapper com;
-
     private Track track;
-
-    public int newTrack(Sessione s) throws ConnectionException, DeadServerDatabaseException, InternalException, MurphySyndromeException, eu.fbk.mpba.litixcom.core.exceptions.SecurityException, TooManyUsersOnServerException, LoginCancelledException {
-        this.track = com.newTrack(s);
-        return track.getTrackId();
-    }
-
-    final Queue<Long> queue = new ArrayDeque<>();
-    final Semaphore queueSemaphore = new Semaphore(0);
-    byte[] lastSplit = null;
-
-    public synchronized void notifySplit(Long id) {
-        if (!commitPending) {
-            synchronized (queue) {
-                queue.add(id);
-            }
-            queueSemaphore.release();
-            Log.v("notifySplit", "added " + id);
-        }
-        else
-            throw new NullPointerException("Track already committed.");
-    }
-
-    private byte[] loadSplit() {
-        synchronized (queue) {
-            if (lastSplit == null) {
-                Cursor x = buffer.query("split", new String[]{"data"}, "first_ts == " + queue.peek(), null, null, null, null);
-                if (x.moveToLast()) {
-                    lastSplit = x.getBlob(0);
-                } else {
-                    Log.e("DBReader", "Split ID not found in database!");
-                }
-                x.close();
-            }
-        }
-        return lastSplit;
-    }
-
-    private void processSplitsQueue() {
-        Log.d("Man", Thread.currentThread().getName());
-        try {
-            while (true) {
-                try {
-                    Log.d("Man", "Waiting for permits:" + queueSemaphore.availablePermits());
-                    queueSemaphore.acquire();
-
-                    if (readyToClose()) {
-                        Log.d("Man", "Committing");
-                        track.commit();
-                        Log.d("Man", "Committed");
-                        break;
-                    }
-                    else {
-                        Log.d("Man", "Pushing");
-                        track.put(loadSplit());
-
-                        synchronized (queue) {
-                            queue.remove();
-                        }
-                        // Uploaded, cleaning cache
-                        lastSplit = null;
-                        Log.d("Man", "Pushed");
-                    }
-                } catch (ConnectionException | LoginCancelledException | InternalException e) {
-                    Log.d("Man", "Push failed L1, releasing once, sleeping 13370ms", e);
-                    queueSemaphore.release();
-                    Thread.sleep(13370);
-                } catch (DeadServerDatabaseException | TooManyUsersOnServerException | MurphySyndromeException e) {
-                    Log.d("Man", String.format("Push failed L2, %s, releasing once, sleeping 1337000/2ms\n%s", e.getClass().getName(), e.getMessage()));
-                    queueSemaphore.release();
-                    Thread.sleep(1337000 / 2);
-                } catch (SecurityException e) {
-                    e.printStackTrace();
-                    queueSemaphore.release();
-                }
-            }
-        } catch (InterruptedException ignored) {
-            Log.d("Man", Thread.currentThread().getName() + " interrupted, exiting processSplitsQueue");
-            // TODO: remove committed items from db
-        }
-    }
+    private List<Track> tracks;
+    protected LitixCom com;
 
     public LitixComManager(final Activity activity, InetSocketAddress address, Certificati c) {
-        com = new LitixComWrapper(address, new Credenziali() {
-
-            final AtomicReference<String> username = new AtomicReference<>(null);
+        com = new LitixCom(address, new Credenziali() {
 
             public String getDeviceId() {
                 return getXDID(activity);
@@ -253,37 +173,151 @@ public class LitixComManager {
         th = new Thread(new Runnable() {
             @Override
             public void run() {
-                processSplitsQueue();
+                processSplitsQueue(queue);
             }
         }, "LitixCom uploader");
         th.setDaemon(true);
         th.start();
     }
 
-    public List<Sessione> getAuthorizedSessions() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersOnServerException {
-        return com.getSessionsList();
+    public int newTrack(Sessione s) throws ConnectionException, DeadServerDatabaseException, InternalException, MurphySyndromeException, eu.fbk.mpba.litixcom.core.exceptions.SecurityException, TooManyUsersOnServerException, LoginCancelledException {
+        if (track == null) {
+            track = com.newTrack(s);
+            return track.getTrackId();
+        } else
+            throw new NullPointerException("Already set track.");
     }
 
-    public int queuedUploads() {
-        synchronized (queue) {
-            return queue.size();
+    public void enqueueUncommittedTracks() throws LoginCancelledException, ConnectionException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersOnServerException, DeadServerDatabaseException {
+        if (tracks == null) {
+            Cursor x = buffer.query(true, "track", new String[]{"track_id"}, "status == \"pending\"", null, null, null, null, null);
+            List<Integer> trackIds = new ArrayList<>();
+            x.moveToFirst();
+            while (!x.isAfterLast()) {
+                trackIds.add(x.getInt(0));
+                x.moveToNext();
+            }
+            x.close();
+            tracks = new ArrayList<>();
+            for (Integer i : trackIds) {
+                Track t = com.continueTrack(i);
+                if (t.getNextBlobIdOnContinue() != null) {
+                    tracks.add(t);
+                    List<Long> splits = new ArrayList<>();
+                    Cursor y = buffer.query(true, "split", new String[]{"first_ts"}, "start_ts ==  AND status == \"pending\"", null, null, null, null, null);
+                    // TODO ommerda
+                    // Variare da timestamping identification a remote identification (split_id = blob id, start_ts = track_id)
+                    // Questo if è da finire
+                    // Modificare tutto
+                    queue.put();
+                }
+                else
+                    Log.i("continueTracks", "DB contains a track that is not registered id:" + t.getTrackId());
+            }
+
         }
     }
 
+    final BlockingQueue<Pair<Track, Long>> queue = new LinkedBlockingQueue<>();
+
+    public void notifySplit(Long id) {
+        if (!commitPending) {
+            try {
+                queue.put(new Pair<>(track, id));
+                Log.v("notifySplit", "added " + id);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                Log.e("notifySplit", "error " + id);
+            }
+        } else
+            throw new NullPointerException("Track already committed.");
+    }
+
+    private byte[] loadSplit(Track track, long split) {
+        byte[] s = null;
+        Cursor x = buffer.query("split", new String[]{"data"}, "track_id == ? AND first_ts == ?", new String[] { "" + track.getTrackId(), "" + split }, null, null, null);
+        if (x.moveToLast()) {
+            s = x.getBlob(0);
+        } else {
+            Log.e("DBReader", "Split ID not found in database!");
+        }
+        x.close();
+        return s;
+    }
+
+    private void processSplitsQueue(BlockingQueue<Pair<Track, Long>> queue) {
+        Log.d("Man", Thread.currentThread().getName());
+        try {
+            Track trackInfo;
+            Long splitId;
+            byte[] split;
+            boolean pending = true;
+            while (pending) {
+                Log.d("Man", "Waiting for queue");
+
+                Pair<Track, Long> entry = queue.take();
+
+                trackInfo = entry.first;
+                splitId = entry.second;
+                split = null;
+
+                while (true) {
+                    try {
+                        if (splitId == null) {
+                            Log.d("Man", "Committing (null id is a command)");
+
+                            trackInfo.commit();
+                            buffer.execSQL("UPDATE track SET status = \"committed\" WHERE track_id = ?", new Object[]{trackInfo.getTrackId()});
+
+                            Log.d("Man", "Committed");
+                            pending = false;
+                        } else {
+                            Log.d("Man", "Pushing");
+
+                            if (split == null)
+                                split = loadSplit(trackInfo, splitId);
+
+                            trackInfo.put(split);
+                            buffer.execSQL("UPDATE split SET status = \"uploaded\" WHERE track_id = ?", new Object[]{trackInfo.getTrackId()});
+
+                            Log.d("Man", "Pushed");
+                        }
+                        break;
+                    } catch (ConnectionException | LoginCancelledException | InternalException e) {
+                        Log.d("Man", "Push failed L1, performing no take, sleeping 13370ms", e);
+                        Thread.sleep(13370);
+                    } catch (DeadServerDatabaseException | TooManyUsersOnServerException | MurphySyndromeException e) {
+                        Log.d("Man", String.format("Push failed L2, %s, performing no take, sleeping 1337000/2ms\n%s", e.getClass().getName(), e.getMessage()));
+                        Thread.sleep(1337000 / 2);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (InterruptedException ignored) {
+            Log.d("Man", Thread.currentThread().getName() + " interrupted");
+        }
+        Log.d("Man", "Exiting processSplitsQueue");
+    }
+
+    public List<Sessione> getAuthorizedSessions() throws ConnectionException, LoginCancelledException, SecurityException, InternalException, TooManyUsersOnServerException, DeadServerDatabaseException {
+        return com.getSessionsList();
+    }
+
+    /**
+     * This only for the foreground track
+     */
     private boolean commitPending = false;
 
     public void enqueueCommit() {
+        // this only for insertion
         commitPending = true;
-        queueSemaphore.release();
+        // null id is the command
+        queue.add(new Pair<Track, Long>(track, null));
     }
 
-    public synchronized boolean readyToClose() {
-        return queuedUploads() == 0 && commitPending;
-    }
-
-    public boolean close() {
+    public void close() {
         th.interrupt();
-        return readyToClose();
     }
 
     @NonNull

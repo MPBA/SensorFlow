@@ -36,18 +36,17 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                 "create table if not exists split (\n" +
                         " first_ts INTEGER PRIMARY KEY,\n" +
                         " start_ts INTEGER,\n" +
+                        " status TEXT check(status in (\"local\", \"uploaded\")) NOT NULL DEFAULT \"local\",\n" +
                         " data BLOB NOT NULL,\n" +
                         " foreign key (start_ts) references track(start_ts)\n" +
                         ");";
         final static String i2 =
                 "create table if not exists track (\n" +
-                        " start_ts INTEGER check(start_ts > 1444430000) PRIMARY KEY,\n" +
+                        " start_ts INTEGER check(start_ts > 1444444444) PRIMARY KEY,\n" +
                         " session_id INTEGER,\n" +
                         " track_id INTEGER,\n" +
                         " name TEXT,\n" +
                         " status TEXT check(status in (\"local\", \"pending\", \"committed\")) NOT NULL DEFAULT \"local\",\n" +
-                        " progress INTEGER check(progress >= 0 and (progress == 0 or status != \"local\")) NOT NULL DEFAULT 0,\n" +
-                        " committed_ts INTEGER check(committed_ts > start_ts or status != \"committed\") NOT NULL DEFAULT 0\n" +
                         ");";
         final static String t = "insert into track (start_ts, session_id, track_id, name) values(?, ?, ?, ?)";
         final static String s = "insert into split (first_ts, start_ts, data) values(?, ?, ?)";
@@ -193,7 +192,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final Litix.TrackSplit ts = sb.build();
         final long bks = currentBacklogSize();
 
-        textStatusPut(TS_PACKAGES, splits + 1);
+        textStatusPut(TS_PACKAGES, splits);
 
         mSensorData.clear();
         mSensorEvent.clear();

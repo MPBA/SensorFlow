@@ -203,10 +203,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (ec != null)
             ec.error(arg0, arg1);
 
-        if(arg0 == 401){
-            Log.e(debugTAG, "ERROR 401!!!! " + arg1);
-            DQUnitManager.INSTANCE.disconnect();
-        }
+        Log.e(debugTAG, "ERROR " + arg0 + " " + arg1);
+
         broadcastEvent(arg0, arg1);
     }
 
@@ -221,13 +219,9 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         } else
         if (connectionRequested) {
             connectionRequested = false;
-//          if (serialNumberRequested) {
-//              DQUnitManager.INSTANCE.getSerialNumber(); // TODO 8 no for now
-//          } else {
             if (debug)
                 Log.d(debugTAG, "Connecting the INSTANCE");
             DQUnitManager.INSTANCE.connect();
-//          }
         } else {
             if (debug)
                 Log.i(debugTAG, "...no fw nor conn requested");

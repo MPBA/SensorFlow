@@ -71,6 +71,8 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if (debug)
             Log.v(debugTAG, "XeeDevice construction");
 
+        ec = c;
+
         xeeAcc = new XeeSensor.XeeAccelerometer(this);
         xeeGPS = new XeeSensor.XeeGPS(this);
 
@@ -91,7 +93,6 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
         setDeviceToConnect(d);
         setEnvironment(e);
-        ec = c;
         connect(this.simulation = simulation);
         setReceivingData(true);
     }

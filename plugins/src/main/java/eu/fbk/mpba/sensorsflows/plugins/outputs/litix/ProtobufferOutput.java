@@ -28,28 +28,28 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     public static final String TS_COMPRESSED =    "Compressed   [%]";
     public static final String TS_PACKTIMEOUT =   "Max buf time [s]";
     private final SplitEvent mOnSplit;
-    private long mSessionID;
-    private long mTrackID;
+    private Integer mSessionID;
+    private Integer mTrackID;
 
     private class Queries {
         final static String i1 =
                 "create table if not exists split (\n" +
-                        " first_ts INTEGER PRIMARY KEY,\n" +
-                        " start_ts INTEGER,\n" +
-                        " status TEXT check(status in (\"local\", \"uploaded\")) NOT NULL DEFAULT \"local\",\n" +
+                        " blob_id INTEGER,\n" +
+                        " track_id INTEGER,\n" +
+                        " uploaded INTEGER NOT NULL DEFAULT 0,\n" +
                         " data BLOB NOT NULL,\n" +
-                        " foreign key (start_ts) references track(start_ts)\n" +
+                        " foreign key (track_id) references track(track_id),\n" +
+                        " primary key (blob_id, track_id)" +
                         ");";
         final static String i2 =
                 "create table if not exists track (\n" +
-                        " start_ts INTEGER check(start_ts > 1444444444) PRIMARY KEY,\n" +
-                        " session_id INTEGER,\n" +
-                        " track_id INTEGER,\n" +
+                        " track_id INTEGER PRIMARY KEY,\n" +
+                        " session_id INTEGER,\n" +              // Non usato
                         " name TEXT,\n" +
-                        " status TEXT check(status in (\"local\", \"pending\", \"committed\")) NOT NULL DEFAULT \"local\",\n" +
+                        " committed INTEGER NOT NULL DEFAULT 0\n" +
                         ");";
-        final static String t = "insert into track (start_ts, session_id, track_id, name) values(?, ?, ?, ?)";
-        final static String s = "insert into split (first_ts, start_ts, data) values(?, ?, ?)";
+        final static String t = "insert into track (track_id, session_id, name) values(?, ?, ?)";
+        final static String s = "insert into split (blob_id, track_id, data) values(?, ?, ?)";
     }
 
     private final SplitterParams mSplitter;
@@ -60,7 +60,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     protected List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
     protected List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
     protected Object mSessionTag = "undefined";
-    protected long mTrackStart = 0;
     protected int splits = 0;
     private String mName;
     private int mReceived = 0;
@@ -147,7 +146,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     public interface SplitEvent {
-        void newSplit(ProtobufferOutput sender, Long id, SplitterParams params);
+        void newSplit(ProtobufferOutput sender, int id, SplitterParams params);
 
         void noMoreBuffers(ProtobufferOutput sender, SplitterParams params);
     }
@@ -169,7 +168,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         return mSensorData.size() + mSensorEvent.size() + mSessionMeta.size();
     }
 
-    public void setLitixID(long session, long track) {
+    public void setLitixID(int session, int track) {
         if (finalized) {
             mTrackID = track;
             mSessionID = session;
@@ -179,7 +178,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     public void flushTrackSplit() {
         Log.d("ProtoOut", "Flushing " + currentBacklogSize() + " SensorData/Event/Meta");
-        final Long split_id = getMonoTimeMillis();
+        final int split_id = splits;
 
         Litix.TrackSplit.Builder sb = Litix.TrackSplit.newBuilder();
         sb.setTrackName(mSessionTag.toString());
@@ -192,7 +191,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         final Litix.TrackSplit ts = sb.build();
         final long bks = currentBacklogSize();
 
-        textStatusPut(TS_PACKAGES, splits);
+        textStatusPut(TS_PACKAGES, splits + 1);
 
         mSensorData.clear();
         mSensorEvent.clear();
@@ -224,14 +223,15 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
                     textStatusPut(TS_TOTAL_KB, (mReceivedBytes+=raw.size())/1000.);
                     textStatusPut(TS_COMPRESSED_KB, (mForwardedBytes+=compressed.size())/1000.);
-                    textStatusPut(TS_COMPRESSED, Math.round((1.-mForwardedBytes/(double)mReceivedBytes)*100));
+                    textStatusPut(TS_COMPRESSED, Math.round((1. - mForwardedBytes / (double) mReceivedBytes) * 100));
 
                     SQLiteStatement s = buffer.compileStatement(Queries.s);
                     s.clearBindings();
                     s.bindLong(1, split_id);
-                    s.bindLong(2, mTrackStart);
+                    s.bindLong(2, mTrackID);
                     s.bindBlob(3, compressed.toByteArray());
                     s.executeInsert();
+                    s.close();
 
                     compressed.close();
 
@@ -251,9 +251,9 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         }, "Flush").start();
     }
 
-    private long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+    private static long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
 
-    private long getMonoTimeMillis() {
+    public static long getMonoTimeMillis() {
         return (System.nanoTime() + bootUTCNanos) / 1_000_000L;
     }
 
@@ -265,7 +265,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         finalized = false;
         mReverseSensors = new HashMap<>(streamingSensors.size(), 1);
         mSessionTag = sessionTag;
-        mTrackStart = getMonoTimeMillis();
 
         for (int s = 0; s < streamingSensors.size(); s++) {
             SensorInfo.Builder db = SensorInfo.newBuilder()
@@ -279,13 +278,16 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             mReverseSensors.put(streamingSensors.get(s), s);
         }
 
-        SQLiteStatement stmt = buffer.compileStatement(Queries.t);
-        stmt.bindLong(1, mTrackStart);
-        stmt.bindLong(2, mSessionID);
-        stmt.bindLong(3, mTrackID);
-        stmt.bindString(4, mSessionTag.toString());
-        stmt.executeInsert();
-
+        if (mTrackID == null || mSessionID == null)
+            mTrackID = mSessionID = 0;
+        else {
+            SQLiteStatement
+            stmt = buffer.compileStatement(Queries.t);
+            stmt.bindLong(1, mTrackID);
+            stmt.bindLong(2, mSessionID);
+            stmt.bindString(3, mSessionTag.toString());
+            stmt.executeInsert();
+        }
 
         textStatusPut(TS_PACKAGES, splits);
         textStatusPut(TS_TOTAL_KB, 0);

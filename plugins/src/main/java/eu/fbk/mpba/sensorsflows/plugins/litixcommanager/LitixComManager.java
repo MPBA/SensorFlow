@@ -37,20 +37,25 @@ import eu.fbk.mpba.litixcom.core.exceptions.TooManyUsersOnServerException;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Certificati;
 import eu.fbk.mpba.litixcom.core.mgrs.auth.Credenziali;
 import eu.fbk.mpba.litixcom.core.mgrs.messages.Sessione;
+import eu.fbk.mpba.sensorsflows.plugins.outputs.litix.ProtobufferOutput;
 
 public class LitixComManager {
     private SQLiteDatabase buffer = null;
     private final Thread th;
     private Track track;
-    private List<Track> tracks;
     protected LitixCom com;
+    final BlockingQueue<Pair<Track, Integer>> queue = new LinkedBlockingQueue<>();
+
+    private static class Queries {
+        final static String cond_uncommitted = "committed == 0";
+        final static String select_from_bid = "blob_id >= ? AND uploaded = 0";
+        final static String select_split = "track_id == ? AND blob_id == ?";
+        final static String update_committed = "UPDATE track SET committed = ? WHERE track_id = ?";
+        final static String update_uploaded = "UPDATE split SET uploaded = ? WHERE track_id = ? AND blob_id = ?";
+    }
 
     public LitixComManager(final Activity activity, InetSocketAddress address, Certificati c) {
         com = new LitixCom(address, new Credenziali() {
-
-            public String getDeviceId() {
-                return getXDID(activity);
-            }
 
             @Override
             public void setToken(String token) {
@@ -128,7 +133,7 @@ public class LitixComManager {
                 });
                 try {
                     semaphore.acquire();
-                    String address = getDeviceId() + "-" + activity.getApplicationInfo().packageName;
+                    String address = getXDID(activity) + "-" + activity.getApplicationInfo().packageName;
                     return new Triple(name[0], surname[0], address);
                 } catch (InterruptedException e) {
                     return null;
@@ -180,6 +185,13 @@ public class LitixComManager {
         th.start();
     }
 
+    public void setBufferOnce(SQLiteDatabase buffer) {
+        if (this.buffer == null)
+            this.buffer = buffer;
+        else
+            throw new RuntimeException("Already set buffer!");
+    }
+
     public int newTrack(Sessione s) throws ConnectionException, DeadServerDatabaseException, InternalException, MurphySyndromeException, eu.fbk.mpba.litixcom.core.exceptions.SecurityException, TooManyUsersOnServerException, LoginCancelledException {
         if (track == null) {
             track = com.newTrack(s);
@@ -188,9 +200,12 @@ public class LitixComManager {
             throw new NullPointerException("Already set track.");
     }
 
+    private boolean tracks = true;
+
     public void enqueueUncommittedTracks() throws LoginCancelledException, ConnectionException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersOnServerException, DeadServerDatabaseException {
-        if (tracks == null) {
-            Cursor x = buffer.query(true, "track", new String[]{"track_id"}, "status == \"pending\"", null, null, null, null, null);
+        if (tracks) {
+            tracks = false;
+            Cursor x = buffer.query(true, "track", new String[]{"track_id"}, Queries.cond_uncommitted, null, null, null, null, null);
             List<Integer> trackIds = new ArrayList<>();
             x.moveToFirst();
             while (!x.isAfterLast()) {
@@ -198,29 +213,33 @@ public class LitixComManager {
                 x.moveToNext();
             }
             x.close();
-            tracks = new ArrayList<>();
+
             for (Integer i : trackIds) {
                 Track t = com.continueTrack(i);
-                if (t.getNextBlobIdOnContinue() != null) {
-                    tracks.add(t);
-                    List<Long> splits = new ArrayList<>();
-                    Cursor y = buffer.query(true, "split", new String[]{"first_ts"}, "start_ts ==  AND status == \"pending\"", null, null, null, null, null);
-                    // TODO ommerda
-                    // Variare da timestamping identification a remote identification (split_id = blob id, start_ts = track_id)
-                    // Questo if è da finire
-                    // Modificare tutto
-                    queue.put();
-                }
-                else
+                Integer bid = t.getNextBlobIdOnContinue();
+                if (bid != null) {
+                    Cursor y = buffer.query(true, "split", new String[]{"blob_id"}, Queries.select_from_bid, new String[]{""+bid}, null, null, null, null);
+                    try {
+                        y.moveToFirst();
+                        while (!y.isAfterLast()) {
+                            queue.put(new Pair<>(t, y.getInt(0)));
+                            y.moveToNext();
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        y.close();
+                    }
+                } else
                     Log.i("continueTracks", "DB contains a track that is not registered id:" + t.getTrackId());
             }
-
+            x.moveToNext();
         }
+        else
+            Log.e("continueTracks", "Pending tracks already restarted");
     }
 
-    final BlockingQueue<Pair<Track, Long>> queue = new LinkedBlockingQueue<>();
-
-    public void notifySplit(Long id) {
+    public void notifySplit(Integer id) {
         if (!commitPending) {
             try {
                 queue.put(new Pair<>(track, id));
@@ -233,9 +252,21 @@ public class LitixComManager {
             throw new NullPointerException("Track already committed.");
     }
 
-    private byte[] loadSplit(Track track, long split) {
+    /**
+     * This only for the foreground track
+     */
+    private boolean commitPending = false;
+
+    public void enqueueCommit() {
+        // this only for insertion
+        commitPending = true;
+        // null id is the command
+        queue.add(new Pair<Track, Integer>(track, null));
+    }
+
+    private byte[] loadSplit(Track track, Integer split) {
         byte[] s = null;
-        Cursor x = buffer.query("split", new String[]{"data"}, "track_id == ? AND first_ts == ?", new String[] { "" + track.getTrackId(), "" + split }, null, null, null);
+        Cursor x = buffer.query("split", new String[]{"data"}, Queries.select_split, new String[] { "" + track.getTrackId(), "" + split }, null, null, null);
         if (x.moveToLast()) {
             s = x.getBlob(0);
         } else {
@@ -245,17 +276,17 @@ public class LitixComManager {
         return s;
     }
 
-    private void processSplitsQueue(BlockingQueue<Pair<Track, Long>> queue) {
+    private void processSplitsQueue(BlockingQueue<Pair<Track, Integer>> queue) {
         Log.d("Man", Thread.currentThread().getName());
         try {
             Track trackInfo;
-            Long splitId;
+            Integer splitId;
             byte[] split;
             boolean pending = true;
             while (pending) {
                 Log.d("Man", "Waiting for queue");
 
-                Pair<Track, Long> entry = queue.take();
+                Pair<Track, Integer> entry = queue.take();
 
                 trackInfo = entry.first;
                 splitId = entry.second;
@@ -267,7 +298,7 @@ public class LitixComManager {
                             Log.d("Man", "Committing (null id is a command)");
 
                             trackInfo.commit();
-                            buffer.execSQL("UPDATE track SET status = \"committed\" WHERE track_id = ?", new Object[]{trackInfo.getTrackId()});
+                            buffer.execSQL(Queries.update_committed, new Object[]{ProtobufferOutput.getMonoTimeMillis(), trackInfo.getTrackId()});
 
                             Log.d("Man", "Committed");
                             pending = false;
@@ -278,7 +309,12 @@ public class LitixComManager {
                                 split = loadSplit(trackInfo, splitId);
 
                             trackInfo.put(split);
-                            buffer.execSQL("UPDATE split SET status = \"uploaded\" WHERE track_id = ?", new Object[]{trackInfo.getTrackId()});
+                            buffer.execSQL(Queries.update_uploaded,
+                                    new Object[]{
+                                            ProtobufferOutput.getMonoTimeMillis(),
+                                            trackInfo.getTrackId(),
+                                            splitId
+                                    });
 
                             Log.d("Man", "Pushed");
                         }
@@ -304,36 +340,17 @@ public class LitixComManager {
         return com.getSessionsList();
     }
 
-    /**
-     * This only for the foreground track
-     */
-    private boolean commitPending = false;
-
-    public void enqueueCommit() {
-        // this only for insertion
-        commitPending = true;
-        // null id is the command
-        queue.add(new Pair<Track, Long>(track, null));
-    }
-
     public void close() {
         th.interrupt();
     }
 
     @NonNull
-    private String getXDID(Context context) {
+    public static String getXDID(Context context) {
         String a = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
         if (a == null)
             a = "a-" + Settings.Secure.ANDROID_ID;
         else
             a = "u-" + a;
         return a;
-    }
-
-    public void setBufferOnce(SQLiteDatabase buffer) {
-        if (this.buffer == null)
-            this.buffer = buffer;
-        else
-            throw new RuntimeException("Already set buffer!");
     }
 }

@@ -218,8 +218,7 @@ public class LitixComManager {
                 Track t = com.continueTrack(i);
                 Integer bid = t.getNextBlobIdOnContinue();
                 if (bid != null) {
-                    Cursor y = buffer.query(true, "split", new String[]{"blob_id"}, Queries.select_from_bid, new String[]{""+bid}, null, null, null, null);
-                    try {
+                    try (Cursor y = buffer.query(true, "split", new String[]{"blob_id"}, Queries.select_from_bid, new String[]{"" + bid}, null, null, null, null)) {
                         y.moveToFirst();
                         while (!y.isAfterLast()) {
                             queue.put(new Pair<>(t, y.getInt(0)));
@@ -227,8 +226,6 @@ public class LitixComManager {
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    } finally {
-                        y.close();
                     }
                 } else
                     Log.i("continueTracks", "DB contains a track that is not registered id:" + t.getTrackId());

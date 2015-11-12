@@ -43,8 +43,10 @@ public class LitixComManager {
     private SQLiteDatabase buffer = null;
     private final Thread th;
     private Track track;
-    protected LitixCom com;
     final BlockingQueue<Pair<Track, Integer>> queue = new LinkedBlockingQueue<>();
+    private boolean tracks = true;
+    private boolean foregroundCommitPending = false;
+    protected LitixCom com;
 
     private static class Queries {
         final static String cond_uncommitted = "committed == 0";
@@ -53,6 +55,7 @@ public class LitixComManager {
         final static String update_committed = "UPDATE track SET committed = ? WHERE track_id = ?";
         final static String update_uploaded = "UPDATE split SET uploaded = ? WHERE track_id = ? AND blob_id = ?";
     }
+
 
     public LitixComManager(final Activity activity, InetSocketAddress address, Certificati c) {
         com = new LitixCom(address, new Credenziali() {
@@ -185,6 +188,7 @@ public class LitixComManager {
         th.start();
     }
 
+
     public void setBufferOnce(SQLiteDatabase buffer) {
         if (this.buffer == null)
             this.buffer = buffer;
@@ -200,7 +204,6 @@ public class LitixComManager {
             throw new NullPointerException("Already set track.");
     }
 
-    private boolean tracks = true;
 
     public void enqueueUncommittedTracks() throws LoginCancelledException, ConnectionException, InternalException, MurphySyndromeException, SecurityException, TooManyUsersOnServerException, DeadServerDatabaseException {
         if (tracks) {
@@ -237,7 +240,7 @@ public class LitixComManager {
     }
 
     public void notifySplit(Integer id) {
-        if (!commitPending) {
+        if (!foregroundCommitPending) {
             try {
                 queue.put(new Pair<>(track, id));
                 Log.v("notifySplit", "added " + id);
@@ -249,14 +252,10 @@ public class LitixComManager {
             throw new NullPointerException("Track already committed.");
     }
 
-    /**
-     * This only for the foreground track
-     */
-    private boolean commitPending = false;
 
     public void enqueueCommit() {
         // this only for insertion
-        commitPending = true;
+        foregroundCommitPending = true;
         // null id is the command
         queue.add(new Pair<Track, Integer>(track, null));
     }

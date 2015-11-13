@@ -35,8 +35,14 @@ public class TextEventsSensor<ValueT> extends SensorComponent<Long, ValueT> {
         addTimedText(getTime().getMonoUTCNanos(), text.toString());
     }
 
+    // 101 means an out of time note!!!!!!!!!!! FIXME non monotonic
     public void addTimedText(long timestamp, CharSequence text) {
         sensorEvent(timestamp, (lastNoteTS < timestamp) ? 100 : 101, text.toString());
         lastNoteTS = timestamp;
+    }
+
+    public void addLog(int code, CharSequence text) {
+        sensorEvent(getTime().getMonoUTCNanos(), code + 1000, text.toString());
+        lastNoteTS = getTime().getMonoUTCNanos();
     }
 }

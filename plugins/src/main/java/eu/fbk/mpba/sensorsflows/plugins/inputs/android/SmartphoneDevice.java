@@ -47,6 +47,10 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
         _textSensor.addText(text);
     }
 
+    public void logNow(int code, String text) {
+        _textSensor.addLog(code, text);
+    }
+
     public interface Note {
         void commit(String text);
     }

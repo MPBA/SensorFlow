@@ -22,9 +22,8 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
     private ArrayList<InetAddress> servers;
     private boolean forward = false;
 
-    protected SntpSensor(DevicePlugin<Long, double[]> parent, Collection<String> servers) {
+    protected SntpSensor(DevicePlugin<Long, double[]> parent) {
         super(parent);
-        setServers(servers);
     }
 
     public void setServers(Collection<String> servers) {
@@ -46,7 +45,7 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
             try {
                 x.add(InetAddress.getByName(s));
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                Log.i(SntpSensor.class.getSimpleName(), "SntpServer unresolved: " + e.getMessage());
             }
         }
         this.servers = new ArrayList<>(x);

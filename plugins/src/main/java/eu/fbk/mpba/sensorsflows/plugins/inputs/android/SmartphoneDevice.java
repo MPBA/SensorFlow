@@ -5,7 +5,6 @@ import android.hardware.SensorManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
@@ -36,7 +35,7 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
         if (udpTime)
             _sensors.add(_udpTimeOffsetSensor = new UdpTimeOffsetSensor(this));
         if (sntp)
-            _sensors.add(_sntpClient = new SntpSensor(this, Collections.singletonList("pool.ntp.org")));
+            _sensors.add(_sntpClient = new SntpSensor(this));
         else
             _sntpClient = null;
     }
@@ -93,10 +92,6 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
 
     public interface NtpCallback {
         void end(SntpSensor.NtpResp r);
-    }
-
-    public void computeNtpAsync() {
-        computeNtpAsync(null);
     }
 
     public void computeNtpAsync(final NtpCallback cb) {

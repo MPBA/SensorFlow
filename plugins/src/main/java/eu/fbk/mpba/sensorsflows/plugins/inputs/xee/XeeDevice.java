@@ -161,7 +161,11 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             if (receiving) {
                 DQUnitManager.INSTANCE.startReceivingCarData();
             } else {
-                DQUnitManager.INSTANCE.stopReceivingCarData();
+                try {
+                    DQUnitManager.INSTANCE.stopReceivingCarData();
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
             }
             receivingData = receiving;
         }

@@ -2,6 +2,8 @@ package eu.fbk.mpba.sensorsflows.plugins.inputs.android;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,22 +18,29 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
     private final SntpSensor _sntpClient;
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
-    private TextEventsSensor<double[]> _textSensor;
+    private LogSensor<double[]> _logSensor;
     private UdpTimeOffsetSensor _udpTimeOffsetSensor;
 
     public SmartphoneDevice(Context context, String name) {
         this(context, name, true, true, true, true, true, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
-    public SmartphoneDevice(Context context, String name, boolean text, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
+    public SmartphoneDevice(Context context, String name, boolean deviceIds, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
         this.name = name;
         _sensors = new ArrayList<>();
+        _sensors.add(_logSensor = new LogSensor<>(this));
+        if (deviceIds) {
+            String a = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
+            int b = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getPhoneType();
+            String c = Settings.Secure.ANDROID_ID;
+            _logSensor.addMeta(0, "DeviceId:" + a);
+            _logSensor.addMeta(1, "PhoneType:" + b);
+            _logSensor.addMeta(2, "AndroidId:" + c);
+        }
         if (gps)
             _sensors.add(new GpsSensor(this, context, 0, 0));
         if (accelerometer)
             _sensors.add(new AccelerometerSensor(this, context, accSensorDelay));
-        if (text)
-            _sensors.add(_textSensor = new TextEventsSensor<>(this));
         if (udpTime)
             _sensors.add(_udpTimeOffsetSensor = new UdpTimeOffsetSensor(this));
         if (sntp)
@@ -43,11 +52,11 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
     // Time markers
 
     public void addNoteNow(String text) {
-        _textSensor.addText(text);
+        _logSensor.addText(text);
     }
 
     public void logNow(int code, String text) {
-        _textSensor.addLog(code, text);
+        _logSensor.addLog(code, text);
     }
 
     public interface Note {
@@ -56,11 +65,11 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
 
     public Note newNote() {
         return new Note() {
-            long time = _textSensor.getTime().getMonoUTCNanos();
+            long time = _logSensor.getTime().getMonoUTCNanos();
 
             @Override
             public void commit(String text) {
-                _textSensor.addTimedText(time, text);
+                _logSensor.addTimedText(time, text);
             }
         };
     }

@@ -16,7 +16,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
     // TODO 4: replayable
 
     private String name;
-    private EXLSensor monoSensor;
+    private CBSensor monoSensor;
 
     EXLAccelerometer er;
     EXLBattery ry;
@@ -26,7 +26,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
         this.name = name;
-        monoSensor = new EXLSensor(this, realDevice, adapter);
+        monoSensor = new CBSensor(this, realDevice, adapter);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         return name;
     }
 
-    public static class EXLSensor extends SensorComponent<Long, double[]> {
+    public static class CBSensor extends SensorComponent<Long, double[]> {
 
         boolean streaming = true;
         int received = 0;
@@ -84,14 +84,14 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         String address;
         BluetoothDevice dev;
         
-        protected EXLSensor(CozyBabyDevice parent, BluetoothDevice device, BluetoothAdapter adapter) {
+        protected CBSensor(CozyBabyDevice parent, BluetoothDevice device, BluetoothAdapter adapter) {
             this(parent);
             dev = device;
             address = device.getAddress();
             manager = new CozyBabyManager(btsStatus, btsData, device, adapter);
         }
 
-        protected EXLSensor(CozyBabyDevice parent) {
+        protected CBSensor(CozyBabyDevice parent) {
             super(parent);
             this.parent = parent;
             name = parent.name;
@@ -136,18 +136,18 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
             }
 
             public void connecting(CozyBabyReceiver sender, BluetoothDevice device, boolean secureMode) {
-                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                        CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
+                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                //        CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
             public void connected(CozyBabyReceiver sender, String deviceName) {
-                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                        CONNECTED, "connected to " + deviceName);
+                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                //        CONNECTED, "connected to " + deviceName);
             }
 
             public void disconnected(CozyBabyReceiver sender, DisconnectionCause cause) {
-                parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                        DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
+                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                //        DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
             }
         };
 
@@ -200,7 +200,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         }
     }
 
-    public static class EXLAccelerometer extends CozyBabyDevice.EXLSensor {
+    public static class EXLAccelerometer extends CBSensor {
 
         protected EXLAccelerometer(CozyBabyDevice parent) {
             super(parent);
@@ -212,7 +212,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLGyroscope extends CozyBabyDevice.EXLSensor {
+    public static class EXLGyroscope extends CBSensor {
 
         protected EXLGyroscope(CozyBabyDevice parent) {
             super(parent);
@@ -224,7 +224,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLMagnetometer extends CozyBabyDevice.EXLSensor {
+    public static class EXLMagnetometer extends CBSensor {
 
         protected EXLMagnetometer(CozyBabyDevice parent) {
             super(parent);
@@ -236,7 +236,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLQuaternion extends CozyBabyDevice.EXLSensor {
+    public static class EXLQuaternion extends CBSensor {
 
         protected EXLQuaternion(CozyBabyDevice parent) {
             super(parent);
@@ -248,7 +248,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLBattery extends CozyBabyDevice.EXLSensor {
+    public static class EXLBattery extends CBSensor {
 
         protected EXLBattery(CozyBabyDevice parent) {
             super(parent);

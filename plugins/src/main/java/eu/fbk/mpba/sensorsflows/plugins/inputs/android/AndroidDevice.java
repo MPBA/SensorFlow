@@ -13,7 +13,7 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
+public class AndroidDevice implements DevicePlugin<Long, double[]> {
 
     private final SntpSensor _sntpClient;
     private String name;
@@ -21,21 +21,21 @@ public class SmartphoneDevice implements DevicePlugin<Long, double[]> {
     private LogSensor<double[]> _logSensor;
     private UdpTimeOffsetSensor _udpTimeOffsetSensor;
 
-    public SmartphoneDevice(Context context, String name) {
+    public AndroidDevice(Context context, String name) {
         this(context, name, true, true, true, true, true, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
-    public SmartphoneDevice(Context context, String name, boolean deviceIds, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
+    public AndroidDevice(Context context, String name, boolean deviceIds, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
         this.name = name;
         _sensors = new ArrayList<>();
         _sensors.add(_logSensor = new LogSensor<>(this));
         if (deviceIds) {
-            String a = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
-            int b = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getPhoneType();
-            String c = Settings.Secure.ANDROID_ID;
-            _logSensor.addMeta(0, "DeviceId:" + a);
-            _logSensor.addMeta(1, "PhoneType:" + b);
-            _logSensor.addMeta(2, "AndroidId:" + c);
+            final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            final String androidId = android.provider.Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+            _logSensor.addMeta(0, "DeviceId:" + tm.getDeviceId());
+            _logSensor.addMeta(1, "SimSerialNumber:" + tm.getSimSerialNumber());
+            _logSensor.addMeta(2, "PhoneType:" + tm.getPhoneType());
+            _logSensor.addMeta(3, "AndroidId:" + androidId);
         }
         if (gps)
             _sensors.add(new GpsSensor(this, context, 0, 0));

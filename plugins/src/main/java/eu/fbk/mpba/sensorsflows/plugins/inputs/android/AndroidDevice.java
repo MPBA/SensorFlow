@@ -16,10 +16,14 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 public class AndroidDevice implements DevicePlugin<Long, double[]> {
 
     private final SntpSensor _sntpClient;
+    private final boolean deviceIds;
     private String name;
     private List<SensorComponent<Long, double[]>> _sensors;
     private LogSensor<double[]> _logSensor;
     private UdpTimeOffsetSensor _udpTimeOffsetSensor;
+    final TelephonyManager telephonyManager;
+    final String androidId;
+    private String packageName;
 
     public AndroidDevice(Context context, String name) {
         this(context, name, true, true, true, true, true, SensorManager.SENSOR_DELAY_FASTEST);
@@ -29,13 +33,14 @@ public class AndroidDevice implements DevicePlugin<Long, double[]> {
         this.name = name;
         _sensors = new ArrayList<>();
         _sensors.add(_logSensor = new LogSensor<>(this));
-        if (deviceIds) {
-            final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            final String androidId = android.provider.Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
-            _logSensor.addMeta(0, "DeviceId:" + tm.getDeviceId());
-            _logSensor.addMeta(1, "SimSerialNumber:" + tm.getSimSerialNumber());
-            _logSensor.addMeta(2, "PhoneType:" + tm.getPhoneType());
-            _logSensor.addMeta(3, "AndroidId:" + androidId);
+        if (this.deviceIds = deviceIds) {
+            telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            androidId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+            packageName = context.getApplicationInfo().packageName;
+        }
+        else {
+            telephonyManager = null;
+            androidId = null;
         }
         if (gps)
             _sensors.add(new GpsSensor(this, context, 0, 0));
@@ -139,6 +144,13 @@ public class AndroidDevice implements DevicePlugin<Long, double[]> {
     public void inputPluginInitialize() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOnAsync();
+        }
+        if (deviceIds) {
+            _logSensor.addMeta(0, "DeviceId:" + telephonyManager.getDeviceId());
+            _logSensor.addMeta(1, "SimSerialNumber:" + telephonyManager.getSimSerialNumber());
+            _logSensor.addMeta(2, "PhoneType:" + telephonyManager.getPhoneType());
+            _logSensor.addMeta(3, "AndroidId:" + androidId);
+            _logSensor.addMeta(3, "Application:" + packageName);
         }
     }
 

@@ -156,13 +156,32 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         private final long cycle = max * 1_000000L / freq;
         
         private final CozyBabyManager.DataDelegate btsData = new CozyBabyManager.DataDelegate() {
+            @Override
+            public void received(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, Long timestamp, double[] value) {
+
+            }
+
+            @Override
+            public void lostSamples(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, int howMany) {
+
+            }
+
+            @Override
+            public void duplicateSamples(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, int howMany) {
+
+            }
+
+            @Override
+            public void lostPacket(CozyBabyManager sender, int type) {
+
+            }
+
             long ref = -1;
             long now = -1;
             long pre = 0;
             int last = -1; // val ok
             int qd = 0, bd = 0;
 
-            @Override
             public void received(CozyBabyManager sender, CozyBabyManager.Packet p) {
 //                // TODO! check timestamp calc
 //                now = getTime().getMonoUTCNanos(p.receptionTime);
@@ -188,7 +207,6 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 //                last = p.counter;
             }
 
-            @Override
             public void lost(CozyBabyManager sender, int from, int to, int howMany) {
                 Log.v(this.getClass().getSimpleName(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }

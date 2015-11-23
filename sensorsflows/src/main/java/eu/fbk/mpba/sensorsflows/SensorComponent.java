@@ -68,6 +68,20 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         }
     }
 
+    /**
+     * Unregisters every outputDecorator
+     */
+    public void close() {
+        _handler.clear();
+        _outputs.clear();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
     // Managed Overrides
 
     public int getForwardedMessagesCount() {

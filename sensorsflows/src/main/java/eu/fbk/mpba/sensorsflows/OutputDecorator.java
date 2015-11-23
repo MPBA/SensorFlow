@@ -32,10 +32,10 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         _manager = manager;
         linkedSensors = new ArrayList<>();
         outputPlugIn = output;
-        int dataQueueCapacity = 80;
-        int eventQueueCapacity = 30;
+        int dataQueueCapacity = 100;
+        int eventsQueueCapacity = 50;
         // TODO POI Adjust the capacity
-        _eventsQueue = new ArrayBlockingQueue<>(eventQueueCapacity);
+        _eventsQueue = new ArrayBlockingQueue<>(eventsQueueCapacity);
         // TODO POI Adjust the capacity
         _dataQueue = new ArrayBlockingQueue<>(dataQueueCapacity);
     }
@@ -54,7 +54,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private void dispatchLoopWhileNotStopPending() {
         SensorDataEntry<TimeT, ValueT> data;
         SensorEventEntry<TimeT> event;
-        while (!_stopPending) {
+        while (true) {
             data = _dataQueue.poll();
             event = _eventsQueue.poll();
             if (data != null)
@@ -62,12 +62,15 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
             if (event != null)
                 outputPlugIn.newSensorEvent(event);
             else if (data == null)
-                try {
-                    long sleepInterval = 25; // TODO POI polling timestamp here
-                    Thread.sleep(sleepInterval);
-                } catch (InterruptedException e) {
+                if (_stopPending)
+                    break;
+                else
+                    try {
+                        long sleepInterval = 50; // TODO POI polling timestamp here
+                        Thread.sleep(sleepInterval);
+                    } catch (InterruptedException e) {
 //                    Log.w(LOG_TAG, "InterruptedException in OutputImpl.run() find-me:fnh294he97");
-                }
+                    }
         }
     }
 
@@ -90,6 +93,11 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     public void finalizeOutput() {
         changeState(OutputStatus.FINALIZING);
         _stopPending = true;
+        try {
+            _thread.join(); // FIXME POI Indefinite wait
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -132,5 +140,18 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
 
     OutputPlugin<TimeT, ValueT> getPlugIn() {
         return outputPlugIn;
+    }
+
+    /**
+     * Unregisters every sensor linked
+     */
+    public void close() {
+        linkedSensors.clear();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
     }
 }

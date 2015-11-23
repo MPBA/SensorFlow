@@ -273,7 +273,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             SensorInfo.Builder db = SensorInfo.newBuilder()
                     .setSensorId(s)
                     .setDevice(streamingSensors.get(s).getParentDevicePlugin().getClass().getName())
-                    .setType(getClass().getName())
+                    .setType(streamingSensors.get(s).getClass().getName())
                     .setName(streamingSensors.get(s).getName());
             for (Object x : streamingSensors.get(s).getValueDescriptor())
                 db.addChannels(x.toString());

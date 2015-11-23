@@ -110,7 +110,7 @@ public class FlowsMan<TimeT, ValueT> implements
         if (sender.isListened() && !_paused) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
-                ((OutputDecorator<TimeT, ValueT>)o).sensorValue(sender, time, value);
+                ((OutputDecorator<TimeT, ValueT>) o).sensorValue(sender, time, value);
             }
         }
     }
@@ -127,7 +127,7 @@ public class FlowsMan<TimeT, ValueT> implements
         if (sender.isListened() && !_paused) {
             for (Object o : sender.getOutputs()) {
                 //noinspection unchecked
-                ((OutputDecorator<TimeT, ValueT>)o).sensorEvent(sender, time, type, message);
+                ((OutputDecorator<TimeT, ValueT>) o).sensorEvent(sender, time, type, message);
             }
         }
     }
@@ -183,8 +183,7 @@ public class FlowsMan<TimeT, ValueT> implements
                     s.registerManager(this);
                 _decDevices.add(new DeviceDecorator<>(device, this));
             }
-        }
-        else
+        } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
@@ -227,12 +226,11 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addOutput(OutputPlugin<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY) {
-            if (!_userOutputs.contains(output)){
+            if (!_userOutputs.contains(output)) {
                 _userOutputs.add(output);
                 _decOutputs.add(new OutputDecorator<>(output, this));
             }
-        }
-        else
+        } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
@@ -381,7 +379,8 @@ public class FlowsMan<TimeT, ValueT> implements
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevicePlugIn())) {
 //            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
-            */sensor.switchOnAsync();/*
+            */
+        sensor.switchOnAsync();/*
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -400,7 +399,8 @@ public class FlowsMan<TimeT, ValueT> implements
         // Note the difference with the set streaming
         /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevice())) {
 //            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
-            */sensor.switchOffAsync();/*
+            */
+        sensor.switchOffAsync();/*
         } else {
             throw new NoSuchElementException("ISensor not present in the collection.");
         }*/
@@ -420,7 +420,8 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
         /*if (_decDevices.contains(sensor.getParentDevice()))
-            */sensor.setListened(streaming);/*
+            */
+        sensor.setListened(streaming);/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
     }
@@ -437,7 +438,8 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
         /*if (_decDevices.contains(sensor.getParentDevice()))
-            */return sensor.isListened();/*
+            */
+        return sensor.isListened();/*
         else
             throw new NoSuchElementException("ISensor not present in the collection.");*/
     }
@@ -457,7 +459,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * If a device/output was initialized before this call and it is not already INITIALIZED the
      * engine will wait for it for an indefinite timestamp. In this period the engine status will stay
      * {@code EngineStatus.PREPARING}.
-     *
+     * <p/>
      * The session name is the date-timestamp string {@code Long.toString(System.currentTimeMillis())}
      */
     @SuppressWarnings("JavaDoc")
@@ -468,11 +470,11 @@ public class FlowsMan<TimeT, ValueT> implements
 
     /**
      * Renders the IO-mapping and in two times (async.) initializes the devices and the outputs.
-     * <p/>
+     * <br/>
      * If a device/output was initialized before this call and it is not already INITIALIZED the
-     * engine will wait for it for an indefinite timestamp. In this period the engine status will stay
+     * engine will wait for it for an indefinite time. In this period the engine status will stay
      * {@code EngineStatus.PREPARING}.
-     *
+     * <p/>
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
      */
     public void start(String sessionName) {
@@ -509,8 +511,7 @@ public class FlowsMan<TimeT, ValueT> implements
             }
             // WAS _outputsSensors.clear();
             // WAS _outputsSensors = null;
-        }
-        else
+        } else
             throw new UnsupportedOperationException("Engine already running!");
     }
 
@@ -551,10 +552,10 @@ public class FlowsMan<TimeT, ValueT> implements
     }
 
     /**
-     * This method finalizes every device and every output and prepares the instance to be trashed.
+     * This method finalizes every device and every output and waits the queues to get empty.
      */
     @Override
-    public void close() {
+    public void stop() {
         changeState(EngineStatus.FINALIZING);
         for (DeviceDecorator d : _decDevices) {
             // only if INITIALIZED: checked in the method
@@ -564,14 +565,38 @@ public class FlowsMan<TimeT, ValueT> implements
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
-        for (DeviceDecorator<TimeT, ValueT> d : _decDevices) {
-            for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
-                s.unregisterManager(this);
-        }
-        changeState(EngineStatus.CLOSED);
+        changeState(EngineStatus.FINALIZED);
     }
 
     /**
+     *
+     */
+    @Override
+    public void close() {
+        switch (getStatus()) {
+            case STANDBY:
+                break;
+            case STREAMING:
+                stop();
+            case FINALIZED:
+                changeState(EngineStatus.CLOSING);
+                for (DeviceDecorator<TimeT, ValueT> d : _decDevices)
+                    for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
+                        s.close();
+                for (IOutput<TimeT, ValueT> o : _decOutputs)
+                o.close();
+                changeState(EngineStatus.CLOSED);
+                break;
+            case CLOSED:
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        "Another operation is currently trying to chenge the state: " +
+                                getStatus().toString());
+        }
+    }
+
+        /**
      * Finalizes the object calling also the {@code close} method.
      *
      * @throws Throwable

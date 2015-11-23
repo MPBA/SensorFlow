@@ -55,7 +55,9 @@ public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extend
 
     public boolean isPaused();
 
-    public void close();
+    public void stop();
+
+    void close();
 
     public void setOnStateChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
 

@@ -31,7 +31,7 @@ public class CozyBabyToFile extends CozyBabyReceiver {
         connect();
         if (getState() == BTSrvState.CONNECTED) {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
-                    + "/eu.fbk.mpba.physiorec/");
+                    + "/eu.fbk.mpba.sensorsflows.plugins.inputs.comftech/");
             if (x.mkdirs() || x.isDirectory())
                 try {
                     mOut = new FileOutputStream(new File(x, "cozybaby_" + CsvDataSaver.getHumanDateTimeString() + ".bin"));

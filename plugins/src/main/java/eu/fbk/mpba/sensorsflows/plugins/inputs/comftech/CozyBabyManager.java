@@ -4,8 +4,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
-import java.nio.ByteBuffer;
-
 public class CozyBabyManager extends CozyBabyReceiver {
 
     // TODO 0: implement protocol
@@ -44,7 +42,7 @@ public class CozyBabyManager extends CozyBabyReceiver {
     private final DataDelegate mDataDelegate;
 
     public CozyBabyManager(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
-        super(statusDelegate, device, adapter);
+        super(statusDelegate, device, adapter, true);
         mDataDelegate = dataDelegate;
     }
 
@@ -60,7 +58,7 @@ public class CozyBabyManager extends CozyBabyReceiver {
     //
     final static short[] memsfreqs = { 0, 1, 10, 25, 50, 100, 200 };
     final static byte memsFMin = 1;
-    final static byte memsFMax = 1;
+    final static byte memsFMax = 6;
 
     // Operation
 
@@ -68,9 +66,10 @@ public class CozyBabyManager extends CozyBabyReceiver {
 
     @SuppressWarnings("SpellCheckingInspection")
     @Override
-    protected void received(final byte[] payload, final int bytes) {
-        ByteBuffer pack = ByteBuffer.wrap(payload, 0, bytes);
-        switch (payload[0]) {
+    protected void received(final byte[] pack, final int offset, final int bytes) {
+        int i = offset;
+        int code = pack[i++] & 0xff;
+        switch (code) {
             case Packet.ECG_WAVEFORM: {
                 // Timestamp relativo all’istante di inizio campionamento
                 long timestamp_ECG_PckStart;
@@ -88,15 +87,25 @@ public class CozyBabyManager extends CozyBabyReceiver {
                 int[] ECGSamples = new int[n];
 
                 // Control
-                timestamp_ECG_PckStart = pack.getInt() & 0x0000_0000_FFFF_FFFFL;    // 4B U
-                Samplenum = pack.getInt() & 0x0000_0000_FFFF_FFFFL;                 // 4B U
-                sampleFrequencyECG = pack.getShort() & 0x00_00_FF_FF;               // 2B U
+                timestamp_ECG_PckStart = (
+                        (pack[i++] & 0xff) +
+                                ((pack[i++] & 0xff) << 8) +
+                                ((pack[i++] & 0xff) << 16) +
+                                ((pack[i++] & 0xff) << 24)
+                ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
+                Samplenum = (
+                        (pack[i++] & 0xff) +
+                                ((pack[i++] & 0xff) << 8) +
+                                ((pack[i++] & 0xff) << 16) +
+                                ((pack[i++] & 0xff) << 24)
+                ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
+                sampleFrequencyECG = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
 
                 // Data
-                HeartRate = pack.getShort() & 0x00_00_FF_FF;                        // 2B U
-                SensorStatus = pack.get() & 0x00_00_00_FF;                          // 1B U
-                for (int i = 0; i < n; i++)
-                    ECGSamples[i] = pack.getShort() & 0x00_00_FF_FF;                // 2B U
+                HeartRate = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
+                SensorStatus = pack[i++] & 0xff;                                           // 1B U
+                for (int j = 0; j < n; j++)
+                    ECGSamples[j] = (short)((pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8));      // 2B U
 
                 if (nextEcg < Samplenum) {
                     // Lost: jump
@@ -111,10 +120,12 @@ public class CozyBabyManager extends CozyBabyReceiver {
                     nextEcg = Samplenum;
                 }
 
-                for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++) {
                     mDataDelegate.received(this, Packet.SubType.ECG_VALUE,
-                            timestamp_ECG_PckStart * 1000 + i * 1000 / sampleFrequencyECG,
-                            new double[] { ECGSamples[i] });
+                            timestamp_ECG_PckStart * 1000 + j * 1000 / sampleFrequencyECG,
+                            new double[]{ECGSamples[j]});
+                    Log.v("CIAO", "ecg: " + ECGSamples[j]);
+                }
 
                 mDataDelegate.received(this, Packet.SubType.ECG_COMP_HR,
                         timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
@@ -136,40 +147,54 @@ public class CozyBabyManager extends CozyBabyReceiver {
                 // Per la decodifica dell’informazione si veda il comando FMEMS
                 int sampleFrequencyMEMS;
                 // Numer of samples
-                int n = 3 * (bytes - 9) / 2;
+                int n = (bytes - 10) / 2;
                 // Vettore contenente l'informazione per la ricostruzione della waveform.
                 // Ogni campione è costituito da una tripletta di valori relativi,
                 // rispettivamente, alle accelerazioni X, Y e Z.
                 int[] MEMSSamples = new int[n];
 
-                timestamp_MEMS_PckStart = pack.getInt() & 0x0000_0000_FFFF_FFFFL;   // 4B U
-                Samplenum = pack.getInt() & 0x0000_0000_FFFF_FFFFL;                 // 4B U
-                sampleFrequencyMEMS = pack.get() & 0x00_00_00_FF;                   // 1B U
+                timestamp_MEMS_PckStart = (
+                        (pack[i++] & 0xff) +
+                        ((pack[i++] & 0xff) << 8) +
+                        ((pack[i++] & 0xff) << 16) +
+                        ((pack[i++] & 0xff) << 24)
+                ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
+                Samplenum = (
+                        (pack[i++] & 0xff) +
+                                ((pack[i++] & 0xff) << 8) +
+                                ((pack[i++] & 0xff) << 16) +
+                                ((pack[i++] & 0xff) << 24)
+                ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
+                sampleFrequencyMEMS = pack[i++] & 0xff;                   // 1B U
                 if (sampleFrequencyMEMS >= memsFMin && sampleFrequencyMEMS <= memsFMax)
                     sampleFrequencyMEMS = memsfreqs[sampleFrequencyMEMS];
                 else
                     // Pack everything to avoid overlapping
                     sampleFrequencyMEMS = memsfreqs[memsFMax];
-                for (int i = 0; i < n; i++)
-                    MEMSSamples[i] = pack.getShort() & 0x00_00_FF_FF;               // 2B U
+                for (int j = 0; j < n; j++) {
+                    MEMSSamples[j] = (short)((pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8));               // 2B U
+                }
 
                 if (nextMems < Samplenum) {
                     // Lost: jump
                     Log.e("CozyDebug", "Lost MEMS samples: " + (nextMems - Samplenum));
-                    mDataDelegate.lostSamples(this, Packet.SubType.ECG_VALUE, (int) (nextMems - Samplenum));
+                    mDataDelegate.lostSamples(this, Packet.SubType.MEMS_XYZ, (int) (nextMems - Samplenum));
                     nextMems = Samplenum - 1;
                 }
                 if (nextMems > Samplenum) {
                     // Duplicated: discard (bug?)
                     Log.e("CozyDebug", "Duplicated MEMS samples: " + (Samplenum - nextMems));
-                    mDataDelegate.duplicateSamples(this, Packet.SubType.ECG_VALUE, (int) (nextMems - Samplenum));
+                    mDataDelegate.duplicateSamples(this, Packet.SubType.MEMS_XYZ, (int) (nextMems - Samplenum));
                     nextMems = Samplenum;
                 }
 
-                for (int i = 0; i < n;)
+                for (int j = 0; j < n;) {
+                    double[] in;
                     mDataDelegate.received(this, Packet.SubType.MEMS_XYZ,
                             timestamp_MEMS_PckStart * 1000 + 1000 / sampleFrequencyMEMS,
-                            new double[] { MEMSSamples[i++], MEMSSamples[i++], MEMSSamples[i++] });
+                            in = new double[]{MEMSSamples[j++], MEMSSamples[j++], MEMSSamples[j++]});
+                    //Log.v("CIAO", "ax:" + in[0] + "ay:" + in[1] + "az:" + in[2]);
+                }
 
                 nextMems = Samplenum + n;
             }
@@ -193,6 +218,8 @@ public class CozyBabyManager extends CozyBabyReceiver {
 
     public void connect() {
         super.connect();
+        command(
+                "TXMEMS1\r\nFMEMS6\r\n".getBytes());
     }
 
     public void stop() {

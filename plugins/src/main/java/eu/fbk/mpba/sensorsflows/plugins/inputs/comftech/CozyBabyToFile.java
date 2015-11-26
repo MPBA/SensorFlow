@@ -21,7 +21,7 @@ public class CozyBabyToFile extends CozyBabyReceiver {
     private FileOutputStream mOut;
 
     public CozyBabyToFile(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
-        super(statusDelegate, device, adapter);
+        super(statusDelegate, device, adapter, false);
     }
 
     // Operation
@@ -58,11 +58,9 @@ public class CozyBabyToFile extends CozyBabyReceiver {
         }
     }
 
-    public void received(byte[] buffer, int bytes) {
+    public void received(byte[] buffer, int offset, int bytes) {
         try {
-            for (int i = 0; i < bytes; i++) {
-                mOut.write(buffer[i]);
-            }
+            mOut.write(buffer, offset, bytes);
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "+++ On write to file", e);
         }

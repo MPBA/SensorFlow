@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
@@ -18,20 +19,19 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
     private String name;
     private CBSensor monoSensor;
 
-    EXLAccelerometer er;
-    EXLBattery ry;
-    EXLGyroscope pe;
-    EXLMagnetometer ma;
-    EXLQuaternion on;
+    CBMEMS mems;
+    CBECG ecg;
 
     public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
         this.name = name;
         monoSensor = new CBSensor(this, realDevice, adapter);
+        mems = new CBMEMS(this);
+        ecg = new CBECG(this);
     }
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) er, pe, ma, on, ry).iterator());
+        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) mems, ecg).iterator());
     }
 
     @Override
@@ -111,11 +111,9 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         }
 
         public void switchDevOnAsync() {
-            manager.command(CozyBabyReceiver.Commands.startStreaming);
         }
 
         public void switchDevOffAsync() {
-            manager.command(CozyBabyReceiver.Commands.stopStreaming);
         }
 
         @Override
@@ -136,79 +134,53 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
             }
 
             public void connecting(CozyBabyReceiver sender, BluetoothDevice device, boolean secureMode) {
-                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                //        CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
+                parent.ecg.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                        CONNECTING, "connecting to " + device.getName() + "@" + device.getAddress() + (secureMode ? " secure" : " insecure") + " mode");
             }
 
             public void connected(CozyBabyReceiver sender, String deviceName) {
-                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                //        CONNECTED, "connected to " + deviceName);
+                parent.ecg.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                        CONNECTED, "connected to " + deviceName);
             }
 
             public void disconnected(CozyBabyReceiver sender, DisconnectionCause cause) {
-                //parent.er.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                //        DISCONNECTED | cause.flag, "disconnected:" + cause.toString());
+                parent.ecg.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
+                        DISCONNECTED, "disconnected:" + cause.toString());
             }
         };
-
-        private final long freq = 100;
-        private final long max = 10000;
-        private final long cycle = max * 1_000000L / freq;
         
         private final CozyBabyManager.DataDelegate btsData = new CozyBabyManager.DataDelegate() {
             @Override
             public void received(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, Long timestamp, double[] value) {
-
+                switch (type) {
+                    case ECG_SAMP_FREQ:
+                        break;
+                    case ECG_COMP_HR:
+                        break;
+                    case ECG_SENSOR_STATUS:
+                        break;
+                    case ECG_VALUE:
+                        parent.ecg.sensorValue(getTime().getMonoUTCNanos(), value);
+                        break;
+                    case MEMS_XYZ:
+                        parent.mems.sensorValue(getTime().getMonoUTCNanos(), value);
+                        break;
+                }
             }
 
             @Override
             public void lostSamples(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, int howMany) {
-
+                Log.v(this.getClass().getSimpleName(), "lost samples, samples:" + howMany + " type:" + type);
             }
 
             @Override
             public void duplicateSamples(CozyBabyManager sender, CozyBabyManager.Packet.SubType type, int howMany) {
-
+                Log.v(this.getClass().getSimpleName(), "duplicated samples, samples:" + howMany + " type:" + type);
             }
 
             @Override
             public void lostPacket(CozyBabyManager sender, int type) {
-
-            }
-
-            long ref = -1;
-            long now = -1;
-            long pre = 0;
-            int last = -1; // val ok
-            int qd = 0, bd = 0;
-
-            public void received(CozyBabyManager sender, CozyBabyManager.Packet p) {
-//                // TODO! check timestamp calc
-//                now = getTime().getMonoUTCNanos(p.receptionTime);
-//                if (ref < 0) {
-//                    pre = ref = now - p.counter * 1000_000000L / freq; // pk0 cTime = now - time from pk0 to pkThis
-//                }
-//
-//                long calc = pre += (p.lostFromPreviousCounter(last) + 1) * 1000_000000L / freq;
-//
-//                received++;
-//
-//                if (parent.er.streaming)
-//                    parent.er.sensorValue(now, new double[]{p.ax, p.ay, p.az});
-//                if (parent.pe.streaming)
-//                    parent.pe.sensorValue(now, new double[]{p.gx, p.gy, p.gz});
-//                if (parent.ma.streaming)
-//                    parent.ma.sensorValue(now, new double[]{p.mx, p.my, p.mz});
-//                if (parent.on.streaming && (qd++ % parent.qDS) == 0)
-//                    parent.on.sensorValue(now, new double[]{p.q1, p.q2, p.q3, p.q4});
-//                if (parent.ry.streaming && (bd++ % parent.bDS) == 0)
-//                    parent.ry.sensorValue(now, new double[]{p.vbatt});
-//
-//                last = p.counter;
-            }
-
-            public void lost(CozyBabyManager sender, int from, int to, int howMany) {
-                Log.v(this.getClass().getSimpleName(), "lost:" + howMany + " fr:" + from + " to:" + to);
+                Log.v(this.getClass().getSimpleName(), "lost packet, type: " + type);
             }
         };
 
@@ -218,62 +190,26 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         }
     }
 
-    public static class EXLAccelerometer extends CBSensor {
+    public static class CBECG extends CBSensor {
 
-        protected EXLAccelerometer(CozyBabyDevice parent) {
+        protected CBECG(CozyBabyDevice parent) {
+            super(parent);
+        }
+
+        public List<Object> getValueDescriptor() {
+            return Collections.singletonList((Object) "value");
+        }
+
+    }
+
+    public static class CBMEMS extends CBSensor {
+
+        protected CBMEMS(CozyBabyDevice parent) {
             super(parent);
         }
 
         public List<Object> getValueDescriptor() {
             return Arrays.asList((Object) "ax", "ay", "az");
-        }
-
-    }
-
-    public static class EXLGyroscope extends CBSensor {
-
-        protected EXLGyroscope(CozyBabyDevice parent) {
-            super(parent);
-        }
-
-        public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "gx", "gy", "gz");
-        }
-
-    }
-
-    public static class EXLMagnetometer extends CBSensor {
-
-        protected EXLMagnetometer(CozyBabyDevice parent) {
-            super(parent);
-        }
-
-        public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "mx", "my", "mz");
-        }
-
-    }
-
-    public static class EXLQuaternion extends CBSensor {
-
-        protected EXLQuaternion(CozyBabyDevice parent) {
-            super(parent);
-        }
-
-        public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "q1", "q2", "q3", "q4");
-        }
-
-    }
-
-    public static class EXLBattery extends CBSensor {
-
-        protected EXLBattery(CozyBabyDevice parent) {
-            super(parent);
-        }
-
-        public List<Object> getValueDescriptor() {
-            return Arrays.asList((Object) "vbatt");
         }
 
     }

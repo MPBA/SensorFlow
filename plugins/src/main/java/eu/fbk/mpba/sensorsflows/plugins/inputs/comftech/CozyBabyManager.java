@@ -130,10 +130,12 @@ public class CozyBabyManager extends CozyBabyReceiver {
                 mDataDelegate.received(this, Packet.SubType.ECG_COMP_HR,
                         timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
                         new double[] { HeartRate });
+                Log.v("CIAO", "HeartRate: " + HeartRate);
 
                 mDataDelegate.received(this, Packet.SubType.ECG_SENSOR_STATUS,
                         timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
-                        new double[] { SensorStatus });
+                        new double[]{SensorStatus});
+                Log.v("CIAO", "SensorStatus: " + SensorStatus);
 
                 nextEcg = Samplenum + n;
             }
@@ -193,7 +195,7 @@ public class CozyBabyManager extends CozyBabyReceiver {
                     mDataDelegate.received(this, Packet.SubType.MEMS_XYZ,
                             timestamp_MEMS_PckStart * 1000 + 1000 / sampleFrequencyMEMS,
                             in = new double[]{MEMSSamples[j++], MEMSSamples[j++], MEMSSamples[j++]});
-                    //Log.v("CIAO", "ax:" + in[0] + "ay:" + in[1] + "az:" + in[2]);
+                    Log.v("CIAO", "ax:" + in[0] + "ay:" + in[1] + "az:" + in[2]);
                 }
 
                 nextMems = Samplenum + n;
@@ -218,8 +220,13 @@ public class CozyBabyManager extends CozyBabyReceiver {
 
     public void connect() {
         super.connect();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         command(
-                "TXMEMS1\r\nFMEMS6\r\n".getBytes());
+                "FMEMS1\r\nTXECG1\r\n".getBytes());
     }
 
     public void stop() {

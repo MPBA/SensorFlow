@@ -1258,7 +1258,7 @@ public final class SensorsProtobuffer {
             ;
 
             /**
-             * <code>DEVICE_NOT_SET = 0;</code>
+             * <code>OTHER = 0;</code>
              */
             public static final int OTHER_VALUE = 0;
             /**

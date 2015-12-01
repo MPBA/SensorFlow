@@ -1,5 +1,6 @@
 package eu.fbk.mpba.sensorsflows.plugins.outputs.litix;
 
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.SystemClock;
@@ -246,6 +247,9 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                         if (lastFlush)
                             mOnSplit.noMoreBuffers(ProtobufferOutput.this, mSplitter);
                     }
+                } catch (SQLiteConstraintException e) {
+                    Log.e("ProtoOut", "SQL error, splitID:" + split_id + " trackID:" + mTrackID);
+                    e.printStackTrace();
                 } catch (Exception e) {
                     Log.e("ProtoOut", "Flush error");
                     e.printStackTrace();

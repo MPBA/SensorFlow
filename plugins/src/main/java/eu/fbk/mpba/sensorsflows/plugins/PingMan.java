@@ -21,13 +21,14 @@ public class PingMan {
         if (isNetworkAvailable(context)) {
             try {
                 HttpURLConnection urlc = (HttpURLConnection) (new URL(url).openConnection());
-                urlc.setRequestProperty("User-Agent", "Test");
+                urlc.setRequestProperty("User-Agent", "Android");
                 urlc.setRequestProperty("Connection", "close");
                 urlc.setConnectTimeout(3000);
                 urlc.connect();
                 ret = (urlc.getResponseCode() > 99);
             } catch (IOException e) {
                 Log.e("ALE PINGMAN", "Error checking internet connection");
+                e.printStackTrace();
                 ret = false;
             }
         } else {

@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 import java.util.zip.GZIPOutputStream;
 
 import eu.fbk.mpba.sensorsflows.OutputPlugin;
@@ -178,10 +177,8 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             throw new NullPointerException("ProtobufferOutput already initialized.");
     }
 
-    Semaphore flush = new Semaphore(1);
-
     public void flushTrackSplit() {
-        Log.d("ProtoOut", "Flushing " + currentBacklogSize() + " SensorData/Event/Meta");
+        Log.d("ProtoOut", "Flushing " + currentBacklogSize() + " SensorData/Event");
         final int split_id = splits;
 
         Litix.TrackSplit.Builder sb = Litix.TrackSplit.newBuilder();

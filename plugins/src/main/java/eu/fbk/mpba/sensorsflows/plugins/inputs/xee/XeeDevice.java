@@ -48,6 +48,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     protected Map<String, XeeSensor.CarData> namesMap = new HashMap<>(50);
     protected Map<Long, XeeSensor.CarData> idMap = new HashMap<>(50);
     private ConnectionCallback ec = null;
+    private boolean finalizationOngoing = false;
 
     public interface ConnectionCallback {
         void error(int e, String message);
@@ -103,6 +104,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             Log.v(debugTAG, "inputPluginInitialize");
 
         active = true;
+        finalizationOngoing = true;
     }
 
     @Override
@@ -182,7 +184,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             else
                 DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
         } catch (StackOverflowError e) {
-            e.printStackTrace();
+            Log.e("XeeDevice", e.getClass().getSimpleName());
         }
         DQUnitManager.INSTANCE.disconnect();
     }
@@ -204,12 +206,15 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
 
     @Override
     public void onError(int arg0, String arg1) {
-        if (ec != null)
+        if (ec != null && !finalizationOngoing)
             ec.error(arg0, arg1);
 
         Log.e(debugTAG, "ERROR " + arg0 + " " + arg1);
 
         broadcastEvent(arg0, arg1);
+
+        if (finalizationOngoing)
+            finalizationOngoing = false;
     }
 
     @Override
@@ -238,11 +243,14 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         if(debug)
             Log.v(debugTAG, "onDriverDown - reason: " + arg0 + " - " + DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
 
-        if (ec != null)
+        if (ec != null && !finalizationOngoing)
             ec.error(arg0, DQDriver.INSTANCE.dqdriverErrorDescriptions.get(arg0));
 
         if(firmwareUPDRequested)
             initDriver(false);
+
+        if (finalizationOngoing)
+            finalizationOngoing = false;
     }
 
     @Override

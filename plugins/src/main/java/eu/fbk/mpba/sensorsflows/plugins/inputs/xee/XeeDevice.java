@@ -96,10 +96,21 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         setEnvironment(e);
         connect(this.simulation = simulation);
         setReceivingData(true);
+        Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+                Log.e("Uncaught", "SemiFATAL EXCEPTION in " + thread.getName(), ex);
+            }
+        };
+        Thread[] t = new Thread[64];
+        int l = Thread.currentThread().getThreadGroup().enumerate(t);
+        for (int i = 0; i < l; i++) {
+            t[i].setUncaughtExceptionHandler(h);
+        }
     }
 
     @Override
-    public void inputPluginInitialize(){
+    public void inputPluginInitialize() {
         if (debug)
             Log.v(debugTAG, "inputPluginInitialize");
 

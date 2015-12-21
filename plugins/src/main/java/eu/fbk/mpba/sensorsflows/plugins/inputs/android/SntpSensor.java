@@ -48,6 +48,8 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
                 Log.i(SntpSensor.class.getSimpleName(), "SntpServer unresolved: " + e.getMessage());
             }
         }
+        if (x.size() == 0)
+            throw new RuntimeException("No internet or NTP addresses unresolvable.");
         this.servers = new ArrayList<>(x);
     }
 

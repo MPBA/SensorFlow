@@ -179,8 +179,8 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
             }
 
             @Override
-            public void lostPacket(CozyBabyManager sender, int type) {
-                Log.v(this.getClass().getSimpleName(), "lost packet, type: " + type);
+            public void log(CozyBabyManager sender, String message) {
+                Log.v(this.getClass().getSimpleName(), "log::" + message);
             }
         };
 

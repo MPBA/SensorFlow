@@ -6,7 +6,6 @@ import android.util.Log;
 
 public class CozyBabyManager extends CozyBabyReceiver {
 
-    // TODO 0: implement protocol
     // - LSB first, Little Endian
 
     // Debug
@@ -62,7 +61,10 @@ public class CozyBabyManager extends CozyBabyReceiver {
 
     // Operation
 
-    long nextEcg = -1, nextMems = 0, lost = 0, ok = 0, invalidChecksum = 0;
+    long nextEcg = -1, nextMems = 0;
+
+    int lastHeartRate = -1;
+    int lastSensorStatus = -1;
 
     @SuppressWarnings("SpellCheckingInspection")
     @Override
@@ -101,21 +103,23 @@ public class CozyBabyManager extends CozyBabyReceiver {
                 ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
                 sampleFrequencyECG = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
 
+                Log.e("CozyDebug", "sampleFrequencyECG: " + sampleFrequencyECG);
+
                 // Data
                 HeartRate = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
                 SensorStatus = pack[i++] & 0xff;                                           // 1B U
                 for (int j = 0; j < n; j++)
-                    ECGSamples[j] = (short)((pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8));      // 2B U
+                    ECGSamples[j] = (short) ((pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8));      // 2B U
 
                 if (nextEcg < Samplenum) {
                     // Lost: jump
-                    Log.e("CozyDebug", "Lost ECG samples: " + (nextEcg - Samplenum));
-                    mDataDelegate.lostSamples(this, Packet.SubType.ECG_VALUE, (int) (nextEcg - Samplenum));
+                    Log.e("CozyDebug", "Lost ECG samples: " + (Samplenum - nextEcg));
+                    mDataDelegate.lostSamples(this, Packet.SubType.ECG_VALUE, (int) (Samplenum - nextEcg));
                     nextEcg = Samplenum;
                 }
                 if (nextEcg > Samplenum) {
                     // Duplicated: discard (bug?)
-                    Log.e("CozyDebug", "Duplicated ECG samples: " + (Samplenum - nextEcg));
+                    Log.e("CozyDebug", "Duplicated ECG samples: " + (nextEcg - Samplenum));
                     mDataDelegate.duplicateSamples(this, Packet.SubType.ECG_VALUE, (int) (nextEcg - Samplenum));
                     nextEcg = Samplenum;
                 }
@@ -124,18 +128,22 @@ public class CozyBabyManager extends CozyBabyReceiver {
                     mDataDelegate.received(this, Packet.SubType.ECG_VALUE,
                             timestamp_ECG_PckStart * 1000 + j * 1000 / sampleFrequencyECG,
                             new double[]{ECGSamples[j]});
-                    Log.v("CIAO", "ecg: " + ECGSamples[j]);
+//                    Log.v("CIAO", "ecg: " + ECGSamples[j]);
                 }
 
-                mDataDelegate.received(this, Packet.SubType.ECG_COMP_HR,
-                        timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
-                        new double[] { HeartRate });
-                Log.v("CIAO", "HeartRate: " + HeartRate);
+                if (HeartRate != lastHeartRate) {
+                    mDataDelegate.received(this, Packet.SubType.ECG_COMP_HR,
+                            timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
+                            new double[]{HeartRate});
+                    lastHeartRate = HeartRate;
+                }
 
-                mDataDelegate.received(this, Packet.SubType.ECG_SENSOR_STATUS,
-                        timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
-                        new double[]{SensorStatus});
-                Log.v("CIAO", "SensorStatus: " + SensorStatus);
+                if (SensorStatus != lastSensorStatus) {
+                    mDataDelegate.received(this, Packet.SubType.ECG_SENSOR_STATUS,
+                            timestamp_ECG_PckStart * 1000 - 1000 / sampleFrequencyECG,
+                            new double[]{SensorStatus});
+                    lastSensorStatus = SensorStatus;
+                }
 
                 nextEcg = Samplenum + n;
             }
@@ -168,37 +176,36 @@ public class CozyBabyManager extends CozyBabyReceiver {
                                 ((pack[i++] & 0xff) << 24)
                 ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
                 sampleFrequencyMEMS = pack[i++] & 0xff;                   // 1B U
+
                 if (sampleFrequencyMEMS >= memsFMin && sampleFrequencyMEMS <= memsFMax)
                     sampleFrequencyMEMS = memsfreqs[sampleFrequencyMEMS];
-                else
-                    // Pack everything to avoid overlapping
+                else {
+                    // Compress everything to avoid overlapping
                     sampleFrequencyMEMS = memsfreqs[memsFMax];
+                    mDataDelegate.log(this, "Unknown frequency, setting the maximal: " + sampleFrequencyMEMS);
+                }
+
                 for (int j = 0; j < n; j++) {
                     MEMSSamples[j] = (short)((pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8));               // 2B U
                 }
 
                 if (nextMems < Samplenum) {
                     // Lost: jump
-                    Log.e("CozyDebug", "Lost MEMS samples: " + (nextMems - Samplenum));
-                    mDataDelegate.lostSamples(this, Packet.SubType.MEMS_XYZ, (int) (nextMems - Samplenum));
+                    mDataDelegate.lostSamples(this, Packet.SubType.MEMS_XYZ, (int) (Samplenum - nextMems));
                     nextMems = Samplenum - 1;
                 }
                 if (nextMems > Samplenum) {
                     // Duplicated: discard (bug?)
-                    Log.e("CozyDebug", "Duplicated MEMS samples: " + (Samplenum - nextMems));
                     mDataDelegate.duplicateSamples(this, Packet.SubType.MEMS_XYZ, (int) (nextMems - Samplenum));
                     nextMems = Samplenum;
                 }
 
                 for (int j = 0; j < n;) {
-                    double[] in;
                     mDataDelegate.received(this, Packet.SubType.MEMS_XYZ,
                             timestamp_MEMS_PckStart * 1000 + 1000 / sampleFrequencyMEMS,
-                            in = new double[]{MEMSSamples[j++], MEMSSamples[j++], MEMSSamples[j++]});
-                    Log.v("CIAO", "ax:" + in[0] + "ay:" + in[1] + "az:" + in[2]);
+                            new double[]{MEMSSamples[j++], MEMSSamples[j++], MEMSSamples[j++]});
                 }
-
-                nextMems = Samplenum + n;
+                nextMems = Samplenum + n / 3;
             }
                 break;
             case Packet.HEART_BPM:
@@ -243,6 +250,6 @@ public class CozyBabyManager extends CozyBabyReceiver {
 
         void duplicateSamples(CozyBabyManager sender, Packet.SubType type, int howMany);
 
-        void lostPacket(CozyBabyManager sender, int type);
+        void log(CozyBabyManager sender, String message);
     }
 }

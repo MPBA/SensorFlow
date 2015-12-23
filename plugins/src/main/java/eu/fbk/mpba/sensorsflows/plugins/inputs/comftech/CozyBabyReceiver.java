@@ -388,6 +388,7 @@ public abstract class CozyBabyReceiver {
                         setState(BTSrvState.DISCONNECTED);
                         if (mStatusDelegate != null)
                             mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
+                        connect();
                     }
                     break;
                 case "Software caused connection abort":

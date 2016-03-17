@@ -339,7 +339,7 @@ public abstract class CozyBabyReceiver {
                         //    checkSum = 0
                         //    while index <msgLen
                         //        checkSum = checkSum + message[index]
-                        //        checkSum = (checkSum AND 0b11010111) - 1 // as (215) is 0b11010111
+                        //        // checkSum = (checkSum AND 0b11010111) - 1 // as (215) is 0b11010111
                         //        increment index
 
                         int myCS = 0, rcCS = 0;
@@ -352,10 +352,8 @@ public abstract class CozyBabyReceiver {
                             while (c < i) {
                                 // checkSum = checkSum + message[index]
                                 myCS += pack[c];
-                                // checkSum = checkSum AND 0b11010111
-                                myCS &= 0b11010111;
-                                // -1
-                                myCS -= 1;
+                                // ?
+                                myCS ^= c;
                                 // incrementindex
                                 c++;
                             }
@@ -368,10 +366,10 @@ public abstract class CozyBabyReceiver {
                                 if (checkSumErrors > 0)
                                     checkSumErrors--;
                             } else {
-                                Log.d(TAG, "EDC positive pack kept (my vs rc): " + myCS + " vs " + rcCS + " " + checkSumErrors + "/64");
-                                if (checkSumErrors++ > 64) {
+                                Log.d(TAG, "EDC positive pack kept (my vs rc): " + myCS + " vs " + rcCS + " " + checkSumErrors + "/16");
+                                if (checkSumErrors++ > 16) {
                                     useCheckSum = false;
-                                    Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 64).");
+                                    Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 16).");
                                 }
                             }
                             // This is a full kept packet

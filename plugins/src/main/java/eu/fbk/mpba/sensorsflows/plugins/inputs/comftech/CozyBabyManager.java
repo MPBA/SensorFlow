@@ -103,8 +103,6 @@ public class CozyBabyManager extends CozyBabyReceiver {
                 ) & 0x0000_0000_FFFF_FFFFL;   // 4B U
                 sampleFrequencyECG = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
 
-                Log.e("CozyDebug", "sampleFrequencyECG: " + sampleFrequencyECG);
-
                 // Data
                 HeartRate = (pack[i++] & 0xff) + ((pack[i++] & 0xff) << 8) & 0x0000_FFFF;   // 2B U
                 SensorStatus = pack[i++] & 0xff;                                           // 1B U
@@ -226,7 +224,7 @@ public class CozyBabyManager extends CozyBabyReceiver {
     }
 
     public void connect() {
-        super.connect();
+        super.connect(3);
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {

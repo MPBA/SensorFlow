@@ -45,11 +45,8 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         monoSensor.disconnect();
     }
 
-    private boolean connected = false;
-
     public void connect() {
-        if (!connected)
-            monoSensor.connect();
+        monoSensor.connect();
     }
 
     public CozyBabyReceiver.BTSrvState getConnectionState() {
@@ -58,8 +55,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public void inputPluginInitialize() {
-        if (!connected)
-            monoSensor.connect();
+        connect();
         monoSensor.switchDevOnAsync();
     }
 
@@ -145,7 +141,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
             public void disconnected(CozyBabyReceiver sender, DisconnectionCause cause) {
                 parent.ecg.sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
-                        DISCONNECTED, "disconnected:" + cause.toString());
+                        (DISCONNECTED << 8) + cause.ordinal(), "disconnected:" + cause.toString());
             }
         };
         

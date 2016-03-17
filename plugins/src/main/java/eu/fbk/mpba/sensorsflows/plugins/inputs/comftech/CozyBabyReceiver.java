@@ -45,112 +45,116 @@ public abstract class CozyBabyReceiver {
 
     // Operation
 
-    protected void connect() { // TODO 8 Using only the insecure mode
-        dispatch = true;
-        if (!mAdapter.isEnabled()) {
-            try {
-                mAdapter.enable();
-            } catch (Exception e) {
-                Log.e(TAG, "Can't enable BT! Getting over.", e);
+    protected void connect(int retry) { // TODO 8 Using only the insecure mode
+        if (getState() == BTSrvState.CONNECTED) {
+            if (mStatusDelegate != null)
+                mStatusDelegate.connected(this, mDevice.getAddress() + "-" + mDevice.getName());
+        } else {
+            dispatch = true;
+            if (!mAdapter.isEnabled()) {
+                try {
+                    mAdapter.enable();
+                } catch (Exception e) {
+                    Log.e(TAG, "Can't enable BT! Getting over.", e);
+                }
             }
-        }
-        setState(BTSrvState.CONNECTING);
-        if (mStatusDelegate != null)
-            mStatusDelegate.connecting(this, mDevice, false);
-        int retry = 3;
-        while (retry-- > 0) {
-            if (mDevice != null) {
-                String devInfo = mDevice.getAddress() + "-" + mDevice.getName();
-                Log.d(TAG, devInfo + ": try connect");
-                mSocket = createSocket(mDevice);
-                if (mSocket == null) {
+            setState(BTSrvState.CONNECTING);
+            if (mStatusDelegate != null)
+                mStatusDelegate.connecting(this, mDevice, false);
+            while (retry-- > 0) {
+                if (mDevice != null) {
+                    String devInfo = mDevice.getAddress() + "-" + mDevice.getName();
+                    Log.d(TAG, devInfo + ": try connect");
+                    mSocket = createSocket(mDevice);
+                    if (mSocket == null) {
+                        // Connection Failed
+                        setState(BTSrvState.DISCONNECTED);
+                        if (mStatusDelegate != null)
+                            mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.OTHER);
+                        close();
+                    } else {
+                        if (!mAdapter.cancelDiscovery())
+                            Log.e(TAG, devInfo + ": cancelDiscovery failed, getting over");
+                        try {
+                            mSocket.connect();
+                            Log.i(TAG, devInfo + ": connected");
+                            // Ok
+                            retry = 0; // EXIT
+                            {
+                                // Connection Established
+                                setState(BTSrvState.CONNECTED);
+                                if (mStatusDelegate != null)
+                                    mStatusDelegate.connected(this, mDevice.getAddress() + "-" + mDevice.getName());
+                                // Get io streams
+                                try {
+                                    Log.v(TAG, "Getting I/O streams");
+                                    mInput = mSocket.getInputStream();
+                                    mOutput = mSocket.getOutputStream();
+                                    Log.v(TAG, "Got I/O streams");
+
+                                    mDispatcher = new Thread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            dispatch();
+                                        }
+                                    });
+                                    Log.v(TAG, "Starting asynch dispatcher");
+                                    mDispatcher.start();
+                                    Log.v(TAG, "Stort");
+
+                                } catch (IOException e) {
+                                    Log.e(TAG, "Can't get I/O streams", e);
+                                    // Connection Failed
+                                    setState(BTSrvState.DISCONNECTED);
+                                    if (mStatusDelegate != null)
+                                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
+                                    close();
+                                    retry = 0; // EXIT
+                                }
+                            }
+                        } catch (IOException e) {
+                            Log.e(TAG, devInfo + ": IOException, connect failure");
+                            switch (e.getMessage()) {
+                                case "read failed, socket might closed or timeout, read ret: -1":
+                                    break; // switch, retry
+                                case "Bluetooth is off":
+                                    Log.e(TAG, e.getMessage());
+                                    // Connection Failed
+                                    setState(BTSrvState.DISCONNECTED);
+                                    if (mStatusDelegate != null)
+                                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.BLUETOOTH_IS_OFF);
+                                    close();
+                                    //retry = 0; // EXIT
+                                    break;
+                                case "Device or resource busy":
+                                case "Host is down":
+                                    Log.e(TAG, e.getMessage());
+                                    // Connection Failed
+                                    setState(BTSrvState.DISCONNECTED);
+                                    if (mStatusDelegate != null)
+                                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.DEVICE_NOT_FOUND);
+                                    close();
+                                    //retry = 0; // EXIT
+                                    break;
+                                default:
+                                    Log.e(TAG, "Unrecognized connect failure", e);
+                                    // Connection Failed
+                                    setState(BTSrvState.DISCONNECTED);
+                                    if (mStatusDelegate != null)
+                                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.OTHER);
+                                    close();
+                                    //retry = 0; // EXIT
+                                    break;
+                            }
+                        }
+                    }
+                } else {
                     // Connection Failed
                     setState(BTSrvState.DISCONNECTED);
                     if (mStatusDelegate != null)
-                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.OTHER);
+                        mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.DEVICE_NOT_SET);
                     close();
-                } else {
-                    if (!mAdapter.cancelDiscovery())
-                        Log.e(TAG, devInfo + ": cancelDiscovery failed, getting over");
-                    try {
-                        mSocket.connect();
-                        Log.i(TAG, devInfo + ": connected");
-                        // Ok
-                        retry = 0; // EXIT
-                        {
-                            // Connection Established
-                            setState(BTSrvState.CONNECTED);
-                            if (mStatusDelegate != null)
-                                mStatusDelegate.connected(this, mDevice.getAddress() + "-" + mDevice.getName());
-                            // Get io streams
-                            try {
-                                Log.v(TAG, "Getting I/O streams");
-                                mInput = mSocket.getInputStream();
-                                mOutput = mSocket.getOutputStream();
-                                Log.v(TAG, "Got I/O streams");
-
-                                mDispatcher = new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        dispatch();
-                                    }
-                                });
-                                Log.v(TAG, "Starting asynch dispatcher");
-                                mDispatcher.start();
-                                Log.v(TAG, "Stort");
-
-                            } catch (IOException e) {
-                                Log.e(TAG, "Can't get I/O streams", e);
-                                // Connection Failed
-                                setState(BTSrvState.DISCONNECTED);
-                                if (mStatusDelegate != null)
-                                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.IO_STREAMS_ERROR);
-                                close();
-                                retry = 0; // EXIT
-                            }
-                        }
-                    } catch (IOException e) {
-                        Log.e(TAG, devInfo + ": IOException, connect failure");
-                        switch (e.getMessage()) {
-                            case "read failed, socket might closed or timeout, read ret: -1":
-                                break; // switch, retry
-                            case "Bluetooth is off":
-                                Log.e(TAG, e.getMessage());
-                                // Connection Failed
-                                setState(BTSrvState.DISCONNECTED);
-                                if (mStatusDelegate != null)
-                                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.BLUETOOTH_IS_OFF);
-                                close();
-                                retry = 0; // EXIT
-                                break;
-                            case "Device or resource busy":
-                            case "Host is down":
-                                Log.e(TAG, e.getMessage());
-                                // Connection Failed
-                                setState(BTSrvState.DISCONNECTED);
-                                if (mStatusDelegate != null)
-                                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.DEVICE_NOT_FOUND);
-                                close();
-                                retry = 0; // EXIT
-                                break;
-                            default:
-                                Log.e(TAG, "Unrecognized connect failure", e);
-                                // Connection Failed
-                                setState(BTSrvState.DISCONNECTED);
-                                if (mStatusDelegate != null)
-                                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.OTHER);
-                                close();
-                                retry = 0; // EXIT
-                                break;
-                        }
-                    }
                 }
-            } else {
-                // Connection Failed
-                setState(BTSrvState.DISCONNECTED);
-                if (mStatusDelegate != null)
-                    mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.DEVICE_NOT_SET);
-                close();
             }
         }
     }
@@ -313,7 +317,7 @@ public abstract class CozyBabyReceiver {
 
 
                         // Checksum Computation
-                        // TODO check the actual algorithm pseudo code is the (1), assert (2) is equivalent
+                        // TODO check the actual algorithm pseudo code is the (1), assert (3) is equivalent
                         // (1)
                         //    Index = first
                         //    checkSum = 0
@@ -329,6 +333,14 @@ public abstract class CozyBabyReceiver {
                         //        checkSum = checkSum + message[index]
                         //        checkSum = checkSum AND 0b11010110 // as (215-1) is (214) that is 0b11010110
                         //        increment index
+                        //
+                        // (3)
+                        //    Index = first
+                        //    checkSum = 0
+                        //    while index <msgLen
+                        //        checkSum = checkSum + message[index]
+                        //        checkSum = (checkSum AND 0b11010111) - 1 // as (215) is 0b11010111
+                        //        increment index
 
                         int myCS = 0, rcCS = 0;
                         if (useCheckSum) {
@@ -340,8 +352,10 @@ public abstract class CozyBabyReceiver {
                             while (c < i) {
                                 // checkSum = checkSum + message[index]
                                 myCS += pack[c];
-                                // checkSum = checkSum AND 0b11010110
-                                myCS &= 0b11010110;
+                                // checkSum = checkSum AND 0b11010111
+                                myCS &= 0b11010111;
+                                // -1
+                                myCS -= 1;
                                 // incrementindex
                                 c++;
                             }
@@ -354,10 +368,10 @@ public abstract class CozyBabyReceiver {
                                 if (checkSumErrors > 0)
                                     checkSumErrors--;
                             } else {
-                                Log.d(TAG, "EDC positive pack kept (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
-                                if (checkSumErrors++ > 128) {
+                                Log.d(TAG, "EDC positive pack kept (my vs rc): " + myCS + " vs " + rcCS + " " + checkSumErrors + "/64");
+                                if (checkSumErrors++ > 64) {
                                     useCheckSum = false;
-                                    Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 256).");
+                                    Log.i(TAG, "CheckSum check disabled (checkSumErrors - packets > 64).");
                                 }
                             }
                             // This is a full kept packet
@@ -367,10 +381,10 @@ public abstract class CozyBabyReceiver {
                             received(result, 4, length);
                             i = 0;
                         } else {
-                            Log.d(TAG, "EDC positive pack discarded (my vs rc): " + Integer.toBinaryString(myCS) + " vs " + Integer.toBinaryString(rcCS));
+                            Log.d(TAG, "EDC positive pack discarded (my vs rc): " + myCS + " vs " + rcCS + " " + checkSumErrors + "/16");
                             if (checkSumErrors++ > 16) {
                                 hardCheckSum = false;
-                                Log.d(TAG, "Hard checkSum check disabled (checkSumErrors - packets > 64).");
+                                Log.d(TAG, "Hard checkSum check disabled (checkSumErrors - packets > 16).");
                             }
                         }
                     }
@@ -388,7 +402,12 @@ public abstract class CozyBabyReceiver {
                         setState(BTSrvState.DISCONNECTED);
                         if (mStatusDelegate != null)
                             mStatusDelegate.disconnected(this, StatusDelegate.DisconnectionCause.CONNECTION_LOST);
-                        connect();
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                        connect(100);
                     }
                     break;
                 case "Software caused connection abort":
@@ -413,6 +432,8 @@ public abstract class CozyBabyReceiver {
     }
 
     protected void setState(BTSrvState state) {
+        if (state == BTSrvState.DISCONNECTED)
+            state = BTSrvState.DISCONNECTED;
         Log.v(TAG, "+Status " + mState + " -> " + state);
         mState = state;
     }
@@ -450,7 +471,7 @@ public abstract class CozyBabyReceiver {
                 READY = 0,
                 CONNECTING = 1,
                 CONNECTED = 2,
-                DISCONNECTED = 4;
+                DISCONNECTED = 3;
 
         void connecting(CozyBabyReceiver sender, BluetoothDevice device, boolean secureMode);
         void connected(CozyBabyReceiver sender, String deviceName);
@@ -464,7 +485,7 @@ public abstract class CozyBabyReceiver {
             WRONG_PACKET_TYPE,
             DEVICE_NOT_SET,
             BLUETOOTH_IS_OFF,
-            IO_STREAMS_ERROR;
+            IO_STREAMS_ERROR
         }
     }
 

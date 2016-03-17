@@ -28,7 +28,7 @@ public class CozyBabyToFile extends CozyBabyReceiver {
 
     @SuppressWarnings("SpellCheckingInspection")
     public void start() {
-        connect();
+        connect(3);
         if (getState() == BTSrvState.CONNECTED) {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
                     + "/eu.fbk.mpba.sensorsflows.plugins.inputs.comftech/");

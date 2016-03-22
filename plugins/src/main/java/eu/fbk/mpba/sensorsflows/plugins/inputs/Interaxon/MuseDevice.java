@@ -13,16 +13,25 @@ import com.interaxon.libmuse.MuseConnectionPacket;
 import com.interaxon.libmuse.MuseDataListener;
 import com.interaxon.libmuse.MuseDataPacket;
 import com.interaxon.libmuse.MuseDataPacketType;
+import com.interaxon.libmuse.MuseManager;
 import com.interaxon.libmuse.MusePreset;
 import com.interaxon.libmuse.MuseVersion;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
+import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 public class MuseDevice implements DevicePlugin<Long, double[]> {
+
+    public static List<Muse> getPairedMuses() {
+        MuseManager.refreshPairedMuses();
+        return MuseManager.getPairedMuses();
+    }
 
     private Muse mMuse = null;
     private String name;
@@ -39,13 +48,25 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
         this.name = name;
     }
 
-    public void connect(Muse muse) {
+    private Semaphore connectResultSemaphore = new Semaphore(0);
+
+    public interface ResultCallback {
+        enum Result {
+            OK, ERROR, ALREADY_CONNECTED
+        }
+
+        void result(Result v);
+    }
+
+    ResultCallback connectTemp = null;
+
+    public void connect(Muse muse, ResultCallback callback) {
         if (mMuse != null)
             mMuse.disconnect(true);
         mMuse = muse;
         ConnectionState state = mMuse.getConnectionState();
         if (state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING) {
-            Log.w("Muse Headband", "doesn't make sense to connect second time to the same muse");
+            callback.result(ResultCallback.Result.ALREADY_CONNECTED);
         } else {
 
             mMuse.registerConnectionListener(connectionListener);
@@ -62,16 +83,14 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
             mMuse.setPreset(MusePreset.PRESET_14);
             mMuse.enableDataTransmission(false);
 
-            try {
-                mMuse.runAsynchronously();
-            } catch (Exception e) {
-                Log.e("Muse Headband", e.toString());
-            }
-        }
-    }
+            // Reset?
+            connectResultSemaphore.drainPermits();
+            connectTemp = callback;
 
-    public void disconnect() {
-        mMuse.disconnect(true);
+            // Send
+            mMuse.runAsynchronously();
+            // TODO: what is notch frequency?
+        }
     }
 
     @Override
@@ -86,7 +105,11 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return null;
+        return new ReadOnlyIterable<>(Arrays.asList(
+                (SensorComponent<Long, double[]>)eeg,
+                accelerometer,
+                alphaRelative,
+                battery).iterator());
     }
 
     @Override
@@ -96,7 +119,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public void close() {
-        disconnect();
+        mMuse.disconnect(true);
     }
 
     private void broadcastEvent(int code, String message) {
@@ -118,26 +141,28 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
                     " -> " + current;
             final String full = "Muse " + p.getSource().getMacAddress() +
                     " " + status;
-
             Log.i("Muse Headband", full);
 
-            // statusText status
+            if (p.getPreviousConnectionState() == ConnectionState.CONNECTING) {
+                if (current == ConnectionState.CONNECTED) {
+                    Log.i("Muse Headband", "ConnectionPacket CONNECTED");
+                    connectTemp.result(ResultCallback.Result.OK);
 
-            if (current == ConnectionState.CONNECTED) {
-                MuseVersion museVersion = mMuse.getMuseVersion();
-                String version = museVersion.getFirmwareType() +
-                        " - " + museVersion.getFirmwareVersion() +
-                        " - " + Integer.toString(
-                        museVersion.getProtocolVersion());
-                // museVersionText version
-            } else {
-                // museVersionText undefined
+                    MuseVersion museVersion = mMuse.getMuseVersion();
+                    String version = museVersion.getFirmwareType() +
+                            " - " + museVersion.getFirmwareVersion() +
+                            " - " + Integer.toString(
+                            museVersion.getProtocolVersion());
+                    Log.i("Muse Headband", version);
+                } else if (current == ConnectionState.DISCONNECTED) {
+                    Log.i("Muse Headband", "ConnectionPacket NOT CONNECTED");
+                    connectTemp.result(ResultCallback.Result.ERROR);
+                }
             }
         }
     }
 
-    int
-            EV_ARTIFACT = 10;
+    int     EV_ARTIFACT = 10;
 
     class DataListener extends MuseDataListener {
 
@@ -215,7 +240,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return null;
+            return Arrays.asList((Object)"TP9", "FP1", "FP2", "TP10");
         }
     }
 
@@ -223,7 +248,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return null;
+            return Arrays.asList((Object)"FORWARD_BACKWARD", "UP_DOWN", "LEFT_RIGHT");
         }
     }
 
@@ -231,7 +256,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return null;
+            return Arrays.asList((Object)"TP9", "FP1", "FP2", "TP10");
         }
     }
 
@@ -239,7 +264,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
 
         @Override
         public List<Object> getValueDescriptor() {
-            return null;
+            return Arrays.asList((Object)"CHARGE", "TENSION", "TEMP");
         }
     }
 }

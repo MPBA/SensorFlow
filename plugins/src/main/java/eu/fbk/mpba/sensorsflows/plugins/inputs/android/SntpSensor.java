@@ -65,7 +65,7 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
         }
     }
 
-    public NtpResp compute(String requestId) {
+    public NtpResp compute(int requestId) {
         int t = 1000, n = 0;
         boolean r;
         double avg = 0., sqavg = 0., std;
@@ -82,7 +82,7 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
                     sqavg += Math.pow(ntp, 2);
                     n++;
                 }
-                sensorEvent(getTime().getMonoUTCNanos(), 0, String.format("req:%d, server:%s, timeout:%d, result:%s", requestId.hashCode() % 1024, servers.get(i), t, r ? ntp : "error"));
+                sensorEvent(getTime().getMonoUTCNanos(), 0, String.format("req:%d, server:%s, timeout:%d, result:%s", requestId % 1024, servers.get(i), t, r ? ntp : "error"));
                 try {
                     Thread.sleep((long) (Math.random() * 100));
                 } catch (InterruptedException e) {

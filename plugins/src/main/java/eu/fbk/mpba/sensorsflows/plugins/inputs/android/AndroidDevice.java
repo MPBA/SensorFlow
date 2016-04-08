@@ -113,12 +113,13 @@ public class AndroidDevice implements DevicePlugin<Long, double[]> {
     public void computeNtpAsync(final NtpCallback cb) {
         if (mNtpThread != null)
             mNtpThread.interrupt();
+        final Long t = _sntpClient.getTime().getMonoUTCNanos();
         mNtpThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                cb.end(_sntpClient.compute(Thread.currentThread().getName()));
+                cb.end(_sntpClient.compute(t.intValue()));
             }
-        }, "AsyncNtpCompute-"+_sntpClient.getTime().getMonoUTCNanos() / 1000);
+        }, "AsyncNtpCompute-"+t / 1_000_000);
         mNtpThread.start();
     }
 

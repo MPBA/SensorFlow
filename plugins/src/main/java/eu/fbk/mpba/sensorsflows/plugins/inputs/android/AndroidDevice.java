@@ -108,13 +108,18 @@ public class AndroidDevice implements DevicePlugin<Long, double[]> {
         void end(SntpSensor.NtpResp r);
     }
 
+    private Thread mNtpThread = null;
+
     public void computeNtpAsync(final NtpCallback cb) {
-        new Thread(new Runnable() {
+        if (mNtpThread != null)
+            mNtpThread.interrupt();
+        mNtpThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                cb.end(_sntpClient.compute());
+                cb.end(_sntpClient.compute(Thread.currentThread().getName()));
             }
-        }, "AsyncNtpCompute-"+System.currentTimeMillis()).start();
+        }, "AsyncNtpCompute-"+_sntpClient.getTime().getMonoUTCNanos() / 1000);
+        mNtpThread.start();
     }
 
     public void setNtpServers(Collection<String> servers) {

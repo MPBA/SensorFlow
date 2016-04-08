@@ -28,7 +28,7 @@ public class EXLs3ToFile extends EXLs3Receiver {
 
     @SuppressWarnings("SpellCheckingInspection")
     public void start() {
-        connect();
+        connect(null);
         if (getState() == EXLs3Receiver.BTSrvState.CONNECTED) {
             File x = new File(Environment.getExternalStorageDirectory().getPath()
                     + "/eu.fbk.mpba.sensorsflows/");

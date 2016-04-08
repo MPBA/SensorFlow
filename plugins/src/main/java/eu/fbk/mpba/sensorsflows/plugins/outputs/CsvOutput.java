@@ -90,10 +90,13 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         close();
     }
 
+    Long mEventsT = 0L, mDataT = 0L;
+
     public void newSensorEvent(SensorEventEntry event) {
         mReceived++;
         List<Object> line = new ArrayList<>();
-        line.add(event.timestamp.toString());
+        line.add((Long)event.timestamp - mEventsT);
+        // mEventsT = (Long)event.timestamp;
         line.add(event.code);
         line.add(event.message);
         _savEvents.save(_reverseSensors.get(event.sensor), line);
@@ -103,7 +106,8 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
     public void newSensorData(SensorDataEntry<Long, double[]> data) {
         mReceived++;
         List<Object> line = new ArrayList<>();
-        line.add(data.timestamp.toString());
+        line.add(data.timestamp - mDataT);
+        // mDataT = data.timestamp;
         for (int i = 0; i < data.value.length; i++)
             line.add(data.value[i]);
         _savData.save(_reverseSensors.get(data.sensor), line);

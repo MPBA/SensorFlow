@@ -56,9 +56,12 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
         monoSensor.disconnect();
     }
 
+    public void connect(EXLs3Receiver.ConnectionCallback c) {
+        monoSensor.connect(c);
+    }
+
     @Override
     public void inputPluginInitialize() {
-        monoSensor.connect();
         monoSensor.switchDevOnAsync();
     }
 
@@ -116,8 +119,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
             throw new UnsupportedOperationException("Do not use this sensor.");
         }
 
-        public void connect() {
-            manager.connect();
+        public void connect(EXLs3Receiver.ConnectionCallback c) {
+            manager.connect(c);
         }
 
         public void disconnect() {

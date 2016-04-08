@@ -48,7 +48,15 @@ public abstract class EXLs3Receiver {
 
     private boolean startPending = false;
 
-    protected void connect() {
+    public interface ConnectionCallback {
+        void end(Result result);
+
+        enum Result {
+            CONNECTED, ERROR
+        }
+    }
+
+    protected void connect(ConnectionCallback c) {
         dispatch = true;
         if (!mAdapter.isEnabled()) {
             try {
@@ -96,6 +104,8 @@ public abstract class EXLs3Receiver {
                         : StatusDelegate.DisconnectionCause.DEVICE_NOT_FOUND);
             close();
         }
+        if (c != null)
+            c.end(getState() == BTSrvState.CONNECTED ? ConnectionCallback.Result.CONNECTED : ConnectionCallback.Result.ERROR);
     }
 
     public void startStream() {

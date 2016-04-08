@@ -58,8 +58,8 @@ public class EXLs3Manager extends EXLs3Receiver {
         }
     }
 
-    public void connect() {
-        super.connect();
+    public void connect(ConnectionCallback c) {
+        super.connect(c);
     }
 
     public void stop() {

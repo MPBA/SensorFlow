@@ -3,8 +3,8 @@ package eu.fbk.mpba.sensorsflows;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Map;
+import java.util.TreeMap;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
 import eu.fbk.mpba.sensorsflows.base.EngineStatus;
@@ -13,7 +13,6 @@ import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
 import eu.fbk.mpba.sensorsflows.base.IOutput;
 import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
-import eu.fbk.mpba.sensorsflows.base.IStandardComparator;
 import eu.fbk.mpba.sensorsflows.base.IUserInterface;
 import eu.fbk.mpba.sensorsflows.base.OutputStatus;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
@@ -108,9 +107,10 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void sensorValue(SensorComponent<TimeT, ValueT> sender, TimeT time, ValueT value) {
         if (sender.isListened() && !_paused) {
-            for (Object o : sender.getOutputs()) {
-                //noinspection unchecked
-                ((OutputDecorator<TimeT, ValueT>) o).sensorValue(sender, time, value);
+            for (OutputDecorator o : sender.getOutputs()) {
+                if (o.isEnabled())
+                    //noinspection unchecked
+                    o.sensorValue(sender, time, value);
             }
         }
     }
@@ -125,9 +125,10 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void sensorEvent(SensorComponent<TimeT, ValueT> sender, TimeT time, int type, String message) {
         if (sender.isListened() && !_paused) {
-            for (Object o : sender.getOutputs()) {
-                //noinspection unchecked
-                ((OutputDecorator<TimeT, ValueT>) o).sensorEvent(sender, time, type, message);
+            for (OutputDecorator o : sender.getOutputs()) {
+                if (o.isEnabled())
+                    //noinspection unchecked
+                    o.sensorEvent(sender, time, type, message);
             }
         }
     }
@@ -144,19 +145,18 @@ public class FlowsMan<TimeT, ValueT> implements
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
 
-    protected List<DeviceDecorator<TimeT, ValueT>> _decDevices = new ArrayList<>();
-    protected List<OutputDecorator<TimeT, ValueT>> _decOutputs = new ArrayList<>();
+    // maybe key, value
 
-    protected Set<DevicePlugin<TimeT, ValueT>> _userDevices = new TreeSet<>(new IStandardComparator());
-    protected Set<OutputPlugin<TimeT, ValueT>> _userOutputs = new TreeSet<>(new IStandardComparator());
+    protected Map<String, DeviceDecorator<TimeT, ValueT>> _userDevices = new TreeMap<>();
+    protected Map<String, OutputDecorator<TimeT, ValueT>> _userOutputs = new TreeMap<>();
 
-    protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                    // null
-    protected List<IOutput> _outputsToInit = new ArrayList<>();                                       // null
+    protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                                 // null
+    protected List<IOutput> _outputsToInit = new ArrayList<>();                                                         // null
 
     protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
-            , EngineStatus> _onStateChanged = null;                   // null
-    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                 // null
-    protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;     // null
+            , EngineStatus> _onStateChanged = null;                                                                     // null
+    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                    // null
+    protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;                    // null
 
     // Engine implementation
 
@@ -177,14 +177,21 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addDevice(DevicePlugin<TimeT, ValueT> device) {
         if (_status == EngineStatus.STANDBY) {
-            if (!_userDevices.contains(device)) {
-                _userDevices.add(device);
+            // Check if only the name is already contained
+            if (!_userDevices.containsKey(device.getName())) {
+                _userDevices.put(device.getName(), new DeviceDecorator<>(device, this));
                 for (SensorComponent<TimeT, ValueT> s : device.getSensors())
                     s.registerManager(this);
-                _decDevices.add(new DeviceDecorator<>(device, this));
             }
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
+    }
+
+    @Override
+    public DevicePlugin<TimeT, ValueT> getDevice(String name) {
+        Object r = _userDevices.get(name);
+        //noinspection unchecked
+        return r == null ? null : ((DeviceDecorator)r).getPlugIn();
     }
 
     /**
@@ -195,13 +202,24 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void addLink(SensorComponent<TimeT, ValueT> fromSensor, OutputPlugin<TimeT, ValueT> toOutput) {
-        // TODO N1 Remember enabling/disabling each link
         // Manual indexOf for performance
-        for (OutputDecorator<TimeT, ValueT> outMan : _decOutputs)
+        for (OutputDecorator<TimeT, ValueT> outMan : _userOutputs.values())
             if (toOutput == outMan.getPlugIn()) { // for reference, safe
                 addLink(fromSensor, outMan);
                 break;
             }
+    }
+
+    @Override
+    public void setOutputEnabled(boolean enabled, String name) {
+        if (_userOutputs.containsKey(name)) {
+            ((OutputDecorator)_userOutputs.get(name)).setEnabled(enabled);
+        }
+    }
+
+    @Override
+    public boolean getOutputEnabled(String name) {
+        return _userOutputs.containsKey(name) && ((OutputDecorator)_userOutputs.get(name)).isEnabled();
     }
 
     /**
@@ -226,12 +244,18 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void addOutput(OutputPlugin<TimeT, ValueT> output) {
         if (_status == EngineStatus.STANDBY) {
-            if (!_userOutputs.contains(output)) {
-                _userOutputs.add(output);
-                _decOutputs.add(new OutputDecorator<>(output, this));
-            }
+            // Check if only the name is already contained
+            if (!_userOutputs.containsKey(output.getName()))
+                _userOutputs.put(output.getName(), new OutputDecorator<>(output, this));
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
+    }
+
+    @Override
+    public OutputPlugin<TimeT, ValueT> getOutput(String name) {
+        Object r = _userOutputs.get(name);
+        //noinspection unchecked
+        return r == null ? null : ((OutputDecorator)r).getPlugIn();
     }
 
     //      STANDBY aux gets (proper)
@@ -246,7 +270,7 @@ public class FlowsMan<TimeT, ValueT> implements
         return new Iterable<DevicePlugin<TimeT, ValueT>>() {
             @Override
             public Iterator<DevicePlugin<TimeT, ValueT>> iterator() {
-                final Iterator<DeviceDecorator<TimeT, ValueT>> i = _decDevices.iterator();
+                final Iterator<DeviceDecorator<TimeT, ValueT>> i = _userDevices.values().iterator();
                 return new Iterator<DevicePlugin<TimeT, ValueT>>() {
 
                     @Override
@@ -278,7 +302,7 @@ public class FlowsMan<TimeT, ValueT> implements
         return new Iterable<OutputPlugin<TimeT, ValueT>>() {
             @Override
             public Iterator<OutputPlugin<TimeT, ValueT>> iterator() {
-                final Iterator<OutputDecorator<TimeT, ValueT>> i = _decOutputs.iterator();
+                final Iterator<OutputDecorator<TimeT, ValueT>> i = _userOutputs.values().iterator();
                 return new Iterator<OutputPlugin<TimeT, ValueT>>() {
 
                     @Override
@@ -364,86 +388,6 @@ public class FlowsMan<TimeT, ValueT> implements
         }
     }
 
-    //      ACTIVE operation commands (proper, but public in the implementations)
-
-    /**
-     * This method asks to the device to switch on a sensor.
-     * Works if the engine is in {@code EngineStatus.STREAMING} or in
-     * {@code EngineStatus.PAUSED} state.
-     *
-     * @param sensor {@code ISensor} to switch on.
-     */
-    @Deprecated
-    @Override
-    public void switchOn(SensorComponent<TimeT, ValueT> sensor) {
-        // Note the difference with the set streaming
-        /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevicePlugIn())) {
-//            Log.v(LOG_TAG, "Switching on async " + sensor.toString());
-            */
-        sensor.switchOnAsync();/*
-        } else {
-            throw new NoSuchElementException("ISensor not present in the collection.");
-        }*/
-    }
-
-    /**
-     * This method asks to the device to switch off a sensor.
-     * Works if the engine is in {@code EngineStatus.STREAMING} or in
-     * {@code EngineStatus.PAUSED} state.
-     *
-     * @param sensor {@code ISensor} to switch off.
-     */
-    @Deprecated
-    @Override
-    public void switchOff(SensorComponent<TimeT, ValueT> sensor) {
-        // Note the difference with the set streaming
-        /*if (mStatus == EngineStatus.STREAMING && _decDevices.contains(sensor.getParentDevice())) {
-//            Log.v(LOG_TAG, "Switching off async " + sensor.toString());
-            */
-        sensor.switchOffAsync();/*
-        } else {
-            throw new NoSuchElementException("ISensor not present in the collection.");
-        }*/
-    }
-
-    //      ACTIVE operation commands (improper, public in the implementations)
-
-    /**
-     * Sets weather the engine should receive the data from the sensor or not.
-     * This feature is useful if it is needed to start an acquisition from a sensor with a low start
-     * lag as before the start the sensor is active but simply the data is not notified.
-     *
-     * @param sensor    The sensor.
-     * @param streaming If to listen to the data events of the sensor.
-     */
-    @Deprecated
-    @Override
-    public void setSensorListened(SensorComponent<TimeT, ValueT> sensor, boolean streaming) {
-        /*if (_decDevices.contains(sensor.getParentDevice()))
-            */
-        sensor.setListened(streaming);/*
-        else
-            throw new NoSuchElementException("ISensor not present in the collection.");*/
-    }
-
-    /**
-     * Gets weather the engine should receive the data from the sensor or not.
-     * This feature is useful if it is needed to start an acquisition from a sensor with a low start
-     * lag as before the start the sensor is active but simply the data is not notified.
-     *
-     * @param sensor The sensor.
-     * @return If the sensor is listened.
-     */
-    @Deprecated
-    @Override
-    public boolean isSensorListened(SensorComponent<TimeT, ValueT> sensor) {
-        /*if (_decDevices.contains(sensor.getParentDevice()))
-            */
-        return sensor.isListened();/*
-        else
-            throw new NoSuchElementException("ISensor not present in the collection.");*/
-    }
-
     //      Engine operation
 
     public void setAutoLinkMode(AutoLinkMode mode) {
@@ -484,28 +428,28 @@ public class FlowsMan<TimeT, ValueT> implements
             switch (_linkMode) {
                 case PRODUCT:
                     // SENSORS x OUTPUTS
-                    for (DeviceDecorator<TimeT, ValueT> d : _decDevices)
+                    for (DeviceDecorator<TimeT, ValueT> d : _userDevices.values())
                         for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
-                            for (OutputDecorator<TimeT, ValueT> o : _decOutputs)    // LINK TO EACH OUTPUT
+                            for (OutputDecorator<TimeT, ValueT> o : _userOutputs.values())    // LINK TO EACH OUTPUT
                                 addLink(s, o);
                     break;
                 case NTH_TO_NTH:
                     // max SENSORS, OUTPUTS
-                    int maxi = Math.max(_decDevices.size(), _decOutputs.size());
+                    int maxi = Math.max(_userDevices.size(), _userOutputs.size());
                     for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-                        for (SensorComponent<TimeT, ValueT> s : _decDevices.get(i % _decDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
-                            addLink(s, _decOutputs.get(i % _decOutputs.size()));
+                        for (SensorComponent<TimeT, ValueT> s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+                            addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
                     break;
             }
             changeState(EngineStatus.PREPARING);
-            _devicesToInit.addAll(_decDevices);
+            _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
-            for (DeviceDecorator d : _decDevices) {
+            for (DeviceDecorator d : _userDevices.values()) {
                 // only if NOT_INITIALIZED: checked in the initializeDevice method
                 initialize(d);
             }
-            _outputsToInit.addAll(_decOutputs);
-            for (OutputDecorator<TimeT, ValueT> o : _decOutputs) {
+            _outputsToInit.addAll(_userOutputs.values());
+            for (OutputDecorator<TimeT, ValueT> o : _userOutputs.values()) {
                 // only if NOT_INITIALIZED: checked in the initializeDevice method
                 initialize(o, sessionName);
             }
@@ -557,11 +501,11 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void stop() {
         changeState(EngineStatus.FINALIZING);
-        for (DeviceDecorator d : _decDevices) {
+        for (DeviceDecorator d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
             finalize(d);
         }
-        for (IOutput<TimeT, ValueT> o : _decOutputs) {
+        for (IOutput<TimeT, ValueT> o : _userOutputs.values()) {
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
@@ -580,10 +524,10 @@ public class FlowsMan<TimeT, ValueT> implements
                 stop();
             case FINALIZED:
                 changeState(EngineStatus.CLOSING);
-                for (DeviceDecorator<TimeT, ValueT> d : _decDevices)
+                for (DeviceDecorator<TimeT, ValueT> d : _userDevices.values())
                     for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
                         s.close();
-                for (IOutput<TimeT, ValueT> o : _decOutputs)
+                for (IOutput<TimeT, ValueT> o : _userOutputs.values())
                 o.close();
                 changeState(EngineStatus.CLOSED);
                 break;

@@ -27,6 +27,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
 
     private ArrayBlockingQueue<SensorEventEntry<TimeT>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
+    private boolean enabled = true;
 
     protected OutputDecorator(OutputPlugin<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
         _manager = manager;
@@ -153,5 +154,13 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     protected void finalize() throws Throwable {
         close();
         super.finalize();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }

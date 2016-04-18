@@ -207,7 +207,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
 
             @Override
             public void lost(EXLs3Manager sender, int from, int to, int howMany) {
-                Log.v(this.getClass().getSimpleName(), "lost:" + howMany + " fr:" + from + " to:" + to);
+                Log.v(EXLs3Device.class.getSimpleName() + " " + sender.mDevice.getAddress(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
 

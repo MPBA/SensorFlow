@@ -7,7 +7,7 @@ import android.util.Log;
 public class EXLs3Manager extends EXLs3Receiver {
 
     // Debug
-    private static final String TAG = EXLs3Manager.class.getSimpleName();
+    private final String TAG;
 
     // Constants
     public static final int MAX_WRONG_PACKETS = 10;
@@ -18,6 +18,7 @@ public class EXLs3Manager extends EXLs3Receiver {
     public EXLs3Manager(StatusDelegate statusDelegate, DataDelegate dataDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
         super(statusDelegate, device, adapter);
         mDataDelegate = dataDelegate;
+        TAG = EXLs3Manager.class.getSimpleName() + " " + device.getAddress();
     }
 
     // Operation

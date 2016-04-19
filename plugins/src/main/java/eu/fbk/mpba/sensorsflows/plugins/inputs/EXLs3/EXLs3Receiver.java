@@ -206,6 +206,7 @@ public abstract class EXLs3Receiver {
                 }
                 else {
                     lostBytes++;
+                    Log.v(TAG, "Lost byte: " + Integer.toHexString(pack[0]));
                 }
             }
         } catch (IOException e) {

@@ -156,24 +156,24 @@ public class EXLs3Manager extends EXLs3Receiver {
             counter = (bytes[u++] & 0xFF);
             if (bytes[1] == PacketType.AGMQB.id)
                 counter += (bytes[u++]& 0xFF) * 0x100;
-            ax = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            ay = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            az = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            gx = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            gy = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            gz = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            mx = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            my = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-            mz = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+            ax = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            ay = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            az = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            gx = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            gy = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            gz = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            mx = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            my = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+            mz = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
             q1 = q2 = q3 = q4 = vbatt = 0;
             if (bytes[1] == PacketType.AGMQB.id) {
-                q1 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-                q2 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-                q3 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-                q4 = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
-             vbatt = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+                q1 = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+                q2 = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+                q3 = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+                q4 = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
+             vbatt = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
            } else if (bytes[1] == PacketType.AGMB.id)
-             vbatt = (bytes[u++] & 0xFF) + (bytes[u++] & 0xFF) * 0x100;
+             vbatt = (short)((bytes[u++] & 0xFF) | (bytes[u++] << 8));
             checksum_received = bytes[u++];
             byte ck = 0;
             for (int i = 0; i < u - 1; i++)

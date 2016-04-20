@@ -169,9 +169,8 @@ public abstract class EXLs3Receiver {
         // In uno dei percorsi scarta bytes,
         // utilizzabile solo per controllare il packet counter
         Log.i(TAG, "Started dispatching...");
-        int lostBytes = 0;
+        int lostBytes = 0, i;
         try {
-            int i;
             byte[] pack = new byte[33];
             try {
                 // Should solve the ignored start stream command issue.
@@ -206,7 +205,7 @@ public abstract class EXLs3Receiver {
                 }
                 else {
                     lostBytes++;
-                    Log.v(TAG, "Lost byte: " + Integer.toHexString(pack[0]));
+                    Log.v(TAG, "Lost byte: " + Integer.toHexString(pack[0] & 0xFF));
                 }
             }
         } catch (IOException e) {
@@ -312,9 +311,9 @@ public abstract class EXLs3Receiver {
 
     // Subclasses
 
-    public static interface StatusDelegate {
+    public interface StatusDelegate {
 
-        public final int
+        int
                 READY = 0,
                 CONNECTING = 1,
                 CONNECTED = 2,
@@ -324,7 +323,7 @@ public abstract class EXLs3Receiver {
         void connected(EXLs3Receiver sender, String deviceName);
         void disconnected(EXLs3Receiver sender, DisconnectionCause cause);
 
-        public enum DisconnectionCause {
+        enum DisconnectionCause {
 
             DEVICE_NOT_FOUND(8),
             IO_STREAMS_ERROR(16),

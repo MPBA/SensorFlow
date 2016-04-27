@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import eu.fbk.mpba.sensorsflows.DevicePlugin;
@@ -19,6 +20,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
     private String name;
     private EXLSensor monoSensor;
 
+    EXLSamplenum sn;
     EXLAccelerometer er;
     EXLBattery ry;
     EXLGyroscope pe;
@@ -30,6 +32,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
     public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
         this.name = name;
         setBootUTCNanos();
+        sn = new EXLSamplenum(this);
         er = new EXLAccelerometer(this);
         ry = new EXLBattery(this);
         pe = new EXLGyroscope(this);
@@ -42,7 +45,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
 
     @Override
     public Iterable<SensorComponent<Long, double[]>> getSensors() {
-        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) er, pe, ma, on, ry).iterator());
+        return new ReadOnlyIterable<>(Arrays.asList((SensorComponent<Long, double[]>) sn, er, pe, ma, on, ry).iterator());
     }
 
     @Override
@@ -191,6 +194,8 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
 
                 received++;
 
+                if (parent.sn.streaming)
+                    parent.sn.sensorValue(now, new double[]{p.counter});
                 if (parent.er.streaming)
                     parent.er.sensorValue(now, new double[]{p.ax, p.ay, p.az});
                 if (parent.pe.streaming)
@@ -215,6 +220,18 @@ public class EXLs3Device implements DevicePlugin<Long, double[]>, IMonoTimestamp
         public int getReceivedMessagesCount() {
             return received;
         }
+    }
+
+    public static class EXLSamplenum extends EXLs3Device.EXLSensor {
+
+        protected EXLSamplenum(EXLs3Device parent) {
+            super(parent);
+        }
+
+        public List<Object> getValueDescriptor() {
+            return Collections.singletonList((Object) "snum");
+        }
+
     }
 
     public static class EXLAccelerometer extends EXLs3Device.EXLSensor {

@@ -11,7 +11,7 @@ public interface IDevice<SensorT> {
 
     Iterable<SensorT> getSensors();
 
-    DeviceStatus getState();
+    DeviceStatus getStatus();
 
     void finalizeDevice();
 }

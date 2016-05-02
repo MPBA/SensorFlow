@@ -8,7 +8,7 @@ public interface IOutput<TimeT, ValueT> extends ISensorDataCallback<ISensor, Tim
 
     void initializeOutput(Object sessionTag);
 
-    OutputStatus getState();
+    OutputStatus getStatus();
 
     void finalizeOutput();
 

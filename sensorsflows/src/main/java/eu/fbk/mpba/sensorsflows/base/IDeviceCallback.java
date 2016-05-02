@@ -7,5 +7,5 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface IDeviceCallback<DeviceT extends IDevice> {
     // TODO (#is never used) check why it is not used
-    void deviceStateChanged(DeviceT device, DeviceStatus state);
+    void deviceStatusChanged(DeviceT device, DeviceStatus state);
 }

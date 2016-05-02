@@ -15,7 +15,7 @@ public interface ISensor extends ISampleCounter {
 
     void switchOffAsync();
 
-    SensorStatus getState();
+    SensorStatus getStatus();
 
     DevicePlugin getParentDevicePlugin();
 

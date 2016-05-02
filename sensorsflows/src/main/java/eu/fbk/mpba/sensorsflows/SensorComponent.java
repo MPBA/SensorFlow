@@ -2,13 +2,11 @@ package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
 
 import eu.fbk.mpba.sensorsflows.base.IMonoTimestampSource;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
 import eu.fbk.mpba.sensorsflows.base.ISensorDataCallback;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
-import eu.fbk.mpba.sensorsflows.base.StrongerComparator;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 /**
@@ -16,7 +14,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  */
 public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     protected DevicePlugin<TimeT, ValueT> _parent = null;
-    protected TreeSet<ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>> _handler = new TreeSet<>(new StrongerComparator());
+    protected List<ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>> _handler = new ArrayList<>();
     protected ArrayList<OutputDecorator<TimeT, ValueT>> _outputs = new ArrayList<>();
 
     protected SensorComponent(DevicePlugin<TimeT, ValueT> parent) {

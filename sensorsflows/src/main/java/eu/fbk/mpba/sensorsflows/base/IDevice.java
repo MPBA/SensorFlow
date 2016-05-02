@@ -7,11 +7,11 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface IDevice<SensorT> {
 
-    public void initializeDevice();
+    void initializeDevice();
 
-    public Iterable<SensorT> getSensors();
+    Iterable<SensorT> getSensors();
 
-    public DeviceStatus getState();
+    DeviceStatus getState();
 
-    public void finalizeDevice();
+    void finalizeDevice();
 }

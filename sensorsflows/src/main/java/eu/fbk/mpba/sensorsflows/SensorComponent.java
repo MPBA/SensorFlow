@@ -62,7 +62,7 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         for (ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
 //            if (i instanceof FlowsMan && ((FlowsMan)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
-            i.sensorStateChanged(this, null, mStatus = state);
+            i.sensorStatusChanged(this, null, mStatus = state);
         }
     }
 
@@ -95,7 +95,7 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
     }
 
     @Override
-    public SensorStatus getState() {
+    public SensorStatus getStatus() {
         return mStatus;
     }
 

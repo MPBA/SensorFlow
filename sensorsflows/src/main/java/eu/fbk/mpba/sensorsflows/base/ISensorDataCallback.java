@@ -7,7 +7,7 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface ISensorDataCallback<SensorT extends ISensor, TimeT, ValueT> {
 
-    void sensorStateChanged(SensorT sensor, TimeT time, SensorStatus state);
+    void sensorStatusChanged(SensorT sensor, TimeT time, SensorStatus state);
 
     void sensorEvent(SensorT sensor, TimeT time, int type, String message);
 

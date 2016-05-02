@@ -16,16 +16,16 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
         _manager = manager;
     }
 
-    protected void changeState(DeviceStatus s) {
+    protected void changeStatus(DeviceStatus s) {
         if (_manager != null)
-            _manager.deviceStateChanged(this, _status = s);
+            _manager.deviceStatusChanged(this, _status = s);
     }
 
     @Override
     public void initializeDevice() {
-        changeState(DeviceStatus.INITIALIZING);
+        changeStatus(DeviceStatus.INITIALIZING);
         _devicePlugin.inputPluginInitialize();
-        changeState(DeviceStatus.INITIALIZED);
+        changeStatus(DeviceStatus.INITIALIZED);
     }
 
     @Override
@@ -35,15 +35,15 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
 
     @Override
     public void finalizeDevice() {
-        changeState(DeviceStatus.FINALIZING);
+        changeStatus(DeviceStatus.FINALIZING);
         _devicePlugin.inputPluginFinalize();
-        changeState(DeviceStatus.FINALIZED);
+        changeStatus(DeviceStatus.FINALIZED);
     }
 
     // Getters
 
     @Override
-    public DeviceStatus getState() {
+    public DeviceStatus getStatus() {
         return _status;
     }
 

@@ -48,11 +48,11 @@ public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extend
 
     void close();
 
-    void setOnStateChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
+    void setOnStatusChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
 
-    void setOnDeviceStateChanged(EventCallback<DeviceT, DeviceStatus> callback);
+    void setOnDeviceStatusChanged(EventCallback<DeviceT, DeviceStatus> callback);
 
-    void setOnOutputStateChanged(EventCallback<OutputT, OutputStatus> callback);
+    void setOnOutputStatusChanged(EventCallback<OutputT, OutputStatus> callback);
 
     EngineStatus getStatus();
 }

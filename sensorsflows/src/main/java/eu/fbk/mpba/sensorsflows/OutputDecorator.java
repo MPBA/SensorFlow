@@ -45,10 +45,10 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         @Override
         public void run() {
             outputPlugIn.outputPluginInitialize(sessionTag, linkedSensors);
-            changeState(OutputStatus.INITIALIZED);
+            changeStatus(OutputStatus.INITIALIZED);
             dispatchLoopWhileNotStopPending();
             outputPlugIn.outputPluginFinalize();
-            changeState(OutputStatus.FINALIZED);
+            changeStatus(OutputStatus.FINALIZED);
         }
     });
 
@@ -75,9 +75,9 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         }
     }
 
-    private void changeState(OutputStatus s) {
+    private void changeStatus(OutputStatus s) {
         if (_manager != null)
-            _manager.outputStateChanged(this, _status = s);
+            _manager.outputStatusChanged(this, _status = s);
     }
 
     // Implemented Callbacks
@@ -85,14 +85,14 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     @Override
     public void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
-        changeState(OutputStatus.INITIALIZING);
+        changeStatus(OutputStatus.INITIALIZING);
         // outputPlugIn.outputPluginInitialize(...) in _thread
         _thread.start();
     }
 
     @Override
     public void finalizeOutput() {
-        changeState(OutputStatus.FINALIZING);
+        changeStatus(OutputStatus.FINALIZING);
         _stopPending = true;
         try {
             _thread.join(); // FIXME POI Indefinite wait
@@ -102,7 +102,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     }
 
     @Override
-    public void sensorStateChanged(ISensor sensor, TimeT time, SensorStatus state) {
+    public void sensorStatusChanged(ISensor sensor, TimeT time, SensorStatus state) {
     }
 
     @Override
@@ -135,7 +135,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     // Getters
 
     @Override
-    public OutputStatus getState() {
+    public OutputStatus getStatus() {
         return _status;
     }
 

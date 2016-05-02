@@ -39,7 +39,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void deviceStateChanged(DeviceDecorator sender, DeviceStatus state) {
+    public void deviceStatusChanged(DeviceDecorator sender, DeviceStatus state) {
         if (state == DeviceStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_devicesToInit.contains(sender)) {
@@ -52,7 +52,7 @@ public class FlowsMan<TimeT, ValueT> implements
             }
             if (_outputsToInit == null)
                 // FIXME WARN User-code timestamp dependency in the output thread or son
-                changeState(EngineStatus.STREAMING);
+                changeStatus(EngineStatus.STREAMING);
         }
         // TODO 7 Manage the other states
     }
@@ -64,7 +64,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void outputStateChanged(IOutput<TimeT, ValueT> sender, OutputStatus state) {
+    public void outputStatusChanged(IOutput<TimeT, ValueT> sender, OutputStatus state) {
         if (state == OutputStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_outputsToInit.contains(sender)) {
@@ -77,7 +77,7 @@ public class FlowsMan<TimeT, ValueT> implements
             }
             if (_devicesToInit == null)
                 // FIXME WARN User-code timestamp dependency in the output thread or son
-                changeState(EngineStatus.STREAMING);
+                changeStatus(EngineStatus.STREAMING);
         }
         // TODO 7 Manage the other states
     }
@@ -89,7 +89,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void sensorStateChanged(SensorComponent<TimeT, ValueT> sender, TimeT time, SensorStatus state) {
+    public void sensorStatusChanged(SensorComponent<TimeT, ValueT> sender, TimeT time, SensorStatus state) {
         // TODO 3 Implement an 'internal device' with an 'internal sensor' for log utilities.
         // The sensor has to send also an event on a status change.
     }
@@ -154,9 +154,9 @@ public class FlowsMan<TimeT, ValueT> implements
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                                         // null
 
     protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
-            , EngineStatus> _onStateChanged = null;                                                                     // null
-    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStateChanged = null;                    // null
-    protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStateChanged = null;                    // null
+            , EngineStatus> _onStatusChanged = null;                                                                     // null
+    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStatusChanged = null;                    // null
+    protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStatusChanged = null;                    // null
 
     // Engine implementation
 
@@ -164,7 +164,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * Default constructor.
      */
     public FlowsMan() {
-        changeState(EngineStatus.STANDBY);
+        changeStatus(EngineStatus.STANDBY);
     }
 
     //      STANDBY inputs (proper)
@@ -335,7 +335,7 @@ public class FlowsMan<TimeT, ValueT> implements
     void initialize(DeviceDecorator device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getState() == DeviceStatus.NOT_INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.NOT_INITIALIZED) {
             device.initializeDevice();
         } else {
 //            Log.w(LOG_TAG, "IDevice not NOT_INITIALIZED: " + device.toString());
@@ -350,7 +350,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void initialize(OutputDecorator<TimeT, ValueT> output, String sessionName) {
         //noinspection StatementWithEmptyBody
-        if (/*_decOutputs.contains(output) &&  */output.getState() == OutputStatus.NOT_INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.NOT_INITIALIZED) {
             output.initializeOutput(sessionName);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
@@ -366,7 +366,7 @@ public class FlowsMan<TimeT, ValueT> implements
     void finalize(DeviceDecorator device) {
         // The connection state is not checked
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getState() == DeviceStatus.INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.INITIALIZED) {
             device.finalizeDevice();
         } else {
 //            Log.w(LOG_TAG, "IDevice not INITIALIZED: " + device.toString());
@@ -381,7 +381,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     void finalize(IOutput<TimeT, ValueT> output) {
         //noinspection StatementWithEmptyBody
-        if (/*_decOutputs.contains(output) &&  */output.getState() == OutputStatus.INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
         } else {
 //            Log.w(LOG_TAG, "IOutput not INITIALIZED: " + output.toString());
@@ -441,7 +441,7 @@ public class FlowsMan<TimeT, ValueT> implements
                             addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
                     break;
             }
-            changeState(EngineStatus.PREPARING);
+            changeStatus(EngineStatus.PREPARING);
             _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
             for (DeviceDecorator d : _userDevices.values()) {
@@ -479,10 +479,10 @@ public class FlowsMan<TimeT, ValueT> implements
         _paused = paused;
     }
 
-    protected void changeState(EngineStatus status) {
+    protected void changeStatus(EngineStatus status) {
         _status = status;
-        if (_onStateChanged != null)
-            _onStateChanged.handle(this, _status);
+        if (_onStatusChanged != null)
+            _onStatusChanged.handle(this, _status);
     }
 
     /**
@@ -500,7 +500,7 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     @Override
     public void stop() {
-        changeState(EngineStatus.FINALIZING);
+        changeStatus(EngineStatus.FINALIZING);
         for (DeviceDecorator d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
             finalize(d);
@@ -509,7 +509,7 @@ public class FlowsMan<TimeT, ValueT> implements
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
-        changeState(EngineStatus.FINALIZED);
+        changeStatus(EngineStatus.FINALIZED);
     }
 
     /**
@@ -523,13 +523,13 @@ public class FlowsMan<TimeT, ValueT> implements
             case STREAMING:
                 stop();
             case FINALIZED:
-                changeState(EngineStatus.CLOSING);
+                changeStatus(EngineStatus.CLOSING);
                 for (DeviceDecorator<TimeT, ValueT> d : _userDevices.values())
                     for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
                         s.close();
                 for (IOutput<TimeT, ValueT> o : _userOutputs.values())
                 o.close();
-                changeState(EngineStatus.CLOSED);
+                changeStatus(EngineStatus.CLOSED);
                 break;
             case CLOSED:
                 break;
@@ -558,8 +558,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStateChanged(EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>, EngineStatus> callback) {
-        _onStateChanged = callback;
+    public void setOnStatusChanged(EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>, EngineStatus> callback) {
+        _onStatusChanged = callback;
     }
 
     /**
@@ -568,8 +568,8 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStateChanged(EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> callback) {
-        _onDeviceStateChanged = callback;
+    public void setOnDeviceStatusChanged(EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> callback) {
+        _onDeviceStatusChanged = callback;
     }
 
     /**
@@ -578,7 +578,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnOutputStateChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
-        _onOutputStateChanged = callback;
+    public void setOnOutputStatusChanged(EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> callback) {
+        _onOutputStatusChanged = callback;
     }
 }

@@ -50,7 +50,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
         try {
             r = ch.getNextRow();
         } catch (IOException e) {
-            sensorEvent(((CSVLoaderDevice) getParentDevicePlugin()).getMonoUTCNanos(System.nanoTime()), 101, "[" + name + "]\t" + e.getMessage());
+            sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()), 101, "[" + name + "]\t" + e.getMessage());
             mStatus = SensorStatus.ERROR;
             fileFinito = true;
         }
@@ -101,5 +101,9 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     public int getForwardedMessagesCount()
     {
         return righeLette; //TODO inviare il numero di <QUALCOSA> inviato
+    }
+
+    public void sensorEvent(int code, String message) {
+        sensorEvent(getTime().getMonoUTCNanos(), code, message);
     }
 }

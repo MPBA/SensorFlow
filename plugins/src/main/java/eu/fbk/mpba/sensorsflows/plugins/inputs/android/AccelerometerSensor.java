@@ -33,7 +33,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
     public void switchOnAsync() {
         if (_sAcc == null)
             changeStatus(SensorStatus.ERROR);
-        else if (getState() == SensorStatus.OFF) {
+        else if (getStatus() == SensorStatus.OFF) {
             _sensorMan.registerListener(this, _sAcc, _delay);
             changeStatus(SensorStatus.ON);
             sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),
@@ -43,7 +43,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
 
     @Override
     public void switchOffAsync() {
-        if (getState() == SensorStatus.ON) {
+        if (getStatus() == SensorStatus.ON) {
             _sensorMan.unregisterListener(this);
             changeStatus(SensorStatus.OFF);
             sensorEvent(getTime().getMonoUTCNanos(System.nanoTime()),

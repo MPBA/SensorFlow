@@ -47,7 +47,7 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
 
     @Override
     public void switchOnAsync() {
-        if (getState() == SensorStatus.OFF) {
+        if (getStatus() == SensorStatus.OFF) {
             _streaming = true;
             changeStatus(SensorStatus.ON);
             sensorEvent(System.currentTimeMillis(), 0, _name + " switched on");
@@ -56,7 +56,7 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
 
     @Override
     public void switchOffAsync() {
-        if (getState() == SensorStatus.ON) {
+        if (getStatus() == SensorStatus.ON) {
             _streaming = false;
             changeStatus(SensorStatus.OFF);
             sensorEvent(System.currentTimeMillis(), 0, _name + " switched off");

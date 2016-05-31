@@ -60,9 +60,13 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         _reverseSensors = new HashMap<>(streamingSensors.size(), 1f);
         for (int i = 0; i < streamingSensors.size(); i++) {
             nn.add(streamingSensors.get(i).getParentDevicePlugin().getClass().getSimpleName() +
-                    "-" + streamingSensors.get(i).getParentDevicePlugin().getName() +
+                    (streamingSensors.get(i).getParentDevicePlugin().getName()
+                            .equals(streamingSensors.get(i).getParentDevicePlugin().getClass().getSimpleName()) ? "" :
+                    "-" + streamingSensors.get(i).getParentDevicePlugin().getName()) +
                     "/" + streamingSensors.get(i).getClass().getSimpleName() +
-                    "-" + streamingSensors.get(i).getName());
+                    (streamingSensors.get(i).getName()
+                            .equals(streamingSensors.get(i).getClass().getSimpleName()) ? "" :
+                    "-" + streamingSensors.get(i).getName()));
             _reverseSensors.put(streamingSensors.get(i), i);
         }
         String p = mPath + "/" + sessionTag.toString() + "/"

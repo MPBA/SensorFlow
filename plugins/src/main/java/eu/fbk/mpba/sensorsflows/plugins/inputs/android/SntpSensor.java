@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -82,7 +83,9 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
                     sqavg += Math.pow(ntp, 2);
                     n++;
                 }
-                sensorEvent(getTime().getMonoUTCNanos(), 0, String.format("req:%d, server:%s, timeout:%d, result:%s", requestId % 1024, servers.get(i), t, r ? ntp : "error"));
+                sensorEvent(getTime().getMonoUTCNanos(), 0,
+                        String.format(Locale.ENGLISH, "req:%d, server:%s, timeout:%d, result:%s",
+                                requestId % 1024, servers.get(i), t, r ? ntp : "error"));
                 try {
                     Thread.sleep((long) (Math.random() * 100));
                 } catch (InterruptedException e) {

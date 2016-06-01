@@ -22,7 +22,7 @@ public class PingMan {
             try {
                 HttpURLConnection urlc = (HttpURLConnection) (new URL(url).openConnection());
                 urlc.setRequestProperty("User-Agent", "Android");
-                urlc.setRequestProperty("Connection", "close");
+                urlc.setRequestProperty("Connection", "closeConnection");
                 urlc.setConnectTimeout(3000);
                 urlc.connect();
                 ret = (urlc.getResponseCode() > 99);

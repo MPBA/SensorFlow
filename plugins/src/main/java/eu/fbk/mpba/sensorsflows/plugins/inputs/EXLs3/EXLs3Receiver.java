@@ -3,7 +3,6 @@ package eu.fbk.mpba.sensorsflows.plugins.inputs.EXLs3;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.os.Build;
 import android.util.Log;
 
 import java.io.IOException;
@@ -34,9 +33,6 @@ public abstract class EXLs3Receiver {
     private boolean dispatch = true;
 
     public EXLs3Receiver(StatusDelegate statusDelegate, BluetoothDevice device, BluetoothAdapter adapter) {
-        if (Build.VERSION.RELEASE.equals("4.4.2")) {
-            throw new RuntimeException("Android Build not supported (lots of bytes lost)");
-        }
         mStatusDelegate = statusDelegate;
         mDevice = device;
         mAdapter = adapter;

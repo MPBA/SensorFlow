@@ -55,7 +55,6 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public void inputPluginInitialize() {
-        connect();
         monoSensor.switchDevOnAsync();
     }
 

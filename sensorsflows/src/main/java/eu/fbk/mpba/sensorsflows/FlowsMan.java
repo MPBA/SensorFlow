@@ -142,6 +142,7 @@ public class FlowsMan<TimeT, ValueT> implements
     final String _itemsToInitLock = "_itemsToInitLock";
 
     private AutoLinkMode _linkMode = AutoLinkMode.PRODUCT;
+    private String sessionTag = "";
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
 
@@ -165,6 +166,17 @@ public class FlowsMan<TimeT, ValueT> implements
      */
     public FlowsMan() {
         changeStatus(EngineStatus.STANDBY);
+    }
+
+    public String getSessionTag() {
+        return sessionTag;
+    }
+
+    public void setSessionTag(String sessionTag) {
+        if (_status == EngineStatus.STANDBY) {
+            this.sessionTag = sessionTag;
+        } else
+            throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     //      STANDBY inputs (proper)
@@ -405,11 +417,14 @@ public class FlowsMan<TimeT, ValueT> implements
      * {@code EngineStatus.PREPARING}.
      * <p/>
      * The session name is the date-timestamp string {@code Long.toString(System.currentTimeMillis())}
+     * if the sessionTag has not been set.
      */
     @SuppressWarnings("JavaDoc")
     @Override
     public void start() {
-        start(Long.toString(System.currentTimeMillis()));
+        if (sessionTag == null || sessionTag.length() == 0)
+            sessionTag = Long.toString(System.currentTimeMillis());
+        start(sessionTag);
     }
 
     /**

@@ -230,8 +230,7 @@ public class CozyBabyManager extends CozyBabyReceiver {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        command(
-                "FMEMS1\r\nTXECG1\r\n".getBytes());
+        command("FMEMS1\r\nTXECG1\r\n".getBytes());
     }
 
     public void stop() {

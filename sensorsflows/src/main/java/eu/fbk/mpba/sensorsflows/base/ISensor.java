@@ -2,7 +2,7 @@ package eu.fbk.mpba.sensorsflows.base;
 
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 
 /**
  * Main control interface for a sensor.
@@ -17,7 +17,7 @@ public interface ISensor extends ISampleCounter {
 
     SensorStatus getStatus();
 
-    DevicePlugin getParentDevicePlugin();
+    NodePlugin getParentDevicePlugin();
 
     List<Object> getValueDescriptor();
 

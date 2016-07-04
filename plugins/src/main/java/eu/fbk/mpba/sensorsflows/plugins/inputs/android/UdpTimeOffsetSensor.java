@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
@@ -21,7 +21,7 @@ public class UdpTimeOffsetSensor extends SensorComponent<Long, double[]> {
 
     private boolean forward = false;
 
-    public UdpTimeOffsetSensor(DevicePlugin<Long, double[]> parent) {
+    public UdpTimeOffsetSensor(NodePlugin<Long, double[]> parent) {
         super(parent);
     }
 

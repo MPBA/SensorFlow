@@ -4,7 +4,7 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
@@ -13,7 +13,7 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
  * [IMPORTANTE] Vai a vedere il javadoc di CSVLoaderSensor,
  * non lo riporto qui per non creare ridondanza ovviamente.
 */
-public class CSVLoaderDevice implements DevicePlugin<Long, double[]> {
+public class CSVLoaderNode implements NodePlugin<Long, double[]> {
     protected List<SensorComponent<Long, double[]>> _sensors;
     protected String _name;
     protected Runnable onfinish = null;
@@ -22,7 +22,7 @@ public class CSVLoaderDevice implements DevicePlugin<Long, double[]> {
      * @param name nome del Device
      *             I vari file vanno aggiunti con addFile.
      */
-    public CSVLoaderDevice(String name) {
+    public CSVLoaderNode(String name) {
         _name = name;
         _sensors = new LinkedList<>();
     }

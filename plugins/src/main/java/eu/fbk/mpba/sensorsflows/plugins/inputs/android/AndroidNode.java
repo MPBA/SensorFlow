@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class AndroidDevice implements DevicePlugin<Long, double[]> {
+public class AndroidNode implements NodePlugin<Long, double[]> {
 
     private final SntpSensor _sntpClient;
     private final boolean deviceIds;
@@ -25,11 +25,11 @@ public class AndroidDevice implements DevicePlugin<Long, double[]> {
     final String androidId;
     private String packageName;
 
-    public AndroidDevice(Context context, String name) {
+    public AndroidNode(Context context, String name) {
         this(context, name, true, true, true, true, true, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
-    public AndroidDevice(Context context, String name, boolean deviceIds, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
+    public AndroidNode(Context context, String name, boolean deviceIds, boolean udpTime, boolean sntp, boolean gps, boolean accelerometer, int accSensorDelay) {
         this.name = name;
         _sensors = new ArrayList<>();
         _sensors.add(_logSensor = new LogSensor<>(this));

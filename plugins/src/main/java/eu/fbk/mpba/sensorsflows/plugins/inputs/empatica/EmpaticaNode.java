@@ -9,11 +9,11 @@ import com.empatica.empalink.delegate.EmpaDataDelegate;
 
 import java.util.Arrays;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
+public class EmpaticaNode implements NodePlugin<Long, double[]> {
 
     final String LOG_TAG = "ALE EMP DEV";
 
@@ -42,12 +42,12 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
         return mTimeToDevice + System.nanoTime();
     }
 
-    public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth) {
+    public EmpaticaNode(String key, final Context context, String address, Runnable enableBluetooth) {
         this(key, context, address, enableBluetooth, null);
     }
 
-    public EmpaticaDevice(String key, final Context context, String address, Runnable enableBluetooth, final Runnable connectedStreaming) {
-        final EmpaticaDevice _this = this;
+    public EmpaticaNode(String key, final Context context, String address, Runnable enableBluetooth, final Runnable connectedStreaming) {
+        final EmpaticaNode _this = this;
         beam = new EmpaticaBeam(context,
                 new EmpaDataDelegate() {
                     @Override
@@ -68,7 +68,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
                     @Override
                     public void didReceiveBatteryLevel(float battery, double timestamp) {
                         mBat.sensorValue(proTime(timestamp), new double[]{battery});
-                        Log.v(LOG_TAG, EmpaticaDevice.this.getName() + " didReceiveBatteryLevel: " + battery);
+                        Log.v(LOG_TAG, EmpaticaNode.this.getName() + " didReceiveBatteryLevel: " + battery);
                     }
 
                     @Override
@@ -91,12 +91,12 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
                     public void end(EmpaticaBeam sender, Result result) {
                         //noinspection unchecked
                         EmpaticaSensor[] is = new EmpaticaSensor[]{
-                                EmpaticaDevice.this.mAcc,
-                                EmpaticaDevice.this.mBat,
-                                EmpaticaDevice.this.mBvp,
-                                EmpaticaDevice.this.mGsr,
-                                EmpaticaDevice.this.mIbi,
-                                EmpaticaDevice.this.mTem};
+                                EmpaticaNode.this.mAcc,
+                                EmpaticaNode.this.mBat,
+                                EmpaticaNode.this.mBvp,
+                                EmpaticaNode.this.mGsr,
+                                EmpaticaNode.this.mIbi,
+                                EmpaticaNode.this.mTem};
                         Long now = proTime();
                         for (EmpaticaSensor s : is) {
                             if (s != null)
@@ -164,7 +164,7 @@ public class EmpaticaDevice implements DevicePlugin<Long, double[]> {
 
     @Override
     public String getName() {
-        return beam.getName() == null ? EmpaticaDevice.class.getSimpleName() : beam.getName();
+        return beam.getName() == null ? EmpaticaNode.class.getSimpleName() : beam.getName();
     }
 
     @Override

@@ -22,11 +22,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class MuseDevice implements DevicePlugin<Long, double[]> {
+public class MuseNode implements NodePlugin<Long, double[]> {
 
     public static List<Muse> getPairedMuses() {
         MuseManager.refreshPairedMuses();
@@ -44,7 +44,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
     ALPHA_RELATIVE alphaRelative = this.new ALPHA_RELATIVE();
     BATTERY battery = this.new BATTERY();
 
-    public MuseDevice(String name) {
+    public MuseNode(String name) {
         this.name = name;
     }
 
@@ -222,7 +222,7 @@ public class MuseDevice implements DevicePlugin<Long, double[]> {
     public abstract class MuseSensor extends SensorComponent<Long, double[]> {
 
         protected MuseSensor() {
-            super(MuseDevice.this);
+            super(MuseNode.this);
         }
 
         @Override

@@ -20,11 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener {
+public class XeeNode implements NodePlugin<Long, double[]>, DQListenerInterface, DQDriverEventListener {
 
     public static final int FIRMWARE_UPDATE = 1 << 5;
     public static final int FIRMWARE_UPDATE_STARTED = FIRMWARE_UPDATE | 1;
@@ -41,7 +41,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
     protected boolean debug = true;
     protected boolean heavy_debug = false;
     protected final String debugTAG = "XeeALE";
-    protected DevicePlugin<Long, double[]> parent;
+    protected NodePlugin<Long, double[]> parent;
     protected XeeSensor.XeeAccelerometer xeeAcc;
     protected XeeSensor.XeeGPS xeeGPS;
     protected List<SensorComponent<Long, double[]>> sensors;
@@ -68,9 +68,9 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
         DQUtils.setEnvironment(e);
     }
 
-    public XeeDevice(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
+    public XeeNode(BluetoothDevice d, DQUtils.DQuidEnvs e, ConnectionCallback c, boolean simulation) {
         if (debug)
-            Log.v(debugTAG, "XeeDevice construction");
+            Log.v(debugTAG, "XeeNode construction");
 
         ec = c;
 
@@ -195,7 +195,7 @@ public class XeeDevice implements DevicePlugin<Long, double[]>, DQListenerInterf
             else
                 DQDriver.INSTANCE.disableSource(DQSourceType.BLUETOOTH_2_1);
         } catch (StackOverflowError e) {
-            Log.e("XeeDevice", e.getClass().getSimpleName());
+            Log.e("XeeNode", e.getClass().getSimpleName());
         }
         DQUnitManager.INSTANCE.disconnect();
     }

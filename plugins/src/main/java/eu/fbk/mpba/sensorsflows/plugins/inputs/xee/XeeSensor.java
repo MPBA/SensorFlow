@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 
 public abstract class XeeSensor extends SensorComponent<Long, double[]> {
@@ -26,7 +26,7 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
     protected int n = 0;
     protected float avgdiff = 0f;
 
-    protected XeeSensor(DevicePlugin<Long, double[]> parent) {
+    protected XeeSensor(NodePlugin<Long, double[]> parent) {
         super(parent);
     }
 
@@ -56,7 +56,7 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class XeeAccelerometer extends XeeSensor {
-        protected XeeAccelerometer(DevicePlugin<Long, double[]> parent) {
+        protected XeeAccelerometer(NodePlugin<Long, double[]> parent) {
             super(parent);
         }
 
@@ -80,7 +80,7 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class XeeGPS extends XeeSensor {
-        protected XeeGPS(DevicePlugin<Long, double[]> parent) {
+        protected XeeGPS(NodePlugin<Long, double[]> parent) {
             super(parent);
         }
 
@@ -111,7 +111,7 @@ public abstract class XeeSensor extends SensorComponent<Long, double[]> {
     public static class CarData extends XeeSensor {
         String name;
 
-        protected CarData(DevicePlugin<Long, double[]> parent, String name) {
+        protected CarData(NodePlugin<Long, double[]> parent, String name) {
             super(parent);
             this.name = name;
         }

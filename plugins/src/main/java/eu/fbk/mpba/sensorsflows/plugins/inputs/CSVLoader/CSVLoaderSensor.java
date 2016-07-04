@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -27,7 +27,7 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     protected boolean fileFinito = false;
     int righeLette = 0;
 
-    public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, long tsScale, String sensorName, DevicePlugin<Long, double[]> d) throws Exception {
+    public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, long tsScale, String sensorName, NodePlugin<Long, double[]> d) throws Exception {
         super(d);
 
         name = sensorName;

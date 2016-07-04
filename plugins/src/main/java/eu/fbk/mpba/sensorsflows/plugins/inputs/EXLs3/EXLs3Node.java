@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class EXLs3Device implements DevicePlugin<Long, double[]> {
+public class EXLs3Node implements NodePlugin<Long, double[]> {
 
     // TODO 4: replayable
 
@@ -28,7 +28,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     protected final int qDS, bDS;
 
-    public EXLs3Device(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
+    public EXLs3Node(BluetoothDevice realDevice, BluetoothAdapter adapter, String name, int quaternionDecimation, int batteryDecimation) {
         this.name = name;
         sn = new EXLSamplenum(this);
         er = new EXLAccelerometer(this);
@@ -82,19 +82,19 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
         int received = 0;
 
         EXLs3Manager manager;
-        EXLs3Device parent;
+        EXLs3Node parent;
         String name;
         String address;
         BluetoothDevice dev;
         
-        protected EXLSensor(EXLs3Device parent, BluetoothDevice device, BluetoothAdapter adapter) {
+        protected EXLSensor(EXLs3Node parent, BluetoothDevice device, BluetoothAdapter adapter) {
             this(parent);
             dev = device;
             address = device.getAddress();
             manager = new EXLs3Manager(btsStatus, btsData, device, adapter);
         }
 
-        protected EXLSensor(EXLs3Device parent) {
+        protected EXLSensor(EXLs3Node parent) {
             super(parent);
             this.parent = parent;
             name = parent.name;
@@ -184,7 +184,7 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
             @Override
             public void lost(EXLs3Manager sender, int from, int to, int howMany) {
-                Log.v(EXLs3Device.class.getSimpleName() + " " + sender.mDevice.getAddress(), "lost:" + howMany + " fr:" + from + " to:" + to);
+                Log.v(EXLs3Node.class.getSimpleName() + " " + sender.mDevice.getAddress(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
 
@@ -194,9 +194,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
         }
     }
 
-    public static class EXLSamplenum extends EXLs3Device.EXLSensor {
+    public static class EXLSamplenum extends EXLs3Node.EXLSensor {
 
-        protected EXLSamplenum(EXLs3Device parent) {
+        protected EXLSamplenum(EXLs3Node parent) {
             super(parent);
         }
 
@@ -206,9 +206,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLAccelerometer extends EXLs3Device.EXLSensor {
+    public static class EXLAccelerometer extends EXLs3Node.EXLSensor {
 
-        protected EXLAccelerometer(EXLs3Device parent) {
+        protected EXLAccelerometer(EXLs3Node parent) {
             super(parent);
         }
 
@@ -218,9 +218,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLGyroscope extends EXLs3Device.EXLSensor {
+    public static class EXLGyroscope extends EXLs3Node.EXLSensor {
 
-        protected EXLGyroscope(EXLs3Device parent) {
+        protected EXLGyroscope(EXLs3Node parent) {
             super(parent);
         }
 
@@ -230,9 +230,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLMagnetometer extends EXLs3Device.EXLSensor {
+    public static class EXLMagnetometer extends EXLs3Node.EXLSensor {
 
-        protected EXLMagnetometer(EXLs3Device parent) {
+        protected EXLMagnetometer(EXLs3Node parent) {
             super(parent);
         }
 
@@ -242,9 +242,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLQuaternion extends EXLs3Device.EXLSensor {
+    public static class EXLQuaternion extends EXLs3Node.EXLSensor {
 
-        protected EXLQuaternion(EXLs3Device parent) {
+        protected EXLQuaternion(EXLs3Node parent) {
             super(parent);
         }
 
@@ -254,9 +254,9 @@ public class EXLs3Device implements DevicePlugin<Long, double[]> {
 
     }
 
-    public static class EXLBattery extends EXLs3Device.EXLSensor {
+    public static class EXLBattery extends EXLs3Node.EXLSensor {
 
-        protected EXLBattery(EXLs3Device parent) {
+        protected EXLBattery(EXLs3Node parent) {
             super(parent);
         }
 

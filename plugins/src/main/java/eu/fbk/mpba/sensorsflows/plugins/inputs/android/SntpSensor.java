@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
@@ -23,7 +23,7 @@ public class SntpSensor extends SensorComponent<Long, double[]> {
     private ArrayList<InetAddress> servers;
     private boolean forward = false;
 
-    protected SntpSensor(DevicePlugin<Long, double[]> parent) {
+    protected SntpSensor(NodePlugin<Long, double[]> parent) {
         super(parent);
     }
 

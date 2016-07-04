@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
 public class LogSensor<ValueT> extends SensorComponent<Long, ValueT> {
 
-    public LogSensor(DevicePlugin<Long, ValueT> parent) {
+    public LogSensor(NodePlugin<Long, ValueT> parent) {
         super(parent);
     }
 

@@ -27,7 +27,7 @@ public class EmpaticaScanner {
     }
 
     public interface NewDeviceFound {
-        public void newDevice(Bracelet b, int rssi, boolean allowed);
+        void newDevice(Bracelet b, int rssi, boolean allowed);
     }
 
     public void assert_web_reachable() throws UnreachableWebException {
@@ -109,12 +109,12 @@ public class EmpaticaScanner {
         mDevMan.stopScanning();
     }
 
-    public EmpaticaDevice stop(Bracelet b) {
+    public EmpaticaNode stop(Bracelet b) {
         stop();
         if (!b.mAllowed)
             return null;
         else {
-            return new EmpaticaDevice(mKey, mContext, b.device.getAddress(), mEnableBT);
+            return new EmpaticaNode(mKey, mContext, b.device.getAddress(), mEnableBT);
         }
     }
 

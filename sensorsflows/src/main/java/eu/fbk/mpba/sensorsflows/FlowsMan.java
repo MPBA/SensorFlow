@@ -25,8 +25,8 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
 public class FlowsMan<TimeT, ValueT> implements
-        IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
-        IDeviceCallback<DeviceDecorator<TimeT, ValueT>>,
+        IUserInterface<NodePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>,
+        IDeviceCallback<NodeDecorator<TimeT, ValueT>>,
         ISensorDataCallback<SensorComponent<TimeT, ValueT>, TimeT, ValueT>,
         IOutputCallback<TimeT, ValueT> {
 
@@ -39,7 +39,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void deviceStatusChanged(DeviceDecorator sender, DeviceStatus state) {
+    public void deviceStatusChanged(NodeDecorator sender, DeviceStatus state) {
         if (state == DeviceStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_devicesToInit.contains(sender)) {
@@ -148,15 +148,15 @@ public class FlowsMan<TimeT, ValueT> implements
 
     // maybe key, value
 
-    protected Map<String, DeviceDecorator<TimeT, ValueT>> _userDevices = new TreeMap<>();
+    protected Map<String, NodeDecorator<TimeT, ValueT>> _userDevices = new TreeMap<>();
     protected Map<String, OutputDecorator<TimeT, ValueT>> _userOutputs = new TreeMap<>();
 
-    protected List<DeviceDecorator> _devicesToInit = new ArrayList<>();                                                 // null
+    protected List<NodeDecorator> _devicesToInit = new ArrayList<>();                                                 // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                                         // null
 
-    protected EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
+    protected EventCallback<IUserInterface<NodePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>
             , EngineStatus> _onStatusChanged = null;                                                                     // null
-    protected EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStatusChanged = null;                    // null
+    protected EventCallback<NodePlugin<TimeT, ValueT>, DeviceStatus> _onDeviceStatusChanged = null;                    // null
     protected EventCallback<OutputPlugin<TimeT, ValueT>, OutputStatus> _onOutputStatusChanged = null;                    // null
 
     // Engine implementation
@@ -187,11 +187,11 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param device Device to add.
      */
     @Override
-    public void addDevice(DevicePlugin<TimeT, ValueT> device) {
+    public void addDevice(NodePlugin<TimeT, ValueT> device) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userDevices.containsKey(device.getName())) {
-                _userDevices.put(device.getName(), new DeviceDecorator<>(device, this));
+                _userDevices.put(device.getName(), new NodeDecorator<>(device, this));
                 for (SensorComponent<TimeT, ValueT> s : device.getSensors())
                     s.registerManager(this);
             }
@@ -200,10 +200,10 @@ public class FlowsMan<TimeT, ValueT> implements
     }
 
     @Override
-    public DevicePlugin<TimeT, ValueT> getDevice(String name) {
+    public NodePlugin<TimeT, ValueT> getDevice(String name) {
         Object r = _userDevices.get(name);
         //noinspection unchecked
-        return r == null ? null : ((DeviceDecorator)r).getPlugIn();
+        return r == null ? null : ((NodeDecorator)r).getPlugIn();
     }
 
     /**
@@ -275,15 +275,15 @@ public class FlowsMan<TimeT, ValueT> implements
     /**
      * Enumerates every Device managed.
      *
-     * @return Enumerator usable trough a for (IDevice d : enumerator)
+     * @return Enumerator usable trough a for (INode d : enumerator)
      */
     @Override
-    public Iterable<DevicePlugin<TimeT, ValueT>> getDevices() {
-        return new Iterable<DevicePlugin<TimeT, ValueT>>() {
+    public Iterable<NodePlugin<TimeT, ValueT>> getDevices() {
+        return new Iterable<NodePlugin<TimeT, ValueT>>() {
             @Override
-            public Iterator<DevicePlugin<TimeT, ValueT>> iterator() {
-                final Iterator<DeviceDecorator<TimeT, ValueT>> i = _userDevices.values().iterator();
-                return new Iterator<DevicePlugin<TimeT, ValueT>>() {
+            public Iterator<NodePlugin<TimeT, ValueT>> iterator() {
+                final Iterator<NodeDecorator<TimeT, ValueT>> i = _userDevices.values().iterator();
+                return new Iterator<NodePlugin<TimeT, ValueT>>() {
 
                     @Override
                     public boolean hasNext() {
@@ -291,7 +291,7 @@ public class FlowsMan<TimeT, ValueT> implements
                     }
 
                     @Override
-                    public DevicePlugin<TimeT, ValueT> next() {
+                    public NodePlugin<TimeT, ValueT> next() {
                         return i.next().getPlugIn();
                     }
 
@@ -342,20 +342,20 @@ public class FlowsMan<TimeT, ValueT> implements
      * This method allows to initialize the device before the {@code start} call.
      * Made private
      *
-     * @param device {@code IDevice} to initializeDevice
+     * @param device {@code INode} to initializeNode
      */
-    void initialize(DeviceDecorator device) {
+    void initialize(NodeDecorator device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
         if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.NOT_INITIALIZED) {
-            device.initializeDevice();
+            device.initializeNode();
         } else {
-//            Log.w(LOG_TAG, "IDevice not NOT_INITIALIZED: " + device.toString());
+//            Log.w(LOG_TAG, "INode not NOT_INITIALIZED: " + device.toString());
         }
     }
 
     /**
-     * This method allows to initializeDevice the device before the {@code start} call.
+     * This method allows to initializeNode the device before the {@code start} call.
      * Made private
      *
      * @param output {@code IOutput} to finalize.
@@ -373,15 +373,15 @@ public class FlowsMan<TimeT, ValueT> implements
      * This method allows to finalize the device before the {@code close} call.
      * Made private
      *
-     * @param device {@code IDevice} to finalize.
+     * @param device {@code INode} to finalize.
      */
-    void finalize(DeviceDecorator device) {
+    void finalize(NodeDecorator device) {
         // The connection state is not checked
         //noinspection StatementWithEmptyBody
         if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.INITIALIZED) {
-            device.finalizeDevice();
+            device.finalizeNode();
         } else {
-//            Log.w(LOG_TAG, "IDevice not INITIALIZED: " + device.toString());
+//            Log.w(LOG_TAG, "INode not INITIALIZED: " + device.toString());
         }
     }
 
@@ -443,7 +443,7 @@ public class FlowsMan<TimeT, ValueT> implements
             switch (_linkMode) {
                 case PRODUCT:
                     // SENSORS x OUTPUTS
-                    for (DeviceDecorator<TimeT, ValueT> d : _userDevices.values())
+                    for (NodeDecorator<TimeT, ValueT> d : _userDevices.values())
                         for (SensorComponent<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
                             for (OutputDecorator<TimeT, ValueT> o : _userOutputs.values())    // LINK TO EACH OUTPUT
                                 addLink(s, o);
@@ -459,13 +459,13 @@ public class FlowsMan<TimeT, ValueT> implements
             changeStatus(EngineStatus.PREPARING);
             _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
-            for (DeviceDecorator d : _userDevices.values()) {
-                // only if NOT_INITIALIZED: checked in the initializeDevice method
+            for (NodeDecorator d : _userDevices.values()) {
+                // only if NOT_INITIALIZED: checked in the initializeNode method
                 initialize(d);
             }
             _outputsToInit.addAll(_userOutputs.values());
             for (OutputDecorator<TimeT, ValueT> o : _userOutputs.values()) {
-                // only if NOT_INITIALIZED: checked in the initializeDevice method
+                // only if NOT_INITIALIZED: checked in the initializeNode method
                 initialize(o, sessionName);
             }
             // WAS _outputsSensors.clear();
@@ -516,7 +516,7 @@ public class FlowsMan<TimeT, ValueT> implements
     @Override
     public void stop() {
         changeStatus(EngineStatus.FINALIZING);
-        for (DeviceDecorator d : _userDevices.values()) {
+        for (NodeDecorator d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
             finalize(d);
         }
@@ -539,7 +539,7 @@ public class FlowsMan<TimeT, ValueT> implements
                 stop();
             case FINALIZED:
                 changeStatus(EngineStatus.CLOSING);
-                for (DeviceDecorator<TimeT, ValueT> d : _userDevices.values())
+                for (NodeDecorator<TimeT, ValueT> d : _userDevices.values())
                     for (SensorComponent<TimeT, ValueT> s : d.getPlugIn().getSensors())
                         s.close();
                 for (IOutput<TimeT, ValueT> o : _userOutputs.values())
@@ -573,7 +573,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStatusChanged(EventCallback<IUserInterface<DevicePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>, EngineStatus> callback) {
+    public void setOnStatusChanged(EventCallback<IUserInterface<NodePlugin<TimeT, ValueT>, SensorComponent<TimeT, ValueT>, OutputPlugin<TimeT, ValueT>>, EngineStatus> callback) {
         _onStatusChanged = callback;
     }
 
@@ -583,7 +583,7 @@ public class FlowsMan<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStatusChanged(EventCallback<DevicePlugin<TimeT, ValueT>, DeviceStatus> callback) {
+    public void setOnDeviceStatusChanged(EventCallback<NodePlugin<TimeT, ValueT>, DeviceStatus> callback) {
         _onDeviceStatusChanged = callback;
     }
 

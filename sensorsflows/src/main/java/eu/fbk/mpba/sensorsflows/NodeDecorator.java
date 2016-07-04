@@ -1,18 +1,18 @@
 package eu.fbk.mpba.sensorsflows;
 
 import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
-import eu.fbk.mpba.sensorsflows.base.IDevice;
+import eu.fbk.mpba.sensorsflows.base.INode;
 
 /**
  * This class adds internal support for the library data-paths.
  */
-class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, ValueT>> {
+class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, ValueT>> {
     private FlowsMan<TimeT, ValueT> _manager = null;
     private DeviceStatus _status = DeviceStatus.NOT_INITIALIZED;
-    private DevicePlugin<TimeT, ValueT> _devicePlugin;
+    private NodePlugin<TimeT, ValueT> _nodePlugin;
 
-    DeviceDecorator(DevicePlugin<TimeT, ValueT> devicePlugin, FlowsMan<TimeT, ValueT> manager) {
-        _devicePlugin = devicePlugin;
+    NodeDecorator(NodePlugin<TimeT, ValueT> nodePlugin, FlowsMan<TimeT, ValueT> manager) {
+        _nodePlugin = nodePlugin;
         _manager = manager;
     }
 
@@ -22,21 +22,21 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
     }
 
     @Override
-    public void initializeDevice() {
+    public void initializeNode() {
         changeStatus(DeviceStatus.INITIALIZING);
-        _devicePlugin.inputPluginInitialize();
+        _nodePlugin.inputPluginInitialize();
         changeStatus(DeviceStatus.INITIALIZED);
     }
 
     @Override
     public Iterable<SensorComponent<TimeT, ValueT>> getSensors() {
-        return _devicePlugin.getSensors();
+        return _nodePlugin.getSensors();
     }
 
     @Override
-    public void finalizeDevice() {
+    public void finalizeNode() {
         changeStatus(DeviceStatus.FINALIZING);
-        _devicePlugin.inputPluginFinalize();
+        _nodePlugin.inputPluginFinalize();
         changeStatus(DeviceStatus.FINALIZED);
     }
 
@@ -51,7 +51,7 @@ class DeviceDecorator<TimeT, ValueT> implements IDevice<SensorComponent<TimeT, V
         return _manager;
     }
 
-    DevicePlugin<TimeT, ValueT> getPlugIn() {
-        return _devicePlugin;
+    NodePlugin<TimeT, ValueT> getPlugIn() {
+        return _nodePlugin;
     }
 }

@@ -5,13 +5,13 @@ package eu.fbk.mpba.sensorsflows.base;
  *
  * The user should access to these methods only to have a higher control of the operation.
  */
-public interface IDevice<SensorT> {
+public interface INode<SensorT> {
 
-    void initializeDevice();
+    void initializeNode();
 
     Iterable<SensorT> getSensors();
 
     DeviceStatus getStatus();
 
-    void finalizeDevice();
+    void finalizeNode();
 }

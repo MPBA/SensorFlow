@@ -8,11 +8,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
-public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
+public class CozyBabyNode implements NodePlugin<Long, double[]> {
 
     // TODO 4: replayable
 
@@ -22,7 +22,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
     CBMEMS mems;
     CBECG ecg;
 
-    public CozyBabyDevice(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
+    public CozyBabyNode(BluetoothDevice realDevice, BluetoothAdapter adapter, String name) {
         this.name = name;
         monoSensor = new CBSensor(this, realDevice, adapter);
         mems = new CBMEMS(this);
@@ -74,19 +74,19 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
         int received = 0;
 
         CozyBabyManager manager;
-        CozyBabyDevice parent;
+        CozyBabyNode parent;
         String name;
         String address;
         BluetoothDevice dev;
         
-        protected CBSensor(CozyBabyDevice parent, BluetoothDevice device, BluetoothAdapter adapter) {
+        protected CBSensor(CozyBabyNode parent, BluetoothDevice device, BluetoothAdapter adapter) {
             this(parent);
             dev = device;
             address = device.getAddress();
             manager = new CozyBabyManager(btsStatus, btsData, device, adapter);
         }
 
-        protected CBSensor(CozyBabyDevice parent) {
+        protected CBSensor(CozyBabyNode parent) {
             super(parent);
             this.parent = parent;
             name = parent.name;
@@ -187,7 +187,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     public static class CBECG extends CBSensor {
 
-        protected CBECG(CozyBabyDevice parent) {
+        protected CBECG(CozyBabyNode parent) {
             super(parent);
         }
 
@@ -199,7 +199,7 @@ public class CozyBabyDevice implements DevicePlugin<Long, double[]> {
 
     public static class CBMEMS extends CBSensor {
 
-        protected CBMEMS(CozyBabyDevice parent) {
+        protected CBMEMS(CozyBabyNode parent) {
             super(parent);
         }
 

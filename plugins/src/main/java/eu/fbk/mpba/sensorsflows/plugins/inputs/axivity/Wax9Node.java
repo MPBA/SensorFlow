@@ -8,20 +8,20 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 
-public class Wax9Device extends Wax9Receiver implements DevicePlugin<Long, double[]> {
+public class Wax9Node extends Wax9Receiver implements NodePlugin<Long, double[]> {
 
     // - LSB first, Little Endian
 
     // Debug
-    private static final String TAG = Wax9Device.class.getSimpleName();
+    private static final String TAG = Wax9Node.class.getSimpleName();
     private String name;
     protected InertialSensors is;
     protected ExtraSensors es;
 
-    public Wax9Device(String name, BluetoothDevice device, BluetoothAdapter adapter, StatusDelegate conn) {
+    public Wax9Node(String name, BluetoothDevice device, BluetoothAdapter adapter, StatusDelegate conn) {
         super(conn, device, adapter);
         this.name = name;
         is = new InertialSensors(this);
@@ -116,7 +116,7 @@ public class Wax9Device extends Wax9Receiver implements DevicePlugin<Long, doubl
 
     protected static abstract class ASensor extends SensorComponent<Long, double[]> {
 
-        protected ASensor(DevicePlugin<Long, double[]> parent) {
+        protected ASensor(NodePlugin<Long, double[]> parent) {
             super(parent);
         }
 
@@ -133,7 +133,7 @@ public class Wax9Device extends Wax9Receiver implements DevicePlugin<Long, doubl
 
     protected static class InertialSensors extends ASensor {
 
-        protected InertialSensors(DevicePlugin<Long, double[]> parent) {
+        protected InertialSensors(NodePlugin<Long, double[]> parent) {
             super(parent);
         }
 
@@ -145,7 +145,7 @@ public class Wax9Device extends Wax9Receiver implements DevicePlugin<Long, doubl
 
     protected static class ExtraSensors extends ASensor {
 
-        protected ExtraSensors(DevicePlugin<Long, double[]> parent) {
+        protected ExtraSensors(NodePlugin<Long, double[]> parent) {
             super(parent);
         }
 

@@ -9,7 +9,7 @@ import android.hardware.SensorManager;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -22,7 +22,7 @@ public class AccelerometerSensor extends SensorComponent<Long, double[]> impleme
     private Sensor _sAcc;
     private int _delay;
 
-    public AccelerometerSensor(DevicePlugin<Long, double[]> d, Context context, int sensorDelay) {
+    public AccelerometerSensor(NodePlugin<Long, double[]> d, Context context, int sensorDelay) {
         super(d);
         _delay = sensorDelay;
         _sensorMan = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);

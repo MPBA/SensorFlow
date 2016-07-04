@@ -13,7 +13,7 @@ import android.widget.Toast;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -38,7 +38,7 @@ public class GpsSensor extends SensorComponent<Long, double[]> implements Locati
      * @param minDistance   :   the minimum distance interval for notifications, in meters.
      */
     @SuppressLint("NewApi")
-    public GpsSensor(DevicePlugin<Long, double[]> parent, Context context, long minTime, float minDistance) {
+    public GpsSensor(NodePlugin<Long, double[]> parent, Context context, long minTime, float minDistance) {
         super(parent);
         this.minTime = minTime;
         this.minDistance = minDistance;

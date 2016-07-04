@@ -8,7 +8,7 @@ import eu.fbk.mpba.sensorsflows.SensorComponent;
 
 public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
 
-    public EmpaticaSensor(EmpaticaDevice p) {
+    public EmpaticaSensor(EmpaticaNode p) {
         super(p);
     }
 
@@ -29,7 +29,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class Battery extends EmpaticaSensor {
-        public Battery(EmpaticaDevice p) {
+        public Battery(EmpaticaNode p) {
             super(p);
         }
 
@@ -40,7 +40,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class Accelerometer extends EmpaticaSensor {
-        public Accelerometer(EmpaticaDevice p) {
+        public Accelerometer(EmpaticaNode p) {
             super(p);
         }
 
@@ -51,7 +51,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class IBI extends EmpaticaSensor {
-        public IBI(EmpaticaDevice p) {
+        public IBI(EmpaticaNode p) {
             super(p);
         }
 
@@ -62,7 +62,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class Thermometer extends EmpaticaSensor {
-        public Thermometer(EmpaticaDevice p) {
+        public Thermometer(EmpaticaNode p) {
             super(p);
         }
 
@@ -73,7 +73,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class GSR extends EmpaticaSensor {
-        public GSR(EmpaticaDevice p) {
+        public GSR(EmpaticaNode p) {
             super(p);
         }
 
@@ -84,7 +84,7 @@ public abstract class EmpaticaSensor extends SensorComponent<Long, double[]> {
     }
 
     public static class BVP extends EmpaticaSensor {
-        public BVP(EmpaticaDevice p) {
+        public BVP(EmpaticaNode p) {
             super(p);
         }
 

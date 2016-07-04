@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorsflows.plugins;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 import eu.fbk.mpba.sensorsflows.SensorComponent;
 import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 
@@ -17,7 +17,7 @@ public class RandomSensorStub extends SensorComponent<Long, float[]> {
     private String _name;
     private volatile boolean _streaming = false;
 
-    public RandomSensorStub(DevicePlugin<Long, float[]> d) {
+    public RandomSensorStub(NodePlugin<Long, float[]> d) {
         super(d);
         _name = "RandomSensor";
         final RandomSensorStub t = this;

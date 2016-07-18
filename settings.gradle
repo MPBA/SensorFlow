@@ -1,1 +1,1 @@
-include ':sensorsflows', ':plugins', ':testapp', ':empalink-2.0'
+include ':plugins', ':sensorsflows', ':testapp', ':empalink-2.0'

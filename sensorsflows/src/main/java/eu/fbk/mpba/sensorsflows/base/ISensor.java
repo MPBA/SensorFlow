@@ -2,7 +2,7 @@ package eu.fbk.mpba.sensorsflows.base;
 
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.DevicePlugin;
+import eu.fbk.mpba.sensorsflows.NodePlugin;
 
 /**
  * Main control interface for a sensor.
@@ -11,15 +11,17 @@ import eu.fbk.mpba.sensorsflows.DevicePlugin;
  */
 public interface ISensor extends ISampleCounter {
 
-    public void switchOnAsync();
+    void switchOnAsync();
 
-    public void switchOffAsync();
+    void switchOffAsync();
 
-    public SensorStatus getState();
+    SensorStatus getStatus();
 
-    public DevicePlugin getParentDevicePlugin();
+    NodePlugin getParentDevicePlugin();
 
-    public abstract List<Object> getValuesDescriptors();
+    List<Object> getValueDescriptor();
 
-    public abstract String getName();
+    String getName();
+
+    IMonoTimestampSource getTime();
 }

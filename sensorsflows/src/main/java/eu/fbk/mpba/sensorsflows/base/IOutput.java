@@ -6,9 +6,11 @@ package eu.fbk.mpba.sensorsflows.base;
  */
 public interface IOutput<TimeT, ValueT> extends ISensorDataCallback<ISensor, TimeT, ValueT> {
 
-    public void initializeOutput(Object sessionTag);
+    void initializeOutput(Object sessionTag);
 
-    public OutputStatus getState();
+    OutputStatus getStatus();
 
-    public void finalizeOutput();
+    void finalizeOutput();
+
+    void close();
 }

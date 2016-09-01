@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorsflows.base;
 
-public interface IStandard {
+public interface IPlugin {
     String getName();
     void close();
 }

@@ -38,6 +38,16 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
         public long getMonoUTCNanos(long realTimeNanos) {
             return realTimeNanos + _bootTime;
         }
+
+        @Override
+        public long getMonoUTCMillis() {
+            return getMonoUTCNanos() / 1_000_000;
+        }
+
+        @Override
+        public long getMonoUTCMillis(long realTimeNanos) {
+            return getMonoUTCNanos(realTimeNanos) / 1_000_000;
+        }
     };
 
     void addOutput(OutputDecorator<TimeT, ValueT> _output) {
@@ -82,14 +92,6 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
 
     // Managed Overrides
 
-    public int getForwardedMessagesCount() {
-        return mForwardedMessages;
-    }
-
-    public int getReceivedMessagesCount() {
-        return getForwardedMessagesCount();
-    }
-
     public NodePlugin<TimeT, ValueT> getParentDevicePlugin() {
         return _parent;
     }
@@ -101,6 +103,10 @@ public abstract class SensorComponent<TimeT, ValueT> implements ISensor {
 
     public String getName() {
         return this.getClass().getSimpleName();
+    }
+
+    public static IMonoTimestampSource getSTime() {
+        return _time;
     }
 
     public IMonoTimestampSource getTime() {

@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorsflows;
 
-public enum AutoLinkMode {
+public enum LinkMode {
     /**
      * Uses the links specified through the {@code addLink} method.
      */

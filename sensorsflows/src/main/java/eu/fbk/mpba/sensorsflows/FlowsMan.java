@@ -141,7 +141,7 @@ public class FlowsMan<TimeT, ValueT> implements
     final String _emAlreadyRendered = "The engine is initialized. No inputs, outputs or links can be added now.";
     final String _itemsToInitLock = "_itemsToInitLock";
 
-    private AutoLinkMode _linkMode = AutoLinkMode.PRODUCT;
+    private LinkMode _linkMode = LinkMode.PRODUCT;
     private String sessionTag = "";
     protected EngineStatus _status = EngineStatus.STANDBY;
     protected boolean _paused = false;
@@ -184,15 +184,15 @@ public class FlowsMan<TimeT, ValueT> implements
     /**
      * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-map rendering.
      *
-     * @param device Device to add.
+     * @param node Device to add.
      */
     @Override
-    public void addDevice(NodePlugin<TimeT, ValueT> device) {
+    public void addInput(NodePlugin<TimeT, ValueT> node) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
-            if (!_userDevices.containsKey(device.getName())) {
-                _userDevices.put(device.getName(), new NodeDecorator<>(device, this));
-                for (SensorComponent<TimeT, ValueT> s : device.getSensors())
+            if (!_userDevices.containsKey(node.getName())) {
+                _userDevices.put(node.getName(), new NodeDecorator<>(node, this));
+                for (SensorComponent<TimeT, ValueT> s : node.getSensors())
                     s.registerManager(this);
             }
         } else
@@ -200,7 +200,7 @@ public class FlowsMan<TimeT, ValueT> implements
     }
 
     @Override
-    public NodePlugin<TimeT, ValueT> getDevice(String name) {
+    public NodePlugin<TimeT, ValueT> getInput(String name) {
         Object r = _userDevices.get(name);
         //noinspection unchecked
         return r == null ? null : ((NodeDecorator)r).getPlugIn();
@@ -402,7 +402,7 @@ public class FlowsMan<TimeT, ValueT> implements
 
     //      Engine operation
 
-    public void setAutoLinkMode(AutoLinkMode mode) {
+    public void setLinkMode(LinkMode mode) {
         if (_status == EngineStatus.STANDBY)
             _linkMode = mode;
         else

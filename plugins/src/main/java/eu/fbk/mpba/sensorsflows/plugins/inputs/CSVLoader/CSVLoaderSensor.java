@@ -25,7 +25,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     protected String name;
     static int globalDebugID = 0;
     protected boolean fileFinito = false;
-    int righeLette = 0;
 
     public CSVLoaderSensor(InputStreamReader isr, String fieldSeparator, String rowSeparator, long tsScale, String sensorName, NodePlugin<Long, double[]> d) throws Exception {
         super(d);
@@ -92,15 +91,6 @@ public class CSVLoaderSensor extends SensorComponent<Long, double[]> {
     @Override
     public String getName() {
         return name;
-    }
-
-    public int getReceivedMessagesCount()
-    {
-        return getForwardedMessagesCount();
-    }
-    public int getForwardedMessagesCount()
-    {
-        return righeLette; //TODO inviare il numero di <QUALCOSA> inviato
     }
 
     public void sensorEvent(int code, String message) {

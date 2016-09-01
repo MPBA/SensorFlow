@@ -54,12 +54,12 @@ public class CozyBabyNode implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         monoSensor.switchDevOnAsync();
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         monoSensor.disconnect();
     }
 
@@ -178,11 +178,6 @@ public class CozyBabyNode implements NodePlugin<Long, double[]> {
                 Log.v(this.getClass().getSimpleName(), "log::" + message);
             }
         };
-
-        @Override
-        public int getReceivedMessagesCount() {
-            return received;
-        }
     }
 
     public static class CBECG extends CBSensor {

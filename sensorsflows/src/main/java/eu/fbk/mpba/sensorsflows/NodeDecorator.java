@@ -24,7 +24,7 @@ class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, Value
     @Override
     public void initializeNode() {
         changeStatus(DeviceStatus.INITIALIZING);
-        _nodePlugin.inputPluginInitialize();
+        _nodePlugin.inputPluginStart();
         changeStatus(DeviceStatus.INITIALIZED);
     }
 
@@ -36,7 +36,7 @@ class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, Value
     @Override
     public void finalizeNode() {
         changeStatus(DeviceStatus.FINALIZING);
-        _nodePlugin.inputPluginFinalize();
+        _nodePlugin.inputPluginStop();
         changeStatus(DeviceStatus.FINALIZED);
     }
 

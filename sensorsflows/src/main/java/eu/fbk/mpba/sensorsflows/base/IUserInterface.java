@@ -16,9 +16,9 @@ public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extend
 
     // ITEMS ENUMERATION control part
 
-    void addDevice(DeviceT device);
+    void addInput(DeviceT device);
 
-    DeviceT getDevice(String name);
+    DeviceT getInput(String name);
 
     Iterable<DeviceT> getDevices();
 

@@ -169,14 +169,4 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
                 e.printStackTrace();
             }
     }
-
-    @Override
-    public int getReceivedMessagesCount() {
-        return mForwarded;
-    }
-
-    @Override
-    public int getForwardedMessagesCount() {
-        return mReceived;
-    }
 }

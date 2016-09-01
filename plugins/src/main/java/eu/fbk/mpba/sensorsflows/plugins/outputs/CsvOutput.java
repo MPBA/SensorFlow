@@ -144,14 +144,4 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
             _savEvents = null;
         }
     }
-
-    @Override
-    public int getReceivedMessagesCount() {
-        return mReceived;
-    }
-
-    @Override
-    public int getForwardedMessagesCount() {
-        return mForwarded;
-    }
 }

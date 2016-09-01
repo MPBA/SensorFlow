@@ -90,12 +90,12 @@ public class Wax9Node extends Wax9Receiver implements NodePlugin<Long, double[]>
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         // connect();
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         stop();
     }
 

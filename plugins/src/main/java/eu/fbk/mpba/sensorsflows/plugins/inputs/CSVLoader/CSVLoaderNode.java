@@ -83,7 +83,7 @@ public class CSVLoaderNode implements NodePlugin<Long, double[]> {
      * Faccio partire i sensori
      * Chiamato almeno una volta
      */
-    @Override public void inputPluginInitialize() {
+    @Override public void inputPluginStart() {
         //Thread per un'esecuzione non bloccante.
         try {
             thr.start();
@@ -95,7 +95,7 @@ public class CSVLoaderNode implements NodePlugin<Long, double[]> {
         }
     }
 
-    @Override public void inputPluginFinalize() {
+    @Override public void inputPluginStop() {
 
     }
 

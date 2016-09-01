@@ -147,7 +147,7 @@ public class AndroidNode implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOnAsync();
         }
@@ -161,7 +161,7 @@ public class AndroidNode implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         for (SensorComponent<Long, double[]> s : _sensors) {
             s.switchOffAsync();
         }

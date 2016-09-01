@@ -148,12 +148,12 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         // Nothing to do before the start
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         // Device kept connected
     }
 

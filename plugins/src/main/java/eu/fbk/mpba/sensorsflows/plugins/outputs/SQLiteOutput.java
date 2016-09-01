@@ -111,14 +111,4 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         if (_sav != null)
             _sav.close();
     }
-
-    @Override
-    public int getReceivedMessagesCount() {
-        return getForwardedMessagesCount();
-    }
-
-    @Override
-    public int getForwardedMessagesCount() {
-        return mCount;
-    }
 }

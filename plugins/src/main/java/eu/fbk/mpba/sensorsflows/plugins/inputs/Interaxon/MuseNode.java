@@ -94,12 +94,12 @@ public class MuseNode implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         mMuse.enableDataTransmission(true);
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         mMuse.enableDataTransmission(false);
     }
 

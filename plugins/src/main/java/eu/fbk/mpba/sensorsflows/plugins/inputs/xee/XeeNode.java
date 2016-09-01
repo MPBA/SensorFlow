@@ -110,18 +110,18 @@ public class XeeNode implements NodePlugin<Long, double[]>, DQListenerInterface,
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         if (debug)
-            Log.v(debugTAG, "inputPluginInitialize");
+            Log.v(debugTAG, "inputPluginStart");
 
         active = true;
         finalizationOngoing = true;
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         if (debug)
-            Log.v(debugTAG, "inputPluginFinalize");
+            Log.v(debugTAG, "inputPluginStop");
 
         active = false;
     }

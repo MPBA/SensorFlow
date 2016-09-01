@@ -62,12 +62,12 @@ public class EXLs3Node implements NodePlugin<Long, double[]> {
     }
 
     @Override
-    public void inputPluginInitialize() {
+    public void inputPluginStart() {
         monoSensor.switchDevOnAsync();
     }
 
     @Override
-    public void inputPluginFinalize() {
+    public void inputPluginStop() {
         monoSensor.disconnect();
     }
 
@@ -187,11 +187,6 @@ public class EXLs3Node implements NodePlugin<Long, double[]> {
                 Log.v(EXLs3Node.class.getSimpleName() + " " + sender.mDevice.getAddress(), "lost:" + howMany + " fr:" + from + " to:" + to);
             }
         };
-
-        @Override
-        public int getReceivedMessagesCount() {
-            return received;
-        }
     }
 
     public static class EXLSamplenum extends EXLs3Node.EXLSensor {

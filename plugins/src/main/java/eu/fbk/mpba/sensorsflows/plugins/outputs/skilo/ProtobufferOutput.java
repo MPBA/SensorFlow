@@ -204,22 +204,4 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         close();
         super.finalize();
     }
-
-    @Override
-    public int getReceivedMessagesCount() {
-        return mReceived;
-    }
-
-    @Override
-    public int getForwardedMessagesCount() {
-        return mForwarded;
-    }
-
-    public int getTimeOffsetMillis() {
-        return mTimeOffsetMillis;
-    }
-
-    public void setTimeOffsetMillis(int timeOffsetMillis) {
-        this.mTimeOffsetMillis = timeOffsetMillis;
-    }
 }

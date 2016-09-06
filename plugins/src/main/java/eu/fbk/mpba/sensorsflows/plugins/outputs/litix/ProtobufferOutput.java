@@ -54,7 +54,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     }
 
     private final SplitterParams mSplitter;
-    protected SQLiteDatabase buffer;
+    protected final SQLiteDatabase buffer;
     protected List<SensorInfo> mSensorInfo = new ArrayList<>();
     protected HashMap<ISensor, Integer> mReverseSensors = new HashMap<>();
     protected List<Litix.SensorData> mSensorData = new ArrayList<>();
@@ -161,8 +161,12 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         //noinspection ResultOfMethodCallIgnored
 //        mDatabaseFile.mkdirs();
 //        buffer = SQLiteDatabase.openOrCreateDatabase(mDatabaseFile, null);
-        buffer.execSQL(Queries.i1);
-        buffer.execSQL(Queries.i2);
+
+        // sync for db
+        synchronized (buffer) {
+            buffer.execSQL(Queries.i1);
+            buffer.execSQL(Queries.i2);
+        }
     }
 
     public long currentBacklogSize() {
@@ -226,13 +230,16 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     textStatusPut(TS_COMPRESSED_KB, (mForwardedBytes+=compressed.size())/1000.);
                     textStatusPut(TS_COMPRESSED, Math.round((1. - mForwardedBytes / (double) mReceivedBytes) * 100));
 
-                    SQLiteStatement s = buffer.compileStatement(Queries.s);
-                    s.clearBindings();
-                    s.bindLong(1, split_id);
-                    s.bindLong(2, mTrackID);
-                    s.bindBlob(3, compressed.toByteArray());
-                    s.executeInsert();
-                    s.close();
+                    // sync for db
+                    synchronized (buffer) {
+                        SQLiteStatement s = buffer.compileStatement(Queries.s);
+                        s.clearBindings();
+                        s.bindLong(1, split_id);
+                        s.bindLong(2, mTrackID);
+                        s.bindBlob(3, compressed.toByteArray());
+                        s.executeInsert();
+                        s.close();
+                    }
 
                     compressed.close();
 
@@ -253,12 +260,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                 }
             }
         }, "Flush").start();
-    }
-
-    private static long bootUTCNanos = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-
-    public static long getMonoTimeMillis() {
-        return (System.nanoTime() + bootUTCNanos) / 1_000_000L;
     }
 
     // OutputPlugIn implementation
@@ -285,12 +286,15 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
         if (mTrackID == null || mSessionID == null)
             mTrackID = mSessionID = 0;
         else {
-            SQLiteStatement
-            stmt = buffer.compileStatement(Queries.t);
-            stmt.bindLong(1, mTrackID);
-            stmt.bindLong(2, mSessionID);
-            stmt.bindString(3, mSessionTag.toString());
-            stmt.executeInsert();
+            // sync for db
+            synchronized (buffer) {
+                SQLiteStatement
+                        stmt = buffer.compileStatement(Queries.t);
+                stmt.bindLong(1, mTrackID);
+                stmt.bindLong(2, mSessionID);
+                stmt.bindString(3, mSessionTag.toString());
+                stmt.executeInsert();
+            }
         }
 
         textStatusPut(TS_PACKAGES, splits);

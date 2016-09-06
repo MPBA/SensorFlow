@@ -155,10 +155,10 @@ public class CozyBabyNode implements NodePlugin<Long, double[]> {
                     case ECG_SENSOR_STATUS:
                         break;
                     case ECG_VALUE:
-                        parent.ecg.sensorValue(getTime().getMonoUTCNanos(), value);
+                        parent.ecg.sensorValue(timestamp, value);
                         break;
                     case MEMS_XYZ:
-                        parent.mems.sensorValue(getTime().getMonoUTCNanos(), value);
+                        parent.mems.sensorValue(timestamp, value);
                         break;
                 }
             }

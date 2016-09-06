@@ -197,7 +197,7 @@ public class EXLs3Node implements NodePlugin<Long, double[]> {
         }
 
         public List<Object> getValueDescriptor() {
-            return Collections.singletonList((Object) "snum");
+            return Collections.singletonList((Object) "number");
         }
 
     }

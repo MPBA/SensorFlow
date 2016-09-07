@@ -152,11 +152,9 @@ public class AndroidNode implements NodePlugin<Long, double[]> {
             s.switchOnAsync();
         }
         if (deviceIds) {
-            _logSensor.addMeta(0, "DeviceId:" + telephonyManager.getDeviceId());
-            _logSensor.addMeta(1, "SimSerialNumber:" + telephonyManager.getSimSerialNumber());
-            _logSensor.addMeta(2, "PhoneType:" + telephonyManager.getPhoneType());
-            _logSensor.addMeta(3, "AndroidId:" + androidId);
-            _logSensor.addMeta(3, "Application:" + packageName);
+            _logSensor.addMeta(0, "PhoneType:" + telephonyManager.getPhoneType());
+            _logSensor.addMeta(1, "AndroidId:" + androidId);
+            _logSensor.addMeta(2, "Application:" + packageName);
         }
     }
 

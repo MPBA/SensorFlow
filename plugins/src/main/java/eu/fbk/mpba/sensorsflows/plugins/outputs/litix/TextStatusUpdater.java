@@ -10,19 +10,17 @@ public abstract class TextStatusUpdater {
     long tsLastUpd = 0;
 
     public void textStatusPut(String k, Object v) {
-        Object x = tsParams.put(k, v);
-        // if (x != null && x != v)
-            if (SystemClock.elapsedRealtime() - tsLastUpd > 33) {
-                tsLastUpd = SystemClock.elapsedRealtime();
-                StringBuilder text = new StringBuilder();
-                for (Map.Entry<String, Object> e : tsParams.entrySet())
-                    text
-                            .append(e.getKey())
-                            .append(": \t")
-                            .append(e.getValue())
-                            .append('\n');
-                updateTextStatus(text.toString());
-            }
+        tsParams.put(k, v);
+        if (SystemClock.elapsedRealtime() - tsLastUpd > 33) {
+            tsLastUpd = SystemClock.elapsedRealtime();
+            StringBuilder text = new StringBuilder();
+            for (Map.Entry<String, Object> e : tsParams.entrySet())
+                text.append(e.getKey())
+                    .append(": \t")
+                    .append(e.getValue())
+                    .append('\n');
+            updateTextStatus(text.toString());
+        }
     }
 
     public abstract void updateTextStatus(String text);

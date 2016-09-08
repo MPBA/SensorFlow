@@ -26,7 +26,7 @@ dependencies {
 
     compile fileTree(include: ['*.jar'], dir: 'libs')
 
-    compile project(':sensorsflows/plugins/empalink-2.0')
+    compile project(':sensorsflows:plugins:empalink-2.0')
     compile project(':sensorsflows')
     compile project(':litixcom')
 }

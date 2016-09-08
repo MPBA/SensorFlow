@@ -19,16 +19,14 @@ android {
 }
 
 dependencies {
-    // compile 'com.google.protobuf:protobuf-java:2.6.1'
-    compile 'com.loopj.android:android-async-http:1.4.6'
-    compile 'com.google.code.gson:gson:2.3'
-    compile project(':empalink-2.0')
-    compile files('libs/libmuseandroid.jar')
-    compile 'commons-io:commons-io:2.4'
-    // xee as armeabi jniLibs
-    compile files('libs/DQuid_xee_driver.jar')
-    compile files('libs/DQuid_xee_sdk.jar')
-    compile project(':sensorsflows')
     compile 'com.android.support:appcompat-v7:23.0.1'
+    compile 'commons-io:commons-io:2.4'
+    compile 'com.google.code.gson:gson:2.3'
+    compile 'com.loopj.android:android-async-http:1.4.6'
+
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+
+    compile project(':sensorsflows/plugins/empalink-2.0')
+    compile project(':sensorsflows')
     compile project(':litixcom')
 }

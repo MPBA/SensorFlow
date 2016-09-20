@@ -31,6 +31,11 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
     // also through the values.
     private Long mTimeToDevice = 0L;
 
+    /**
+     * Converts the seconds in nanos and updates TimeToDevice
+     * @param seconds timestamp received in seconds
+     * @return timestamp received in nanoseconds
+     */
     private Long proTime(double seconds) {
         Long nanoTime = System.nanoTime();
         Long nanos = (long) (seconds * 1_000_000_000);

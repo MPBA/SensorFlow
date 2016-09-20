@@ -1,6 +1,7 @@
 package eu.fbk.mpba.sensorsflows.plugins.inputs.empatica;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -18,6 +19,7 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
     final String LOG_TAG = "ALE EMP DEV";
 
     private boolean lastCheckTODO = true;
+    private float batteryLevel = -1;
 
     final EmpaticaBeam beam;
     final EmpaticaSensor.Accelerometer mAcc;
@@ -58,11 +60,6 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
                     @Override
                     public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
                         mAcc.sensorValue(proTime(timestamp), new double[]{x, y, z});
-                        if (lastCheckTODO) {
-                            lastCheckTODO = false;
-                            if (connectedStreaming != null)
-                                new Thread(connectedStreaming).start();
-                        }
                     }
 
                     @Override
@@ -72,6 +69,12 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
 
                     @Override
                     public void didReceiveBatteryLevel(float battery, double timestamp) {
+                        batteryLevel = battery;
+                        if (lastCheckTODO) {
+                            lastCheckTODO = false;
+                            if (connectedStreaming != null)
+                                new Handler(context.getMainLooper()).post(connectedStreaming);
+                        }
                         mBat.sensorValue(proTime(timestamp), new double[]{battery});
                         Log.v(LOG_TAG, EmpaticaNode.this.getName() + " didReceiveBatteryLevel: " + battery);
                     }
@@ -182,5 +185,9 @@ public class EmpaticaNode implements NodePlugin<Long, double[]> {
 
     public void close() {
         beam.destroy();
+    }
+
+    public float getBatteryLevel() {
+        return batteryLevel;
     }
 }

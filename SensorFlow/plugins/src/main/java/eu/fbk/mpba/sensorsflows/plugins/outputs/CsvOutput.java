@@ -55,7 +55,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
         return files;
     }
 
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors) {
         List<String> nn = new ArrayList<>(streamingSensors.size());
         _reverseSensors = new HashMap<>(streamingSensors.size(), 1f);
         for (int i = 0; i < streamingSensors.size(); i++) {
@@ -90,7 +90,7 @@ public class CsvOutput implements OutputPlugin<Long, double[]> {
             files.add(f.getAbsolutePath());
     }
 
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         close();
     }
 

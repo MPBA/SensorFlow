@@ -119,7 +119,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     // OutputPlugIn implementation
 
     @Override
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors) {
         mSensors = streamingSensors;
         mSessionTag = sessionTag;
         mFolder = new File(mFolder, mSessionTag.toString() + "/" + getName());
@@ -146,7 +146,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private boolean finalized = false;
 
     @Override
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         flushTrackSplit(mSensorData, getTrackSplitNameForNow(), true);
         finalized = true;
     }
@@ -196,7 +196,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     @Override
     public void close() {
         if (!finalized)
-            outputPluginFinalize();
+            outputPluginStop();
     }
 
     @Override

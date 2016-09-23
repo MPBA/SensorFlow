@@ -9,9 +9,9 @@ import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
 public interface OutputPlugin<TimeT, ValueT> extends IPlugin {
 
-    void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors);
+    void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors);
 
-    void outputPluginFinalize();
+    void outputPluginStop();
 
     void newSensorEvent(SensorEventEntry<TimeT> event);
 

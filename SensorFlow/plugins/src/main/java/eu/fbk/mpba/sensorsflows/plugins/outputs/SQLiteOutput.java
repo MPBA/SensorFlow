@@ -35,7 +35,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         return Collections.singletonList(_sav.getPath());
     }
 
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> linkedSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> linkedSensors) {
         File f = new File(_path + "/" + sessionTag.toString());
         //noinspection ResultOfMethodCallIgnored
         f.mkdirs();
@@ -59,7 +59,7 @@ public class SQLiteOutput implements OutputPlugin<Long, double[]> {
         }
     }
 
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         close();
     }
 

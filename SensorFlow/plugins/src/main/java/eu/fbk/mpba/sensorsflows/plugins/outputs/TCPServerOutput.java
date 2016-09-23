@@ -93,14 +93,14 @@ public class TCPServerOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors) {
         mSTh.start();
         mSensors = streamingSensors;
         mTag = sessionTag.toString();
     }
 
     @Override
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         close();
     }
 

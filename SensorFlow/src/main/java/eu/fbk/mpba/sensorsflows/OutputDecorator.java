@@ -44,10 +44,10 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private Thread _thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            outputPlugIn.outputPluginInitialize(sessionTag, linkedSensors);
+            outputPlugIn.outputPluginStart(sessionTag, linkedSensors);
             changeStatus(OutputStatus.INITIALIZED);
             dispatchLoopWhileNotStopPending();
-            outputPlugIn.outputPluginFinalize();
+            outputPlugIn.outputPluginStop();
             changeStatus(OutputStatus.FINALIZED);
         }
     });
@@ -86,7 +86,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     public void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
         changeStatus(OutputStatus.INITIALIZING);
-        // outputPlugIn.outputPluginInitialize(...) in _thread
+        // outputPlugIn.outputPluginStart(...) in _thread
         _thread.start();
     }
 

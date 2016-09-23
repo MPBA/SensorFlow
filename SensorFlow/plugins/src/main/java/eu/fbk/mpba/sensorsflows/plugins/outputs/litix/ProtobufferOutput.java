@@ -22,11 +22,11 @@ import eu.fbk.mpba.sensorsflows.plugins.outputs.litix.Litix.SensorInfo;
 
 public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
-    public static final String TS_PACKAGES =      "splits-buffered   ";
-    public static final String TS_TOTAL_KB =      "data-raw      [KB]";
-    public static final String TS_COMPRESSED_KB = "data-gzipped  [KB]";
-    public static final String TS_COMPRESSED =    "data-gz-ratio  [%]";
-    public static final String TS_PACKTIMEOUT =   "split-time-max [s]";
+    private static final String TS_PACKAGES =      "splits-count      ";
+    private static final String TS_TOTAL_KB =      "data-raw      [KB]";
+    private static final String TS_COMPRESSED_KB = "data-gzipped  [KB]";
+    private static final String TS_COMPRESSED =    "data-gz-ratio  [%]";
+    private static final String TS_PACKTIMEOUT =   "split-time-max [s]";
     private final SplitEvent mOnSplit;
     private Integer mSessionID;
     private Integer mTrackID;
@@ -54,13 +54,13 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
     private final SplitterParams mSplitter;
     protected final SQLiteDatabase buffer;
-    protected List<SensorInfo> mSensorInfo = new ArrayList<>();
-    protected HashMap<ISensor, Integer> mReverseSensors = new HashMap<>();
-    protected List<Litix.SensorData> mSensorData = new ArrayList<>();
-    protected List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
-    protected List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
-    protected Object mSessionTag = "undefined";
-    protected int splits = 0;
+    private List<SensorInfo> mSensorInfo = new ArrayList<>();
+    private HashMap<ISensor, Integer> mReverseSensors = new HashMap<>();
+    private List<Litix.SensorData> mSensorData = new ArrayList<>();
+    private List<Litix.SensorEvent> mSensorEvent = new ArrayList<>();
+    private List<Litix.SessionMeta> mSessionMeta = new ArrayList<>();
+    private Object mSessionTag = "undefined";
+    private int splits = 0;
     private String mName;
     private long mForwardedBytes = 0;
     private long mReceivedBytes = 0;
@@ -68,17 +68,17 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private TextStatusUpdater mUpd;
 
     public void setTextStatusUpdater(TextStatusUpdater upd) {
-        upd.textStatusPut(TS_PACKAGES, splits);
-        upd.textStatusPut(TS_TOTAL_KB, 0);
-        upd.textStatusPut(TS_COMPRESSED_KB, 0);
-        upd.textStatusPut(TS_COMPRESSED, 0);
-        upd.textStatusPut(TS_PACKTIMEOUT, mSplitter.maxSplitTime / 1000.);
+        upd.put(TS_PACKAGES, splits);
+        upd.put(TS_TOTAL_KB, 0);
+        upd.put(TS_COMPRESSED_KB, 0);
+        upd.put(TS_COMPRESSED, 0);
+        upd.put(TS_PACKTIMEOUT, mSplitter.maxSplitTime / 1000.);
         this.mUpd = upd;
     }
 
-    void textStatusPut(String k, Object v) {
+    private void textStatusPut(String k, Object v) {
         if (mUpd != null) {
-            mUpd.textStatusPut(k, v);
+            mUpd.put(k, v);
         }
     }
 
@@ -102,18 +102,18 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             lastSplitTime = SystemClock.elapsedRealtime();
         }
 
-        public void updateSize(float compressed, float raw) {
+        void updateSize(float compressed, float raw) {
             Log.d("ProtoOut", "Updating size" + (timeout ? " after timeout" : ""));
             if (!timeout)
                 adjust *= (float) Math.pow(targetCompressedSize / compressed, adjustBalance);
             compressionRatio = Math.min(1.f, compressionRatio * (1 - ratioBalance) + ratioBalance * compressed / raw);
         }
 
-        public float getFlushSize() {
+        float getFlushSize() {
             return targetCompressedSize * adjust / compressionRatio;
         }
 
-        public boolean addAndPopFlushSuggested(int newSize) {
+        boolean addAndPopFlushSuggested(int newSize) {
             size += newSize;
             if (size >= getFlushSize() || size >= minSplitSize && SystemClock.elapsedRealtime() - lastSplitTime > maxSplitTime) {
                 size = 0;
@@ -161,7 +161,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             throw new NullPointerException("ProtobufferOutput already initialized.");
     }
 
-    public void flushTrackSplit() {
+    private void flushTrackSplit() {
         Log.d("ProtoOut", "Flushing " + currentBacklogSize() + " SensorData/Event");
         final int split_id = splits;
 
@@ -174,8 +174,6 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
             sb.addAllSensors(mSensorInfo);
 
         final Litix.TrackSplit ts = sb.build();
-
-        textStatusPut(TS_PACKAGES, splits);
 
         mSensorData.clear();
         mSensorEvent.clear();
@@ -226,8 +224,13 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
 
                     if (mOnSplit != null) {
                         mOnSplit.newSplit(ProtobufferOutput.this, split_id, mSplitter);
-                        if (lastFlush)
+                    }
+                    if (lastFlush) {
+                        // The commit
+                        splits++;
+                        if (mOnSplit != null) {
                             mOnSplit.noMoreBuffers(ProtobufferOutput.this, mSplitter);
+                        }
                     }
                 } catch (SQLiteConstraintException e) {
                     Log.e("ProtoOut", "SQL error, splitID:" + split_id + " trackID:" + mTrackID);
@@ -236,6 +239,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
                     Log.e("ProtoOut", "Flush error");
                     e.printStackTrace();
                 }
+                textStatusPut(TS_PACKAGES, splits);
             }
         }, "Flush").start();
     }
@@ -243,7 +247,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     // OutputPlugIn implementation
 
     @Override
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors) {
         lastFlush = false;
         finalized = false;
         mReverseSensors = new HashMap<>(streamingSensors.size(), 1);
@@ -280,7 +284,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     private boolean lastFlush = false;
 
     @Override
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         lastFlush = true;
         flushTrackSplit();
         finalized = true;
@@ -323,7 +327,7 @@ public class ProtobufferOutput implements OutputPlugin<Long, double[]> {
     @Override
     public void close() {
         if (!finalized)
-            outputPluginFinalize();
+            outputPluginStop();
     }
 
     @Override

@@ -41,7 +41,7 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void outputPluginInitialize(Object sessionTag, List<ISensor> streamingSensors) {
+    public void outputPluginStart(Object sessionTag, List<ISensor> streamingSensors) {
         mSensors = streamingSensors;
         mTag = sessionTag.toString();
         try {
@@ -61,7 +61,7 @@ public class TCPClientOutput implements OutputPlugin<Long, double[]> {
     }
 
     @Override
-    public void outputPluginFinalize() {
+    public void outputPluginStop() {
         close();
     }
 

@@ -30,9 +30,9 @@ dependencies {
     compile 'com.google.code.gson:gson:2.4'
     compile 'com.loopj.android:android-async-http:1.4.6'
     compile 'com.google.protobuf:protobuf-java:3.0.0'
+    compile 'com.github.com:SensorFlow:e04e972'
 
     compile fileTree(include: ['*.jar'], dir: 'libs')
 
     compile project(':SensorFlow:plugins:empalink-2.0')
-    compile project(':SensorFlow')
 }

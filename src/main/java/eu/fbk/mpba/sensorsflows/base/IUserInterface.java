@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorsflows.base;
 
-import eu.fbk.mpba.sensorsflows.OutputPlugin;
+import eu.fbk.mpba.sensorsflows.Output;
 
 /**
  * Main interface for the flows control.
@@ -11,7 +11,7 @@ import eu.fbk.mpba.sensorsflows.OutputPlugin;
  * these, their operation and the operation of the engine.
  */
 @SuppressWarnings("UnusedDeclaration")
-public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extends OutputPlugin> {
+public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extends Output> {
 
 
     // ITEMS ENUMERATION control part

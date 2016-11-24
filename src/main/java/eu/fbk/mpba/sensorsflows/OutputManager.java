@@ -1,7 +1,7 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import eu.fbk.mpba.sensorsflows.base.IOutput;
@@ -16,22 +16,22 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * This class adds internal support for the library data-paths.
  * Polls but has a fixed sleep time in the case that each queue is empty.
  */
-class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
+class OutputManager<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private IOutputCallback<TimeT, ValueT> _manager = null;
 
     private boolean _stopPending = false;
     private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
     private Object sessionTag = "unspecified";
-    private OutputPlugin<TimeT, ValueT> outputPlugIn;
-    private List<ISensor> linkedSensors;
+    private Output<TimeT, ValueT> outputPlugIn;
+    private TreeSet<ISensor> linkedSensors;
 
     private ArrayBlockingQueue<SensorEventEntry<TimeT>> _eventsQueue;
     private ArrayBlockingQueue<SensorDataEntry<TimeT, ValueT>> _dataQueue;
     private boolean enabled = true;
 
-    protected OutputDecorator(OutputPlugin<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
+    protected OutputManager(Output<TimeT, ValueT> output, IOutputCallback<TimeT, ValueT> manager) {
         _manager = manager;
-        linkedSensors = new ArrayList<>();
+        linkedSensors = new TreeSet<>();
         outputPlugIn = output;
         int dataQueueCapacity = 100;
         int eventsQueueCapacity = 50;
@@ -44,10 +44,10 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     private Thread _thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            outputPlugIn.outputPluginStart(sessionTag, linkedSensors);
+            outputPlugIn.onOutputStart(sessionTag, new ArrayList<>(linkedSensors));
             changeStatus(OutputStatus.INITIALIZED);
             dispatchLoopWhileNotStopPending();
-            outputPlugIn.outputPluginStop();
+            outputPlugIn.onOutputStop();
             changeStatus(OutputStatus.FINALIZED);
         }
     });
@@ -59,9 +59,9 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
             data = _dataQueue.poll();
             event = _eventsQueue.poll();
             if (data != null)
-                outputPlugIn.newSensorData(data);
+                outputPlugIn.onValue(data);
             if (event != null)
-                outputPlugIn.newSensorEvent(event);
+                outputPlugIn.onEvent(event);
             else if (data == null)
                 if (_stopPending)
                     break;
@@ -86,7 +86,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     public void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
         changeStatus(OutputStatus.INITIALIZING);
-        // outputPlugIn.outputPluginStart(...) in _thread
+        // outputPlugIn.onOutputStart(...) in _thread
         _thread.start();
     }
 
@@ -102,33 +102,33 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
     }
 
     @Override
-    public void sensorStatusChanged(ISensor sensor, TimeT time, SensorStatus state) {
+    public void onStatusChanged(ISensor sensor, TimeT time, SensorStatus state) {
     }
 
     @Override
-    public void sensorEvent(ISensor sensor, TimeT time, int type, String message) {
+    public void onEvent(ISensor sensor, TimeT time, int type, String message) {
         try {
             // FIXME WARN Locks the sensor's thread
             _eventsQueue.put(new SensorEventEntry<>(sensor, time, type, message));
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorEvent() find-me:924nj89f8j2");
+//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onEvent() find-me:924nj89f8j2");
         }
     }
 
     @Override
-    public void sensorValue(ISensor sensor, TimeT time, ValueT value) {
+    public void onValue(ISensor sensor, TimeT time, ValueT value) {
         try {
             // FIXME WARN Locks the sensor's thread
             SensorDataEntry<TimeT, ValueT> a = new SensorDataEntry<>(sensor, time, value);
             _dataQueue.put(a);
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.sensorValue() find-me:24bhi5ti89");
+//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onValue() find-me:24bhi5ti89");
         }
     }
 
     // Setters
 
-    public void addSensor(ISensor s) {
+    public void addFlow(ISensor s) {
         linkedSensors.add(s);
     }
 
@@ -139,7 +139,7 @@ class OutputDecorator<TimeT, ValueT> implements IOutput<TimeT, ValueT> {
         return _status;
     }
 
-    OutputPlugin<TimeT, ValueT> getPlugIn() {
+    Output<TimeT, ValueT> getOutput() {
         return outputPlugIn;
     }
 

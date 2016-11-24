@@ -2,7 +2,7 @@ package eu.fbk.mpba.sensorsflows.base;
 
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.NodePlugin;
+import eu.fbk.mpba.sensorsflows.Input;
 
 /**
  * Main control interface for a sensor.
@@ -17,11 +17,9 @@ public interface ISensor {
 
     SensorStatus getStatus();
 
-    NodePlugin getParentDevicePlugin();
+    Input getParentInput();
 
-    List<Object> getValueDescriptor();
+    List<Object> getHeader();
 
     String getName();
-
-    IMonoTimestampSource getTime();
 }

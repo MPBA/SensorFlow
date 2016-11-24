@@ -6,13 +6,13 @@ import eu.fbk.mpba.sensorsflows.base.INode;
 /**
  * This class adds internal support for the library data-paths.
  */
-class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, ValueT>> {
-    private FlowsMan<TimeT, ValueT> _manager = null;
+class NodeDecorator<TimeT, ValueT> implements INode<Flow<TimeT, ValueT>> {
+    private SensorFlow<TimeT, ValueT> _manager = null;
     private DeviceStatus _status = DeviceStatus.NOT_INITIALIZED;
-    private NodePlugin<TimeT, ValueT> _nodePlugin;
+    private Input<TimeT, ValueT> _input;
 
-    NodeDecorator(NodePlugin<TimeT, ValueT> nodePlugin, FlowsMan<TimeT, ValueT> manager) {
-        _nodePlugin = nodePlugin;
+    NodeDecorator(Input<TimeT, ValueT> input, SensorFlow<TimeT, ValueT> manager) {
+        _input = input;
         _manager = manager;
     }
 
@@ -24,19 +24,19 @@ class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, Value
     @Override
     public void initializeNode() {
         changeStatus(DeviceStatus.INITIALIZING);
-        _nodePlugin.inputPluginStart();
+        _input.onInputStart();
         changeStatus(DeviceStatus.INITIALIZED);
     }
 
     @Override
-    public Iterable<SensorComponent<TimeT, ValueT>> getSensors() {
-        return _nodePlugin.getSensors();
+    public Iterable<Flow<TimeT, ValueT>> getSensors() {
+        return _input.getFlows();
     }
 
     @Override
     public void finalizeNode() {
         changeStatus(DeviceStatus.FINALIZING);
-        _nodePlugin.inputPluginStop();
+        _input.onInputStop();
         changeStatus(DeviceStatus.FINALIZED);
     }
 
@@ -47,11 +47,11 @@ class NodeDecorator<TimeT, ValueT> implements INode<SensorComponent<TimeT, Value
         return _status;
     }
 
-    FlowsMan<TimeT, ValueT> getManager() {
+    SensorFlow<TimeT, ValueT> getManager() {
         return _manager;
     }
 
-    NodePlugin<TimeT, ValueT> getPlugIn() {
-        return _nodePlugin;
+    Input<TimeT, ValueT> getPlugIn() {
+        return _input;
     }
 }

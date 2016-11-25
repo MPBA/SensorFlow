@@ -1,5 +1,5 @@
 package eu.fbk.mpba.sensorsflows.base;
 
-public interface IOutputCallback<TimeT, ValueT> {
-    void outputStatusChanged(IOutput<TimeT, ValueT> sender, OutputStatus status);
+public interface IOutputCallback {
+    void outputStatusChanged(IOutput sender, OutputStatus status);
 }

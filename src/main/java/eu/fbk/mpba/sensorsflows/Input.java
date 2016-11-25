@@ -2,11 +2,11 @@ package eu.fbk.mpba.sensorsflows;
 
 import eu.fbk.mpba.sensorsflows.base.IPlugin;
 
-public interface Input<TimeT, ValueT> extends IPlugin {
+public interface Input extends IPlugin {
 
     void onInputStart();
 
     void onInputStop();
 
-    Iterable<Flow<TimeT, ValueT>> getFlows();
+    Iterable<Flow> getFlows();
 }

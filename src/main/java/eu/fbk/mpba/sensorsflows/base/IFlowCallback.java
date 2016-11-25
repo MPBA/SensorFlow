@@ -5,11 +5,11 @@ package eu.fbk.mpba.sensorsflows.base;
  * Multiple sensors call this so the sender parameter is the sender sensor.
  * The receiver should implement this.
  */
-public interface IFlowCallback<SensorT extends ISensor, TimeT, ValueT> {
+public interface IFlowCallback<SensorT extends ISensor> {
 
-    void onStatusChanged(SensorT sensor, TimeT time, SensorStatus state);
+    void onStatusChanged(SensorT sensor, long time, SensorStatus state);
 
-    void onEvent(SensorT sensor, TimeT time, int type, String message);
+    void onEvent(SensorT sensor, long time, int type, String message);
 
-    void onValue(SensorT sensor, TimeT time, ValueT value);
+    void onValue(SensorT sensor, long time, double[] value);
 }

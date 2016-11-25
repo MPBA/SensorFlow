@@ -6,12 +6,12 @@ import eu.fbk.mpba.sensorsflows.base.INode;
 /**
  * This class adds internal support for the library data-paths.
  */
-class NodeDecorator<TimeT, ValueT> implements INode<Flow<TimeT, ValueT>> {
-    private SensorFlow<TimeT, ValueT> _manager = null;
+class NodeDecorator implements INode<Flow> {
+    private SensorFlow _manager = null;
     private DeviceStatus _status = DeviceStatus.NOT_INITIALIZED;
-    private Input<TimeT, ValueT> _input;
+    private Input _input;
 
-    NodeDecorator(Input<TimeT, ValueT> input, SensorFlow<TimeT, ValueT> manager) {
+    NodeDecorator(Input input, SensorFlow manager) {
         _input = input;
         _manager = manager;
     }
@@ -29,7 +29,7 @@ class NodeDecorator<TimeT, ValueT> implements INode<Flow<TimeT, ValueT>> {
     }
 
     @Override
-    public Iterable<Flow<TimeT, ValueT>> getSensors() {
+    public Iterable<Flow> getSensors() {
         return _input.getFlows();
     }
 
@@ -47,11 +47,11 @@ class NodeDecorator<TimeT, ValueT> implements INode<Flow<TimeT, ValueT>> {
         return _status;
     }
 
-    SensorFlow<TimeT, ValueT> getManager() {
+    SensorFlow getManager() {
         return _manager;
     }
 
-    Input<TimeT, ValueT> getPlugIn() {
+    Input getPlugIn() {
         return _input;
     }
 }

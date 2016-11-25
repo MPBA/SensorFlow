@@ -21,14 +21,12 @@ import eu.fbk.mpba.sensorsflows.base.SensorStatus;
  * SensorFlow is the class that represents the engine of the library.
  * This is the only interface that the user should use.
  * Implementation of the IUserInterface
- * @param <TimeT> The type of the timestamp returned by the outputs (must be the same for every item).
- * @param <ValueT> The type of the value returned by the devices (must be the same for every item).
  */
-public class SensorFlow<TimeT, ValueT> implements
-        IUserInterface<Input<TimeT, ValueT>, Flow<TimeT, ValueT>, Output<TimeT, ValueT>>,
-        IDeviceCallback<NodeDecorator<TimeT, ValueT>>,
-        IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT>,
-        IOutputCallback<TimeT, ValueT> {
+public class SensorFlow implements
+        IUserInterface<Input, Flow, Output>,
+        IDeviceCallback<NodeDecorator>,
+        IFlowCallback<Flow>,
+        IOutputCallback {
 
     // Status Interface
 
@@ -64,7 +62,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void outputStatusChanged(IOutput<TimeT, ValueT> sender, OutputStatus state) {
+    public void outputStatusChanged(IOutput sender, OutputStatus state) {
         if (state == OutputStatus.INITIALIZED) {
             synchronized (_itemsToInitLock) {
                 if (_outputsToInit.contains(sender)) {
@@ -89,7 +87,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param state  arg
      */
     @Override
-    public void onStatusChanged(Flow<TimeT, ValueT> sender, TimeT time, SensorStatus state) {
+    public void onStatusChanged(Flow sender, long time, SensorStatus state) {
         // TODO 3 Implement an 'internal device' with an 'internal sensor' for log utilities.
         // The sensor has to send also an event on a status change.
     }
@@ -105,7 +103,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param value  value
      */
     @Override
-    public void onValue(Flow<TimeT, ValueT> sender, TimeT time, ValueT value) {
+    public void onValue(Flow sender, long time, double[] value) {
         if (!sender.isMuted() && !_paused) {
             for (OutputManager o : sender.getOutputs()) {
                 if (o.isEnabled())
@@ -123,7 +121,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param message message text
      */
     @Override
-    public void onEvent(Flow<TimeT, ValueT> sender, TimeT time, int type, String message) {
+    public void onEvent(Flow sender, long time, int type, String message) {
         if (!sender.isMuted() && !_paused) {
             for (OutputManager o : sender.getOutputs()) {
                 if (o.isEnabled())
@@ -147,16 +145,16 @@ public class SensorFlow<TimeT, ValueT> implements
 
     // maybe key, value
 
-    protected Map<String, NodeDecorator<TimeT, ValueT>> _userDevices = new TreeMap<>();
-    protected Map<String, OutputManager<TimeT, ValueT>> _userOutputs = new TreeMap<>();
+    protected Map<String, NodeDecorator> _userDevices = new TreeMap<>();
+    protected Map<String, OutputManager> _userOutputs = new TreeMap<>();
 
     protected List<NodeDecorator> _devicesToInit = new ArrayList<>();                                                 // null
     protected List<IOutput> _outputsToInit = new ArrayList<>();                                                         // null
 
-    protected EventCallback<IUserInterface<Input<TimeT, ValueT>, Flow<TimeT, ValueT>, Output<TimeT, ValueT>>
+    protected EventCallback<IUserInterface<Input, Flow, Output>
             , EngineStatus> _onStatusChanged = null;                                                                     // null
-    protected EventCallback<Input<TimeT, ValueT>, DeviceStatus> _onDeviceStatusChanged = null;                    // null
-    protected EventCallback<Output<TimeT, ValueT>, OutputStatus> _onOutputStatusChanged = null;                    // null
+    protected EventCallback<Input, DeviceStatus> _onDeviceStatusChanged = null;                    // null
+    protected EventCallback<Output, OutputStatus> _onOutputStatusChanged = null;                    // null
 
     // Engine implementation
 
@@ -186,12 +184,12 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param input Device to add.
      */
     @Override
-    public void addInput(Input<TimeT, ValueT> input) {
+    public void addInput(Input input) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userDevices.containsKey(input.getName())) {
-                _userDevices.put(input.getName(), new NodeDecorator<>(input, this));
-                for (Flow<TimeT, ValueT> s : input.getFlows())
+                _userDevices.put(input.getName(), new NodeDecorator(input, this));
+                for (Flow s : input.getFlows())
                     s.addHandler(this);
             }
         } else
@@ -199,7 +197,7 @@ public class SensorFlow<TimeT, ValueT> implements
     }
 
     @Override
-    public Input<TimeT, ValueT> getInput(String name) {
+    public Input getInput(String name) {
         Object r = _userDevices.get(name);
         //noinspection unchecked
         return r == null ? null : ((NodeDecorator)r).getPlugIn();
@@ -212,9 +210,9 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param toOutput   Output channel.
      */
     @Override
-    public void addLink(Flow<TimeT, ValueT> fromSensor, Output<TimeT, ValueT> toOutput) {
+    public void addLink(Flow fromSensor, Output toOutput) {
         // Manual indexOf for performance
-        for (OutputManager<TimeT, ValueT> outMan : _userOutputs.values())
+        for (OutputManager outMan : _userOutputs.values())
             if (toOutput == outMan.getOutput()) { // for reference, safe
                 addLink(fromSensor, outMan);
                 break;
@@ -239,7 +237,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param fromSensor Input sensor retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    void addLink(Flow<TimeT, ValueT> fromSensor, OutputManager<TimeT, ValueT> outMan) {
+    void addLink(Flow fromSensor, OutputManager outMan) {
         if (_status == EngineStatus.STANDBY) {
             fromSensor.addOutput(outMan);
             outMan.addFlow(fromSensor);
@@ -253,17 +251,17 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param output Output to add.
      */
     @Override
-    public void addOutput(Output<TimeT, ValueT> output) {
+    public void addOutput(Output output) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userOutputs.containsKey(output.getName()))
-                _userOutputs.put(output.getName(), new OutputManager<>(output, this));
+                _userOutputs.put(output.getName(), new OutputManager(output, this));
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     @Override
-    public Output<TimeT, ValueT> getOutput(String name) {
+    public Output getOutput(String name) {
         Object r = _userOutputs.get(name);
         //noinspection unchecked
         return r == null ? null : ((OutputManager)r).getOutput();
@@ -277,12 +275,12 @@ public class SensorFlow<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (INode d : enumerator)
      */
     @Override
-    public Iterable<Input<TimeT, ValueT>> getDevices() {
-        return new Iterable<Input<TimeT, ValueT>>() {
+    public Iterable<Input> getDevices() {
+        return new Iterable<Input>() {
             @Override
-            public Iterator<Input<TimeT, ValueT>> iterator() {
-                final Iterator<NodeDecorator<TimeT, ValueT>> i = _userDevices.values().iterator();
-                return new Iterator<Input<TimeT, ValueT>>() {
+            public Iterator<Input> iterator() {
+                final Iterator<NodeDecorator> i = _userDevices.values().iterator();
+                return new Iterator<Input>() {
 
                     @Override
                     public boolean hasNext() {
@@ -290,7 +288,7 @@ public class SensorFlow<TimeT, ValueT> implements
                     }
 
                     @Override
-                    public Input<TimeT, ValueT> next() {
+                    public Input next() {
                         return i.next().getPlugIn();
                     }
 
@@ -309,12 +307,12 @@ public class SensorFlow<TimeT, ValueT> implements
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
     @Override
-    public Iterable<Output<TimeT, ValueT>> getOutputs() {
-        return new Iterable<Output<TimeT, ValueT>>() {
+    public Iterable<Output> getOutputs() {
+        return new Iterable<Output>() {
             @Override
-            public Iterator<Output<TimeT, ValueT>> iterator() {
-                final Iterator<OutputManager<TimeT, ValueT>> i = _userOutputs.values().iterator();
-                return new Iterator<Output<TimeT, ValueT>>() {
+            public Iterator<Output> iterator() {
+                final Iterator<OutputManager> i = _userOutputs.values().iterator();
+                return new Iterator<Output>() {
 
                     @Override
                     public boolean hasNext() {
@@ -322,7 +320,7 @@ public class SensorFlow<TimeT, ValueT> implements
                     }
 
                     @Override
-                    public Output<TimeT, ValueT> next() {
+                    public Output next() {
                         return i.next().getOutput();
                     }
 
@@ -359,7 +357,7 @@ public class SensorFlow<TimeT, ValueT> implements
      *
      * @param output {@code IOutput} to finalize.
      */
-    void initialize(OutputManager<TimeT, ValueT> output, String sessionName) {
+    void initialize(OutputManager output, String sessionName) {
         //noinspection StatementWithEmptyBody
         if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.NOT_INITIALIZED) {
             output.initializeOutput(sessionName);
@@ -390,7 +388,7 @@ public class SensorFlow<TimeT, ValueT> implements
      *
      * @param output {@code IOutput} to finalize.
      */
-    void finalize(IOutput<TimeT, ValueT> output) {
+    void finalize(IOutput output) {
         //noinspection StatementWithEmptyBody
         if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
@@ -405,9 +403,9 @@ public class SensorFlow<TimeT, ValueT> implements
 
     public void routeAll() {
         // SENSORS x OUTPUTS
-        for (NodeDecorator<TimeT, ValueT> d : _userDevices.values())
-            for (Flow<TimeT, ValueT> s : d.getSensors())      // FOREACH SENSOR
-                for (OutputManager<TimeT, ValueT> o : _userOutputs.values())    // LINK TO EACH OUTPUT
+        for (NodeDecorator d : _userDevices.values())
+            for (Flow s : d.getSensors())      // FOREACH SENSOR
+                for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
                     addLink(s, o);
     }
 
@@ -415,7 +413,7 @@ public class SensorFlow<TimeT, ValueT> implements
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-            for (Flow<TimeT, ValueT> s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+            for (Flow s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
                 addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
     }
 
@@ -457,7 +455,7 @@ public class SensorFlow<TimeT, ValueT> implements
                 initialize(d);
             }
             _outputsToInit.addAll(_userOutputs.values());
-            for (OutputManager<TimeT, ValueT> o : _userOutputs.values()) {
+            for (OutputManager o : _userOutputs.values()) {
                 // only if NOT_INITIALIZED: checked in the initializeNode method
                 initialize(o, sessionName);
             }
@@ -513,7 +511,7 @@ public class SensorFlow<TimeT, ValueT> implements
             // only if INITIALIZED: checked in the method
             finalize(d);
         }
-        for (IOutput<TimeT, ValueT> o : _userOutputs.values()) {
+        for (IOutput o : _userOutputs.values()) {
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
@@ -532,10 +530,10 @@ public class SensorFlow<TimeT, ValueT> implements
                 stop();
             case FINALIZED:
                 changeStatus(EngineStatus.CLOSING);
-                for (NodeDecorator<TimeT, ValueT> d : _userDevices.values())
-                    for (Flow<TimeT, ValueT> s : d.getPlugIn().getFlows())
+                for (NodeDecorator d : _userDevices.values())
+                    for (Flow s : d.getPlugIn().getFlows())
                         s.close();
-                for (IOutput<TimeT, ValueT> o : _userOutputs.values())
+                for (IOutput o : _userOutputs.values())
                 o.close();
                 changeStatus(EngineStatus.CLOSED);
                 break;
@@ -566,7 +564,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStatusChanged(EventCallback<IUserInterface<Input<TimeT, ValueT>, Flow<TimeT, ValueT>, Output<TimeT, ValueT>>, EngineStatus> callback) {
+    public void setOnStatusChanged(EventCallback<IUserInterface<Input, Flow, Output>, EngineStatus> callback) {
         _onStatusChanged = callback;
     }
 
@@ -576,7 +574,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStatusChanged(EventCallback<Input<TimeT, ValueT>, DeviceStatus> callback) {
+    public void setOnDeviceStatusChanged(EventCallback<Input, DeviceStatus> callback) {
         _onDeviceStatusChanged = callback;
     }
 
@@ -586,7 +584,7 @@ public class SensorFlow<TimeT, ValueT> implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnOutputStatusChanged(EventCallback<Output<TimeT, ValueT>, OutputStatus> callback) {
+    public void setOnOutputStatusChanged(EventCallback<Output, OutputStatus> callback) {
         _onOutputStatusChanged = callback;
     }
 }

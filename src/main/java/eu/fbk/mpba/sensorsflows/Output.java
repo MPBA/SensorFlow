@@ -7,13 +7,13 @@ import eu.fbk.mpba.sensorsflows.base.IPlugin;
 import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
 import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
 
-public interface Output<TimeT, ValueT> extends IPlugin {
+public interface Output extends IPlugin {
 
     void onOutputStart(Object sessionTag, List<ISensor> streamingSensors);
 
     void onOutputStop();
 
-    void onEvent(SensorEventEntry<TimeT> event);
+    void onEvent(SensorEventEntry event);
 
-    void onValue(SensorDataEntry<TimeT, ValueT> data);
+    void onValue(SensorDataEntry data);
 }

@@ -1,8 +1,9 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.base.ITimeSource;
 import eu.fbk.mpba.sensorsflows.base.ISensor;
@@ -13,10 +14,10 @@ import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class Flow<TimeT, ValueT> implements ISensor {
-    protected Input<TimeT, ValueT> _parent = null;
-    protected List<IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT>> _handler = new ArrayList<>();
-    protected TreeSet<OutputManager<TimeT, ValueT>> _outputs = new TreeSet<>();
+public abstract class Flow implements ISensor {
+    protected Input _parent = null;
+    protected List<IFlowCallback<Flow>> _handler = new ArrayList<>();
+    protected Set<OutputManager> _outputs = new HashSet<>();
 
     private boolean mMuted = true;
     protected SensorStatus mStatus = SensorStatus.OFF;
@@ -44,33 +45,33 @@ public abstract class Flow<TimeT, ValueT> implements ISensor {
         }
     };
 
-    protected Flow(Input<TimeT, ValueT> parent) {
+    protected Flow(Input parent) {
         _parent = parent;
     }
 
-    void addOutput(OutputManager<TimeT, ValueT> _output) {
+    void addOutput(OutputManager _output) {
         _outputs.add(_output);
     }
 
-    void addHandler(IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT> man) {
+    void addHandler(IFlowCallback<Flow> man) {
         _handler.add(man);
     }
 
-    void removeHandler(IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT> man) {
+    void removeHandler(IFlowCallback<Flow> man) {
         _handler.remove(man);
     }
 
-    Iterable<OutputManager<TimeT, ValueT>> getOutputs() {
+    Iterable<OutputManager> getOutputs() {
         return new ReadOnlyIterable<>(_outputs.iterator());
     }
 
     // Managed protected getters setters
 
     protected void changeStatus(SensorStatus state) {
-        for (IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+        for (IFlowCallback<Flow> i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
-            i.onStatusChanged(this, null, mStatus = state);
+            i.onStatusChanged(this, Integer.MIN_VALUE, mStatus = state);
         }
     }
 
@@ -90,7 +91,7 @@ public abstract class Flow<TimeT, ValueT> implements ISensor {
 
     // Managed Overrides
 
-    public Input<TimeT, ValueT> getParentInput() {
+    public Input getParentInput() {
         return _parent;
     }
 
@@ -109,16 +110,16 @@ public abstract class Flow<TimeT, ValueT> implements ISensor {
 
     // Notify methods
 
-    public void onValue(TimeT time, ValueT value) {
-        for (IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+    public void onValue(long time, double[] value) {
+        for (IFlowCallback<Flow> i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
             i.onValue(this, time, value);
         }
     }
 
-    public void onEvent(TimeT time, int type, String message) {
-        for (IFlowCallback<Flow<TimeT, ValueT>, TimeT, ValueT> i : _handler) {
+    public void onEvent(long time, int type, String message) {
+        for (IFlowCallback<Flow> i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
             i.onEvent(this, time, type, message);

@@ -19,7 +19,7 @@ public abstract class Flow implements ISensor {
     protected List<IFlowCallback<Flow>> _handler = new ArrayList<>();
     protected Set<OutputManager> _outputs = new HashSet<>();
 
-    private boolean mMuted = true;
+    private boolean mMuted = false;
     protected SensorStatus mStatus = SensorStatus.OFF;
     private static long _bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
     private static ITimeSource _time = new ITimeSource() {

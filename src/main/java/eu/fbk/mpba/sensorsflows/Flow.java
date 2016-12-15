@@ -53,6 +53,10 @@ public abstract class Flow implements ISensor {
         _outputs.add(_output);
     }
 
+    void removeOutput(OutputManager _output) {
+        _outputs.remove(_output);
+    }
+
     void addHandler(IFlowCallback<Flow> man) {
         _handler.add(man);
     }

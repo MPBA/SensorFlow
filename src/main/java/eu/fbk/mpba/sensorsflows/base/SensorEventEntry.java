@@ -1,14 +1,14 @@
 package eu.fbk.mpba.sensorsflows.base;
 
 public class SensorEventEntry {
-    public SensorEventEntry(ISensor sensor, long timestamp, int code, String message){
-        this.sensor = sensor;
+    public SensorEventEntry(ISensor flow, long timestamp, int code, String message){
+        this.flow = flow;
         this.timestamp = timestamp;
         this.code = code;
         this.message = message;
     }
 
-    public ISensor sensor;
+    public ISensor flow;
     public long timestamp;
     public int code;
     public String message;

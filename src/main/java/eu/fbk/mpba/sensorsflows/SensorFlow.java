@@ -88,15 +88,15 @@ public class SensorFlow implements
      */
     @Override
     public void onStatusChanged(Flow sender, long time, SensorStatus state) {
-        // TODO 3 Implement an 'internal device' with an 'internal sensor' for log utilities.
-        // The sensor has to send also an event on a status change.
+        // TODO 3 Implement an 'internal input' with an 'internal flow' for log utilities.
+        // The flow has to send also an event on a status change.
     }
 
     // Data and Events Interface
 
     /**
      * Not for the end-user.
-     * The sensor calls this when it has a new value.
+     * The flow calls this when it has a new value.
      *
      * @param sender sender
      * @param time   timestamp
@@ -136,8 +136,8 @@ public class SensorFlow implements
 
     // Fields
 
-    final String _emAlreadyRendered = "The engine is initialized. No inputs, outputs or links can be added now.";
-    final String _itemsToInitLock = "_itemsToInitLock";
+    private final String _emAlreadyRendered = "The engine is initialized. No inputs, outputs or links can be added now.";
+    private final String _itemsToInitLock = "_itemsToInitLock";
 
     private String sessionTag = "";
     protected EngineStatus _status = EngineStatus.STANDBY;
@@ -184,7 +184,7 @@ public class SensorFlow implements
      * @param input Device to add.
      */
     @Override
-    public void addInput(Input input) {
+    public SensorFlow addInput(Input input) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userDevices.containsKey(input.getName())) {
@@ -194,6 +194,7 @@ public class SensorFlow implements
             }
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
+        return this;
     }
 
     @Override
@@ -204,37 +205,55 @@ public class SensorFlow implements
     }
 
     /**
-     * Adds a link between a sensor and an output (N to M relation) before the {@code start} call.
+     * Adds a link between a flow and an output (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor Input sensor retreived from a device.
+     * @param fromSensor Input flow retreived from a device.
      * @param toOutput   Output channel.
      */
     @Override
-    public void addLink(Flow fromSensor, Output toOutput) {
+    public SensorFlow addLink(Flow fromSensor, Output toOutput) {
         // Manual indexOf for performance
         for (OutputManager outMan : _userOutputs.values())
             if (toOutput == outMan.getOutput()) { // for reference, safe
                 addLink(fromSensor, outMan);
                 break;
             }
+        return this;
+    }
+
+    /**
+     * Removes a link between a flow and an output (N to M relation) before the {@code start} call.
+     * TODO: test
+     * @param fromSensor Input flow retrieved from a device.
+     * @param toOutput   Output channel.
+     */
+    public SensorFlow removeLink(Flow fromSensor, Output toOutput) {
+        // Manual indexOf for performance
+        for (OutputManager outMan : _userOutputs.values())
+            if (toOutput == outMan.getOutput()) { // for reference, safe
+                removeLink(fromSensor, outMan);
+                break;
+            }
+        return this;
     }
 
     @Override
-    public void setOutputEnabled(boolean enabled, String name) {
+    public SensorFlow setOutputEnabled(boolean enabled, String name) {
         if (_userOutputs.containsKey(name)) {
-            ((OutputManager)_userOutputs.get(name)).setEnabled(enabled);
+            (_userOutputs.get(name)).setEnabled(enabled);
         }
+        return this;
     }
 
     @Override
     public boolean getOutputEnabled(String name) {
-        return _userOutputs.containsKey(name) && ((OutputManager)_userOutputs.get(name)).isEnabled();
+        return _userOutputs.containsKey(name) && (_userOutputs.get(name)).isEnabled();
     }
 
     /**
-     * Adds a link between a sensor and an output-decorator object (N to M relation) before the {@code start} call.
+     * Adds a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor Input sensor retrieved from a device.
+     * @param fromSensor Input flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
     void addLink(Flow fromSensor, OutputManager outMan) {
@@ -246,18 +265,33 @@ public class SensorFlow implements
     }
 
     /**
+     * Removes a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
+     * TODO: test
+     * @param fromSensor Input flow retrieved from a device.
+     * @param outMan     OutputManager object.
+     */
+    void removeLink(Flow fromSensor, OutputManager outMan) {
+        if (_status == EngineStatus.STANDBY) {
+            fromSensor.removeOutput(outMan);
+            outMan.removeFlow(fromSensor);
+        } else
+            throw new UnsupportedOperationException(_emAlreadyRendered);
+    }
+
+    /**
      * Adds an output to the enumeration, this is to be used before the {@code start} call, before the internal in-out map rendering.
      *
      * @param output Output to add.
      */
     @Override
-    public void addOutput(Output output) {
+    public SensorFlow addOutput(Output output) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userOutputs.containsKey(output.getName()))
                 _userOutputs.put(output.getName(), new OutputManager(output, this));
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
+        return this;
     }
 
     @Override
@@ -270,7 +304,7 @@ public class SensorFlow implements
     //      STANDBY aux gets (proper)
 
     /**
-     * Enumerates every Device managed.
+     * Enumerates every Input managed.
      *
      * @return Enumerator usable trough a for (INode d : enumerator)
      */
@@ -399,22 +433,22 @@ public class SensorFlow implements
 
     //      Engine operation
 
-    private boolean linked = false;
-
-    public void routeAll() {
+    public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
         for (NodeDecorator d : _userDevices.values())
             for (Flow s : d.getSensors())      // FOREACH SENSOR
                 for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
                     addLink(s, o);
+        return this;
     }
 
-    public void routeNthToNth() {
+    public SensorFlow routeNthToNth() {
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
             for (Flow s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
                 addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
+        return this;
     }
 
     /**
@@ -429,10 +463,10 @@ public class SensorFlow implements
      */
     @SuppressWarnings("JavaDoc")
     @Override
-    public void start() {
+    public SensorFlow start() {
         if (sessionTag == null || sessionTag.length() == 0)
             sessionTag = Long.toString(System.currentTimeMillis());
-        start(sessionTag);
+        return start(sessionTag);
     }
 
     /**
@@ -444,7 +478,7 @@ public class SensorFlow implements
      * <p/>
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
      */
-    public void start(String sessionName) {
+    public SensorFlow start(String sessionName) {
         if (getStatus() == EngineStatus.STANDBY
                 || getStatus() == EngineStatus.CLOSED) {
             changeStatus(EngineStatus.PREPARING);
@@ -463,6 +497,7 @@ public class SensorFlow implements
             // WAS _outputsSensors = null;
         } else
             throw new UnsupportedOperationException("Engine already running!");
+        return this;
     }
 
     /**
@@ -481,8 +516,9 @@ public class SensorFlow implements
      * @param paused Boolean value.
      */
     @Override
-    public void setPaused(boolean paused) {
+    public SensorFlow setPaused(boolean paused) {
         _paused = paused;
+        return this;
     }
 
     protected void changeStatus(EngineStatus status) {
@@ -505,7 +541,7 @@ public class SensorFlow implements
      * This method finalizes every device and every output and waits the queues to get empty.
      */
     @Override
-    public void stop() {
+    public SensorFlow stop() {
         changeStatus(EngineStatus.FINALIZING);
         for (NodeDecorator d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
@@ -516,6 +552,7 @@ public class SensorFlow implements
             finalize(o);
         }
         changeStatus(EngineStatus.FINALIZED);
+        return this;
     }
 
     /**
@@ -564,8 +601,9 @@ public class SensorFlow implements
      * @param callback Callback to call when the engine state changes.
      */
     @Override
-    public void setOnStatusChanged(EventCallback<IUserInterface<Input, Flow, Output>, EngineStatus> callback) {
+    public SensorFlow setOnStatusChanged(EventCallback<IUserInterface<Input, Flow, Output>, EngineStatus> callback) {
         _onStatusChanged = callback;
+        return this;
     }
 
     /**
@@ -574,8 +612,9 @@ public class SensorFlow implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnDeviceStatusChanged(EventCallback<Input, DeviceStatus> callback) {
+    public SensorFlow setOnDeviceStatusChanged(EventCallback<Input, DeviceStatus> callback) {
         _onDeviceStatusChanged = callback;
+        return this;
     }
 
     /**
@@ -584,7 +623,8 @@ public class SensorFlow implements
      * @param callback Callback to call when any device's state changes.
      */
     @Override
-    public void setOnOutputStatusChanged(EventCallback<Output, OutputStatus> callback) {
+    public SensorFlow setOnOutputStatusChanged(EventCallback<Output, OutputStatus> callback) {
         _onOutputStatusChanged = callback;
+        return this;
     }
 }

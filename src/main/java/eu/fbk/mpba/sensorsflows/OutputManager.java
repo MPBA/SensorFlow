@@ -109,7 +109,7 @@ class OutputManager implements IOutput {
     @Override
     public void onEvent(ISensor sensor, long time, int type, String message) {
         try {
-            // FIXME WARN Locks the sensor's thread
+            // FIXME WARN Locks the flow's thread
             _eventsQueue.put(new SensorEventEntry(sensor, time, type, message));
         } catch (InterruptedException e) {
 //            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onEvent() find-me:924nj89f8j2");
@@ -119,7 +119,7 @@ class OutputManager implements IOutput {
     @Override
     public void onValue(ISensor sensor, long time, double[] value) {
         try {
-            // FIXME WARN Locks the sensor's thread
+            // FIXME WARN Locks the flow's thread
             SensorDataEntry a = new SensorDataEntry(sensor, time, value);
             _dataQueue.put(a);
         } catch (InterruptedException e) {
@@ -131,6 +131,10 @@ class OutputManager implements IOutput {
 
     public void addFlow(ISensor s) {
         linkedSensors.add(s);
+    }
+
+    public void removeFlow(ISensor s) {
+        linkedSensors.remove(s);
     }
 
     // Getters
@@ -145,7 +149,7 @@ class OutputManager implements IOutput {
     }
 
     /**
-     * Unregisters every sensor linked
+     * Unregisters every flow linked
      */
     public void close() {
         linkedSensors.clear();

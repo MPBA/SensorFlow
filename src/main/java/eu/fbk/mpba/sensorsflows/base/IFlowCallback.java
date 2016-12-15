@@ -1,8 +1,8 @@
 package eu.fbk.mpba.sensorsflows.base;
 
 /**
- * Main interface for a sensor's data and state callback.
- * Multiple sensors call this so the sender parameter is the sender sensor.
+ * Main interface for a flow's data and state callback.
+ * Multiple sensors call this so the sender parameter is the sender flow.
  * The receiver should implement this.
  */
 public interface IFlowCallback<SensorT extends ISensor> {

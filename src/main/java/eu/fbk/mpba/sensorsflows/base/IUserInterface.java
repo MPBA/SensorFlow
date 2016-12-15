@@ -16,43 +16,43 @@ public interface IUserInterface<DeviceT, SensorT extends ISensor, OutputT extend
 
     // ITEMS ENUMERATION control part
 
-    void addInput(DeviceT device);
+    IUserInterface<DeviceT, SensorT, OutputT> addInput(DeviceT device);
 
     DeviceT getInput(String name);
 
     Iterable<DeviceT> getDevices();
 
-    void addOutput(OutputT output);
+    IUserInterface<DeviceT, SensorT, OutputT> addOutput(OutputT output);
 
     OutputT getOutput(String name);
 
     Iterable<OutputT> getOutputs();
 
-    void addLink(SensorT fromSensor, OutputT toOutput);
+    IUserInterface<DeviceT, SensorT, OutputT> addLink(SensorT fromSensor, OutputT toOutput);
 
     // ITEMS OPERATION control part
 
-    void setOutputEnabled(boolean enabled, String name);
+    IUserInterface<DeviceT, SensorT, OutputT> setOutputEnabled(boolean enabled, String name);
 
     boolean getOutputEnabled(String name);
 
     // ENGINE OPERATION control part
 
-    void start();
+    IUserInterface<DeviceT, SensorT, OutputT> start();
 
-    void setPaused(boolean streaming);
+    IUserInterface<DeviceT, SensorT, OutputT> setPaused(boolean streaming);
 
     boolean isPaused();
 
-    void stop();
+    IUserInterface<DeviceT, SensorT, OutputT> stop();
 
     void close();
 
-    void setOnStatusChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
+    IUserInterface<DeviceT, SensorT, OutputT> setOnStatusChanged(EventCallback<IUserInterface<DeviceT, SensorT, OutputT>, EngineStatus> callback);
 
-    void setOnDeviceStatusChanged(EventCallback<DeviceT, DeviceStatus> callback);
+    IUserInterface<DeviceT, SensorT, OutputT> setOnDeviceStatusChanged(EventCallback<DeviceT, DeviceStatus> callback);
 
-    void setOnOutputStatusChanged(EventCallback<OutputT, OutputStatus> callback);
+    IUserInterface<DeviceT, SensorT, OutputT> setOnOutputStatusChanged(EventCallback<OutputT, OutputStatus> callback);
 
     EngineStatus getStatus();
 }

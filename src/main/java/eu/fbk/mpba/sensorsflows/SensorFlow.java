@@ -212,12 +212,13 @@ public class SensorFlow implements
      */
     @Override
     public SensorFlow addLink(Flow fromSensor, Output toOutput) {
-        // Manual indexOf for performance
-        for (OutputManager outMan : _userOutputs.values())
-            if (toOutput == outMan.getOutput()) { // for reference, safe
-                addLink(fromSensor, outMan);
-                break;
-            }
+        if (fromSensor != null && toOutput != null)
+            // Manual indexOf for performance
+            for (OutputManager outMan : _userOutputs.values())
+                if (toOutput == outMan.getOutput()) { // for reference, safe
+                    addLink(fromSensor, outMan);
+                    break;
+                }
         return this;
     }
 

@@ -2,18 +2,13 @@ package eu.fbk.mpba.sensorsflows;
 
 import java.util.List;
 
-import eu.fbk.mpba.sensorsflows.base.ISensor;
-import eu.fbk.mpba.sensorsflows.base.IPlugin;
-import eu.fbk.mpba.sensorsflows.base.SensorDataEntry;
-import eu.fbk.mpba.sensorsflows.base.SensorEventEntry;
+public interface Output extends Plugin {
 
-public interface Output extends IPlugin {
-
-    void onOutputStart(Object sessionTag, List<ISensor> streamingSensors);
+    void onOutputStart(Object sessionTag, List<Flow> streamingSensors);
 
     void onOutputStop();
 
-    void onEvent(SensorEventEntry event);
+    void onEvent(Flow flow, long timestamp, int code, String message);
 
-    void onValue(SensorDataEntry data);
+    void onValue(Flow flow, long timestamp, double[] value);
 }

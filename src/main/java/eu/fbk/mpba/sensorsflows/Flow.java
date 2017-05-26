@@ -5,24 +5,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import eu.fbk.mpba.sensorsflows.base.ITimeSource;
-import eu.fbk.mpba.sensorsflows.base.ISensor;
-import eu.fbk.mpba.sensorsflows.base.IFlowCallback;
-import eu.fbk.mpba.sensorsflows.base.SensorStatus;
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 
 /**
  * This class adds internal support for the library data-paths.
  */
-public abstract class Flow implements ISensor {
-    protected Input _parent = null;
-    protected List<IFlowCallback<Flow>> _handler = new ArrayList<>();
-    protected Set<OutputManager> _outputs = new HashSet<>();
+public abstract class Flow {
+    private Input _parent = null;
+    private List<FlowObserver> _handler = new ArrayList<>();
+    private Set<OutputManager> _outputs = new HashSet<>();
 
     private boolean mMuted = false;
-    protected SensorStatus mStatus = SensorStatus.OFF;
+    protected FlowStatus mStatus = FlowStatus.OFF;
     private static long _bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-    private static ITimeSource _time = new ITimeSource() {
+    private static TimeSource _time = new TimeSource() {
 
         @Override
         public long getMonoUTCNanos() {
@@ -57,11 +53,11 @@ public abstract class Flow implements ISensor {
         _outputs.remove(_output);
     }
 
-    void addHandler(IFlowCallback<Flow> man) {
+    void addHandler(FlowObserver man) {
         _handler.add(man);
     }
 
-    void removeHandler(IFlowCallback<Flow> man) {
+    void removeHandler(FlowObserver man) {
         _handler.remove(man);
     }
 
@@ -71,8 +67,8 @@ public abstract class Flow implements ISensor {
 
     // Managed protected getters setters
 
-    protected void changeStatus(SensorStatus state) {
-        for (IFlowCallback<Flow> i : _handler) {
+    protected void changeStatus(FlowStatus state) {
+        for (FlowObserver i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
             i.onStatusChanged(this, Integer.MIN_VALUE, mStatus = state);
@@ -99,8 +95,7 @@ public abstract class Flow implements ISensor {
         return _parent;
     }
 
-    @Override
-    public SensorStatus getStatus() {
+    public FlowStatus getStatus() {
         return mStatus;
     }
 
@@ -108,14 +103,14 @@ public abstract class Flow implements ISensor {
         return this.getClass().getSimpleName();
     }
 
-    public static ITimeSource getTimeSource() {
+    public static TimeSource getTimeSource() {
         return _time;
     }
 
     // Notify methods
 
     public void onValue(long time, double[] value) {
-        for (IFlowCallback<Flow> i : _handler) {
+        for (FlowObserver i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
             i.onValue(this, time, value);
@@ -123,7 +118,7 @@ public abstract class Flow implements ISensor {
     }
 
     public void onEvent(long time, int type, String message) {
-        for (IFlowCallback<Flow> i : _handler) {
+        for (FlowObserver i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
 //                _handler.remove(i);
             i.onEvent(this, time, type, message);
@@ -143,4 +138,8 @@ public abstract class Flow implements ISensor {
     // To implement
 
     public abstract List<Object> getHeader();
+
+    public abstract void switchOnAsync();
+
+    public abstract void switchOffAsync();
 }

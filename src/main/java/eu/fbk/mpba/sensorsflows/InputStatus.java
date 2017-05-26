@@ -1,5 +1,5 @@
-package eu.fbk.mpba.sensorsflows.base;
+package eu.fbk.mpba.sensorsflows;
 
-public enum OutputStatus {
+public enum InputStatus {
     NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
 }

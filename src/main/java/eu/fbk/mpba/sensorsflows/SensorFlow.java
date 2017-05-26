@@ -6,27 +6,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import eu.fbk.mpba.sensorsflows.base.DeviceStatus;
-import eu.fbk.mpba.sensorsflows.base.EngineStatus;
-import eu.fbk.mpba.sensorsflows.base.EventCallback;
-import eu.fbk.mpba.sensorsflows.base.IDeviceCallback;
-import eu.fbk.mpba.sensorsflows.base.IOutput;
-import eu.fbk.mpba.sensorsflows.base.IOutputCallback;
-import eu.fbk.mpba.sensorsflows.base.IFlowCallback;
-import eu.fbk.mpba.sensorsflows.base.IUserInterface;
-import eu.fbk.mpba.sensorsflows.base.OutputStatus;
-import eu.fbk.mpba.sensorsflows.base.SensorStatus;
-
 /**
  * SensorFlow is the class that represents the engine of the library.
  * This is the only interface that the user should use.
- * Implementation of the IUserInterface
+ * Implementation of the IManager
  */
 public class SensorFlow implements
-        IUserInterface<Input, Flow, Output>,
-        IDeviceCallback<NodeDecorator>,
-        IFlowCallback<Flow>,
-        IOutputCallback {
+        InputObserver,
+        FlowObserver,
+        OutputObserver {
+
+//    public static Face face;
+
+//    public interface Face {
+//        void println(String m);
+//    }
+
+    interface Callback<T, A> {
+        void handle(T sender, A state);
+    }
 
     // Status Interface
 
@@ -37,22 +35,25 @@ public class SensorFlow implements
      * @param state  arg
      */
     @Override
-    public void deviceStatusChanged(NodeDecorator sender, DeviceStatus state) {
-        if (state == DeviceStatus.INITIALIZED) {
-            synchronized (_itemsToInitLock) {
-                if (_devicesToInit.contains(sender)) {
-                    _devicesToInit.remove(sender);
-                    if (_status == EngineStatus.PREPARING && _devicesToInit.isEmpty()) {
-                        // POI Change point
-                        _devicesToInit = null;
+    public void inputStatusChanged(InputManager sender, InputStatus state) {
+        if (sender != null) {
+            if (state == InputStatus.INITIALIZED) {
+                synchronized (_itemsToInitLock) {
+                    if (_devicesToInit.contains(sender)) {
+                        _devicesToInit.remove(sender);
+                        if (_status == EngineStatus.PREPARING && _devicesToInit.isEmpty()) {
+                            // POI Change point
+                            _devicesToInit = null;
+                        }
                     }
                 }
+                if (_outputsToInit == null)
+                    // FIXME WARN User-code time dependency in the output thread or child
+                    changeStatus(EngineStatus.STREAMING);
             }
-            if (_outputsToInit == null)
-                // FIXME WARN User-code timestamp dependency in the output thread or child
-                changeStatus(EngineStatus.STREAMING);
+            if (_onDeviceStatusChanged != null)
+                _onDeviceStatusChanged.handle(sender.getInput(), state);
         }
-        // TODO 7 Manage the other states
     }
 
     /**
@@ -62,22 +63,25 @@ public class SensorFlow implements
      * @param state  arg
      */
     @Override
-    public void outputStatusChanged(IOutput sender, OutputStatus state) {
-        if (state == OutputStatus.INITIALIZED) {
-            synchronized (_itemsToInitLock) {
-                if (_outputsToInit.contains(sender)) {
-                    _outputsToInit.remove(sender);
-                    if (_status == EngineStatus.PREPARING && _outputsToInit.isEmpty()) {
-                        // POI Change point
-                        _outputsToInit = null;
+    public void outputStatusChanged(OutputManager sender, OutputStatus state) {
+        if (sender != null) {
+            if (state == OutputStatus.INITIALIZED) {
+                synchronized (_itemsToInitLock) {
+                    if (_outputsToInit.contains(sender)) {
+                        _outputsToInit.remove(sender);
+                        if (_status == EngineStatus.PREPARING && _outputsToInit.isEmpty()) {
+                            // POI Change point
+                            _outputsToInit = null;
+                        }
                     }
                 }
+                if (_devicesToInit == null)
+                    // FIXME WARN User-code time dependency in the output thread or son
+                    changeStatus(EngineStatus.STREAMING);
             }
-            if (_devicesToInit == null)
-                // FIXME WARN User-code timestamp dependency in the output thread or son
-                changeStatus(EngineStatus.STREAMING);
+            if (_onOutputStatusChanged != null)
+                _onOutputStatusChanged.handle(sender.getOutput(), state);
         }
-        // TODO 7 Manage the other states
     }
 
     /**
@@ -87,7 +91,7 @@ public class SensorFlow implements
      * @param state  arg
      */
     @Override
-    public void onStatusChanged(Flow sender, long time, SensorStatus state) {
+    public void onStatusChanged(Flow sender, long time, FlowStatus state) {
         // TODO 3 Implement an 'internal input' with an 'internal flow' for log utilities.
         // The flow has to send also an event on a status change.
     }
@@ -140,21 +144,18 @@ public class SensorFlow implements
     private final String _itemsToInitLock = "_itemsToInitLock";
 
     private String sessionTag = "";
-    protected EngineStatus _status = EngineStatus.STANDBY;
-    protected boolean _paused = false;
+    private EngineStatus _status = EngineStatus.STANDBY;
+    private boolean _paused = false;
 
-    // maybe key, value
+    private Map<String, InputManager> _userDevices = new TreeMap<>();
+    private Map<String, OutputManager> _userOutputs = new TreeMap<>();
 
-    protected Map<String, NodeDecorator> _userDevices = new TreeMap<>();
-    protected Map<String, OutputManager> _userOutputs = new TreeMap<>();
+    private List<InputManager> _devicesToInit = new ArrayList<>();                         // null
+    private List<OutputManager> _outputsToInit = new ArrayList<>();                        // null
 
-    protected List<NodeDecorator> _devicesToInit = new ArrayList<>();                                                 // null
-    protected List<IOutput> _outputsToInit = new ArrayList<>();                                                         // null
-
-    protected EventCallback<IUserInterface<Input, Flow, Output>
-            , EngineStatus> _onStatusChanged = null;                                                                     // null
-    protected EventCallback<Input, DeviceStatus> _onDeviceStatusChanged = null;                    // null
-    protected EventCallback<Output, OutputStatus> _onOutputStatusChanged = null;                    // null
+    private Callback<SensorFlow, EngineStatus> _onStatusChanged = null;                 // null
+    private Callback<Input, InputStatus> _onDeviceStatusChanged = null;               // null
+    private Callback<Output, OutputStatus> _onOutputStatusChanged = null;             // null
 
     // Engine implementation
 
@@ -179,16 +180,15 @@ public class SensorFlow implements
     //      STANDBY inputs (proper)
 
     /**
-     * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-map rendering.
+     * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-mapping.
      *
      * @param input Device to add.
      */
-    @Override
     public SensorFlow addInput(Input input) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
             if (!_userDevices.containsKey(input.getName())) {
-                _userDevices.put(input.getName(), new NodeDecorator(input, this));
+                _userDevices.put(input.getName(), new InputManager(input, this));
                 for (Flow s : input.getFlows())
                     s.addHandler(this);
             }
@@ -197,11 +197,10 @@ public class SensorFlow implements
         return this;
     }
 
-    @Override
     public Input getInput(String name) {
-        Object r = _userDevices.get(name);
+        InputManager r = _userDevices.get(name);
         //noinspection unchecked
-        return r == null ? null : ((NodeDecorator)r).getPlugIn();
+        return r == null ? null : r.getInput();
     }
 
     /**
@@ -210,7 +209,6 @@ public class SensorFlow implements
      * @param fromSensor Input flow retreived from a device.
      * @param toOutput   Output channel.
      */
-    @Override
     public SensorFlow addLink(Flow fromSensor, Output toOutput) {
         if (fromSensor != null && toOutput != null)
             // Manual indexOf for performance
@@ -238,7 +236,6 @@ public class SensorFlow implements
         return this;
     }
 
-    @Override
     public SensorFlow setOutputEnabled(boolean enabled, String name) {
         if (_userOutputs.containsKey(name)) {
             (_userOutputs.get(name)).setEnabled(enabled);
@@ -246,7 +243,6 @@ public class SensorFlow implements
         return this;
     }
 
-    @Override
     public boolean getOutputEnabled(String name) {
         return _userOutputs.containsKey(name) && (_userOutputs.get(name)).isEnabled();
     }
@@ -257,7 +253,7 @@ public class SensorFlow implements
      * @param fromSensor Input flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    void addLink(Flow fromSensor, OutputManager outMan) {
+    private void addLink(Flow fromSensor, OutputManager outMan) {
         if (_status == EngineStatus.STANDBY) {
             fromSensor.addOutput(outMan);
             outMan.addFlow(fromSensor);
@@ -271,7 +267,7 @@ public class SensorFlow implements
      * @param fromSensor Input flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    void removeLink(Flow fromSensor, OutputManager outMan) {
+    private void removeLink(Flow fromSensor, OutputManager outMan) {
         if (_status == EngineStatus.STANDBY) {
             fromSensor.removeOutput(outMan);
             outMan.removeFlow(fromSensor);
@@ -284,7 +280,6 @@ public class SensorFlow implements
      *
      * @param output Output to add.
      */
-    @Override
     public SensorFlow addOutput(Output output) {
         if (_status == EngineStatus.STANDBY) {
             // Check if only the name is already contained
@@ -295,7 +290,6 @@ public class SensorFlow implements
         return this;
     }
 
-    @Override
     public Output getOutput(String name) {
         Object r = _userOutputs.get(name);
         //noinspection unchecked
@@ -307,14 +301,13 @@ public class SensorFlow implements
     /**
      * Enumerates every Input managed.
      *
-     * @return Enumerator usable trough a for (INode d : enumerator)
+     * @return Enumerator usable trough a for (IInputManager d : enumerator)
      */
-    @Override
-    public Iterable<Input> getDevices() {
+    public Iterable<Input> getInputs() {
         return new Iterable<Input>() {
             @Override
             public Iterator<Input> iterator() {
-                final Iterator<NodeDecorator> i = _userDevices.values().iterator();
+                final Iterator<InputManager> i = _userDevices.values().iterator();
                 return new Iterator<Input>() {
 
                     @Override
@@ -324,7 +317,7 @@ public class SensorFlow implements
 
                     @Override
                     public Input next() {
-                        return i.next().getPlugIn();
+                        return i.next().getInput();
                     }
 
                     @Override
@@ -341,7 +334,6 @@ public class SensorFlow implements
      *
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
-    @Override
     public Iterable<Output> getOutputs() {
         return new Iterable<Output>() {
             @Override
@@ -374,25 +366,25 @@ public class SensorFlow implements
      * This method allows to initialize the device before the {@code start} call.
      * Made private
      *
-     * @param device {@code INode} to initializeNode
+     * @param device {@code IInputManager} to initializeInput
      */
-    void initialize(NodeDecorator device) {
+    private void initialize(InputManager device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.NOT_INITIALIZED) {
-            device.initializeNode();
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == InputStatus.NOT_INITIALIZED) {
+            device.initializeInput();
         } else {
-//            Log.w(LOG_TAG, "INode not NOT_INITIALIZED: " + device.toString());
+//            Log.w(LOG_TAG, "IInputManager not NOT_INITIALIZED: " + device.toString());
         }
     }
 
     /**
-     * This method allows to initializeNode the device before the {@code start} call.
+     * This method allows to initializeInput the device before the {@code start} call.
      * Made private
      *
      * @param output {@code IOutput} to finalize.
      */
-    void initialize(OutputManager output, String sessionName) {
+    private void initialize(OutputManager output, String sessionName) {
         //noinspection StatementWithEmptyBody
         if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.NOT_INITIALIZED) {
             output.initializeOutput(sessionName);
@@ -405,15 +397,15 @@ public class SensorFlow implements
      * This method allows to finalize the device before the {@code close} call.
      * Made private
      *
-     * @param device {@code INode} to finalize.
+     * @param device {@code IInputManager} to finalize.
      */
-    void finalize(NodeDecorator device) {
+    private void finalize(InputManager device) {
         // The connection state is not checked
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getStatus() == DeviceStatus.INITIALIZED) {
-            device.finalizeNode();
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == InputStatus.INITIALIZED) {
+            device.finalizeInput();
         } else {
-//            Log.w(LOG_TAG, "INode not INITIALIZED: " + device.toString());
+//            Log.w(LOG_TAG, "IInputManager not INITIALIZED: " + device.toString());
         }
     }
 
@@ -423,7 +415,7 @@ public class SensorFlow implements
      *
      * @param output {@code IOutput} to finalize.
      */
-    void finalize(IOutput output) {
+    private void finalize(OutputManager output) {
         //noinspection StatementWithEmptyBody
         if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputStatus.INITIALIZED) {
             output.finalizeOutput();
@@ -436,8 +428,8 @@ public class SensorFlow implements
 
     public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
-        for (NodeDecorator d : _userDevices.values())
-            for (Flow s : d.getSensors())      // FOREACH SENSOR
+        for (InputManager d : _userDevices.values())
+            for (Flow s : d.getFlows())      // FOREACH SENSOR
                 for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
                     addLink(s, o);
         return this;
@@ -447,7 +439,7 @@ public class SensorFlow implements
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-            for (Flow s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getSensors())      // LINK MODULE LOOPING ON THE SHORTEST
+            for (Flow s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getFlows())      // LINK MODULE LOOPING ON THE SHORTEST
                 addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
         return this;
     }
@@ -462,8 +454,6 @@ public class SensorFlow implements
      * The session name is the date-timestamp string {@code Long.toString(System.currentTimeMillis())}
      * if the sessionTag has not been set.
      */
-    @SuppressWarnings("JavaDoc")
-    @Override
     public SensorFlow start() {
         if (sessionTag == null || sessionTag.length() == 0)
             sessionTag = Long.toString(System.currentTimeMillis());
@@ -479,19 +469,19 @@ public class SensorFlow implements
      * <p/>
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
      */
-    public SensorFlow start(String sessionName) {
+    private SensorFlow start(String sessionName) {
         if (getStatus() == EngineStatus.STANDBY
                 || getStatus() == EngineStatus.CLOSED) {
             changeStatus(EngineStatus.PREPARING);
             _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
-            for (NodeDecorator d : _userDevices.values()) {
-                // only if NOT_INITIALIZED: checked in the initializeNode method
+            for (InputManager d : _userDevices.values()) {
+                // only if NOT_INITIALIZED: checked in the initializeInput method
                 initialize(d);
             }
             _outputsToInit.addAll(_userOutputs.values());
             for (OutputManager o : _userOutputs.values()) {
-                // only if NOT_INITIALIZED: checked in the initializeNode method
+                // only if NOT_INITIALIZED: checked in the initializeInput method
                 initialize(o, sessionName);
             }
             // WAS _outputsSensors.clear();
@@ -506,7 +496,6 @@ public class SensorFlow implements
      *
      * @return Boolean value.
      */
-    @Override
     public boolean isPaused() {
         return _paused;
     }
@@ -516,13 +505,12 @@ public class SensorFlow implements
      *
      * @param paused Boolean value.
      */
-    @Override
     public SensorFlow setPaused(boolean paused) {
         _paused = paused;
         return this;
     }
 
-    protected void changeStatus(EngineStatus status) {
+    private void changeStatus(EngineStatus status) {
         _status = status;
         if (_onStatusChanged != null)
             _onStatusChanged.handle(this, _status);
@@ -533,7 +521,6 @@ public class SensorFlow implements
      *
      * @return The actual status of the engine.
      */
-    @Override
     public EngineStatus getStatus() {
         return _status;
     }
@@ -541,14 +528,13 @@ public class SensorFlow implements
     /**
      * This method finalizes every device and every output and waits the queues to get empty.
      */
-    @Override
     public SensorFlow stop() {
         changeStatus(EngineStatus.FINALIZING);
-        for (NodeDecorator d : _userDevices.values()) {
+        for (InputManager d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
             finalize(d);
         }
-        for (IOutput o : _userOutputs.values()) {
+        for (OutputManager o : _userOutputs.values()) {
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
@@ -559,7 +545,6 @@ public class SensorFlow implements
     /**
      *
      */
-    @Override
     public void close() {
         switch (getStatus()) {
             case STANDBY:
@@ -568,26 +553,26 @@ public class SensorFlow implements
                 stop();
             case FINALIZED:
                 changeStatus(EngineStatus.CLOSING);
-                for (NodeDecorator d : _userDevices.values())
-                    for (Flow s : d.getPlugIn().getFlows())
+                for (InputManager d : _userDevices.values())
+                    for (Flow s : d.getInput().getFlows())
                         s.close();
-                for (IOutput o : _userOutputs.values())
-                o.close();
+                for (OutputManager o : _userOutputs.values())
+                    o.close();
                 changeStatus(EngineStatus.CLOSED);
                 break;
             case CLOSED:
                 break;
             default:
                 throw new UnsupportedOperationException(
-                        "Another operation is currently trying to chenge the state: " +
+                        "Another operation is trying to change the state: " +
                                 getStatus().toString());
         }
     }
 
-        /**
+    /**
      * Finalizes the object calling also the {@code close} method.
      *
-     * @throws Throwable
+     * @throws Throwable any error
      */
     @Override
     protected void finalize() throws Throwable {
@@ -601,8 +586,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when the engine state changes.
      */
-    @Override
-    public SensorFlow setOnStatusChanged(EventCallback<IUserInterface<Input, Flow, Output>, EngineStatus> callback) {
+    public SensorFlow setOnStatusChanged(Callback<SensorFlow, EngineStatus> callback) {
         _onStatusChanged = callback;
         return this;
     }
@@ -612,8 +596,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    @Override
-    public SensorFlow setOnDeviceStatusChanged(EventCallback<Input, DeviceStatus> callback) {
+    public SensorFlow setOnInputStatusChanged(Callback<Input, InputStatus> callback) {
         _onDeviceStatusChanged = callback;
         return this;
     }
@@ -623,8 +606,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    @Override
-    public SensorFlow setOnOutputStatusChanged(EventCallback<Output, OutputStatus> callback) {
+    public SensorFlow setOnOutputStatusChanged(Callback<Output, OutputStatus> callback) {
         _onOutputStatusChanged = callback;
         return this;
     }

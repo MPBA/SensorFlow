@@ -4,11 +4,11 @@ package eu.fbk.mpba.sensorsflows;
  * This class adds internal support for the library data-paths.
  */
 class InputManager {
-    private SensorFlow _manager = null;
+    private Manager _manager = null;
     private Status _status = Status.NOT_INITIALIZED;
     private Input _input;
 
-    InputManager(Input input, SensorFlow manager) {
+    InputManager(Input input, Manager manager) {
         _input = input;
         _manager = manager;
     }
@@ -40,7 +40,7 @@ class InputManager {
         return _status;
     }
 
-    SensorFlow getManager() {
+    Manager getManager() {
         return _manager;
     }
 
@@ -48,7 +48,7 @@ class InputManager {
         return _input;
     }
 
-    enum Status {
+    public enum Status {
         NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
     }
 }

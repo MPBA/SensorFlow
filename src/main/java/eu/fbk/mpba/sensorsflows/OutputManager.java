@@ -73,13 +73,13 @@ class OutputManager {
     }
 
     void onStatusChanged(Flow sensor, long time, Flow.Status state) {
-        onEvent(sensor, time, 0, "onStatusChanged " + state.toString());
+        onLog(sensor, time, "onStatusChanged " + state.toString());
     }
 
-    void onEvent(Flow sensor, long time, int type, String message) {
+    void onLog(Flow sensor, long time, String message) {
         try {
             // FIXME WARN On full, locks the flow's thread
-            _queue.put(sensor, time, type, message);
+            _queue.put(sensor, time, message);
         } catch (InterruptedException e) {
 //            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onLog() find-me:924nj89f8j2");
         }

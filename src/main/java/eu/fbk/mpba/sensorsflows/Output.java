@@ -8,7 +8,7 @@ public interface Output extends Plugin {
 
     void onOutputStop();
 
-    void onLog(Flow flow, long timestamp, int code, String message);
+    void onLog(Flow flow, long timestamp, String message);
 
     void onValue(Flow flow, long timestamp, double[] value);
 

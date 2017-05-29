@@ -1,6 +1,5 @@
 package eu.fbk.mpba.sensorsflows;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,23 +11,23 @@ import eu.fbk.mpba.sensorsflows.util.TimeSource;
  * This class adds internal support for the library data-paths.
  */
 public abstract class Flow {
-    private Input _parent = null;
-    private List<FlowObserver> _handler = new ArrayList<>();
-    private Set<OutputManager> _outputs = new HashSet<>();
+    private Input parent;
+    private Manager manager;
+    private Set<OutputManager> outputs = new HashSet<>();
 
-    private boolean mMuted = false;
-    protected Status mStatus = Status.OFF;
-    private static long _bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-    private static TimeSource _time = new TimeSource() {
+    private boolean muted = false;
+    protected Status status = Status.OFF;
+    private static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+    private static TimeSource time = new TimeSource() {
 
         @Override
         public long getMonoUTCNanos() {
-            return System.nanoTime() + _bootTime;
+            return System.nanoTime() + bootTime;
         }
 
         @Override
         public long getMonoUTCNanos(long realTimeNanos) {
-            return realTimeNanos + _bootTime;
+            return realTimeNanos + bootTime;
         }
 
         @Override
@@ -43,45 +42,40 @@ public abstract class Flow {
     };
 
     protected Flow(Input parent) {
-        _parent = parent;
+        this.parent = parent;
     }
 
     void addOutput(OutputManager _output) {
-        _outputs.add(_output);
+        outputs.add(_output);
     }
 
     void removeOutput(OutputManager _output) {
-        _outputs.remove(_output);
+        outputs.remove(_output);
     }
 
-    void addHandler(FlowObserver man) {
-        _handler.add(man);
+    void setHandler(Manager man) {
+        manager = man;
     }
 
-    void removeHandler(FlowObserver man) {
-        _handler.remove(man);
+    Manager getManager() {
+        return manager;
     }
 
     Iterable<OutputManager> getOutputs() {
-        return new ReadOnlyIterable<>(_outputs.iterator());
+        return new ReadOnlyIterable<>(outputs.iterator());
     }
 
     // Managed protected getters setters
 
     protected void changeStatus(Status state) {
-        for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
-//                _handler.remove(i);
-            i.onStatusChanged(this, Integer.MIN_VALUE, mStatus = state);
-        }
+        manager.onStatusChanged(this, Integer.MIN_VALUE, status = state);
     }
 
     /**
      * Unregisters every outputDecorator
      */
     public void close() {
-        _handler.clear();
-        _outputs.clear();
+        outputs.clear();
     }
 
     @Override
@@ -93,11 +87,11 @@ public abstract class Flow {
     // Managed Overrides
 
     public Input getParentInput() {
-        return _parent;
+        return parent;
     }
 
     public Status getStatus() {
-        return mStatus;
+        return status;
     }
 
     public String getName() {
@@ -105,44 +99,36 @@ public abstract class Flow {
     }
 
     public static TimeSource getTimeSource() {
-        return _time;
-    }
-
-    // Notify methods
-
-    public void onValue(long time, double[] value) {
-        for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
-//                _handler.remove(i);
-            i.onValue(this, time, value);
-        }
-    }
-
-    public void onLog(long time, int type, String message) {
-        for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
-//                _handler.remove(i);
-            i.onEvent(this, time, type, message);
-        }
+        return time;
     }
 
     // Listening
 
     public boolean isMuted() {
-        return mMuted;
+        return muted;
     }
 
     public void setMuted(boolean muted) {
-        this.mMuted = muted;
+        this.muted = muted;
+    }
+
+    // Notify methods
+
+    public void onValue(long time, double[] value) {
+        getManager().onValue(this, time, value);
+    }
+
+    public void onLog(long time, String message) {
+        getManager().onLog(this, time, message);
     }
 
     // To implement
 
-    public abstract List<Object> getHeader();
+    public abstract String[] getHeader();
 
-    public abstract void switchOnAsync();
+    public abstract void switchOn();
 
-    public abstract void switchOffAsync();
+    public abstract void switchOff();
 
     public enum Status {
         OFF, ON, ERROR

@@ -9,7 +9,6 @@ class FlowBuffer {
     private final Flow[] flows;
     private final long[] longs;
     private final double[][] doubles;
-    private final int[] ints;
     private final String[] strings;
 
     private int takeIndex;
@@ -56,12 +55,11 @@ class FlowBuffer {
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
      */
-    private void enqueue(Flow f, long time, int code, String message) {
+    private void enqueue(Flow f, long time, String message) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
         flows[putIndex] = f;
         longs[putIndex] = time;
-        ints[putIndex] = code;
         strings[putIndex] = message;
         if (++putIndex == flows.length)
             putIndex = 0;
@@ -89,7 +87,6 @@ class FlowBuffer {
         this.longs = new long[capacity];
         this.doubles = new double[capacity][];
         this.strings = new String[capacity];
-        this.ints = new int[capacity];
         lock = new ReentrantLock(fair);
         notEmpty = lock.newCondition();
         notFull =  lock.newCondition();
@@ -110,12 +107,12 @@ class FlowBuffer {
                 notFull.await();
             enqueue(f, t, v);
 //            if (System.nanoTime() - last > 100_000_000L) {
-//                SensorFlow.face.println("count:    " + count);
-//                SensorFlow.face.println("remaing:  " + (flows.length - count));
-//                SensorFlow.face.println("pollw:    " + pollw);
-//                SensorFlow.face.println("putw:     " + putw);
-//                SensorFlow.face.println("pollwAvg: " + pollwAvg);
-//                SensorFlow.face.println("putwAvg:  " + putwAvg);
+//                Manager.face.println("count:    " + count);
+//                Manager.face.println("remaing:  " + (flows.length - count));
+//                Manager.face.println("pollw:    " + pollw);
+//                Manager.face.println("putw:     " + putw);
+//                Manager.face.println("pollwAvg: " + pollwAvg);
+//                Manager.face.println("putwAvg:  " + putwAvg);
 //                last = System.nanoTime();
 //            }
         } finally {
@@ -126,13 +123,13 @@ class FlowBuffer {
 //    long last = 0, pollw = 0, putw = 0;
 //    float pollwAvg = 0, putwAvg = 0;
 
-    public void put(Flow f, long t, int c, String v) throws InterruptedException {
+    public void put(Flow f, long t, String v) throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
             while (count == flows.length)
                 notFull.await();
-            enqueue(f, t, c, v);
+            enqueue(f, t, v);
         } finally {
             lock.unlock();
         }
@@ -145,7 +142,6 @@ class FlowBuffer {
         long t;
         boolean dataIs;
         double[] d = null;
-        int c = 0;
         String s = null;
 //        pollw = -System.nanoTime();
         lock.lockInterruptibly();
@@ -168,7 +164,6 @@ class FlowBuffer {
                 doubles[takeIndex] = null;
             }
             else {
-                c = ints[takeIndex];
                 s = strings[takeIndex];
                 strings[takeIndex] = null;
             }
@@ -180,7 +175,7 @@ class FlowBuffer {
             output.onValue(f, t, d);
         }
         else {
-            output.onLog(f, t, c, s);
+            output.onLog(f, t, s);
         }
     }
 

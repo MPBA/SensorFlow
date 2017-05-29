@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * SensorFlow is the class that represents the engine of the library.
+ * Manager is the class that represents the engine of the library.
  * This is the only interface that the user should use.
  * Implementation of the IManager
  */
-public class SensorFlow implements
+public class Manager implements
         InputObserver,
         FlowObserver,
         OutputObserver {
@@ -41,7 +41,7 @@ public class SensorFlow implements
                 synchronized (_itemsToInitLock) {
                     if (_devicesToInit.contains(sender)) {
                         _devicesToInit.remove(sender);
-                        if (_status == SensorFlow.Status.PREPARING && _devicesToInit.isEmpty()) {
+                        if (_status == Manager.Status.PREPARING && _devicesToInit.isEmpty()) {
                             // POI Change point
                             _devicesToInit = null;
                         }
@@ -49,7 +49,7 @@ public class SensorFlow implements
                 }
                 if (_outputsToInit == null)
                     // FIXME WARN User-code time dependency in the output thread or child
-                    changeStatus(SensorFlow.Status.STREAMING);
+                    changeStatus(Manager.Status.STREAMING);
             }
             if (_onDeviceStatusChanged != null)
                 _onDeviceStatusChanged.handle(sender.getInput(), state);
@@ -69,7 +69,7 @@ public class SensorFlow implements
                 synchronized (_itemsToInitLock) {
                     if (_outputsToInit.contains(sender)) {
                         _outputsToInit.remove(sender);
-                        if (_status == SensorFlow.Status.PREPARING && _outputsToInit.isEmpty()) {
+                        if (_status == Manager.Status.PREPARING && _outputsToInit.isEmpty()) {
                             // POI Change point
                             _outputsToInit = null;
                         }
@@ -77,7 +77,7 @@ public class SensorFlow implements
                 }
                 if (_devicesToInit == null)
                     // FIXME WARN User-code time dependency in the output thread or son
-                    changeStatus(SensorFlow.Status.STREAMING);
+                    changeStatus(Manager.Status.STREAMING);
             }
             if (_onOutputStatusChanged != null)
                 _onOutputStatusChanged.handle(sender.getOutput(), state);
@@ -90,7 +90,6 @@ public class SensorFlow implements
      * @param sender sender
      * @param state  arg
      */
-    @Override
     public void onStatusChanged(Flow sender, long time, Flow.Status state) {
         // TODO 3 Implement an 'internal input' with an 'internal flow' for log utilities.
         // The flow has to send also an event on a status change.
@@ -121,16 +120,15 @@ public class SensorFlow implements
      * Not for the end-user.
      *
      * @param sender  sender
-     * @param type    event code
      * @param message message text
      */
     @Override
-    public void onEvent(Flow sender, long time, int type, String message) {
+    public void onLog(Flow sender, long time, String message) {
         if (!sender.isMuted() && !_paused) {
             for (OutputManager o : sender.getOutputs()) {
                 if (o.isEnabled())
                     //noinspection unchecked
-                    o.onEvent(sender, time, type, message);
+                    o.onLog(sender, time, message);
             }
         }
     }
@@ -144,7 +142,7 @@ public class SensorFlow implements
     private final String _itemsToInitLock = "_itemsToInitLock";
 
     private String sessionTag = "";
-    private Status _status = SensorFlow.Status.STANDBY;
+    private Status _status = Manager.Status.STANDBY;
     private boolean _paused = false;
 
     private Map<String, InputManager> _userDevices = new TreeMap<>();
@@ -153,7 +151,7 @@ public class SensorFlow implements
     private List<InputManager> _devicesToInit = new ArrayList<>();                         // null
     private List<OutputManager> _outputsToInit = new ArrayList<>();                        // null
 
-    private Callback<SensorFlow, Status> _onStatusChanged = null;                 // null
+    private Callback<Manager, Status> _onStatusChanged = null;                 // null
     private Callback<Input, InputManager.Status> _onDeviceStatusChanged = null;               // null
     private Callback<Output, OutputManager.Status> _onOutputStatusChanged = null;             // null
 
@@ -162,8 +160,8 @@ public class SensorFlow implements
     /**
      * Default constructor.
      */
-    public SensorFlow() {
-        changeStatus(SensorFlow.Status.STANDBY);
+    public Manager() {
+        changeStatus(Manager.Status.STANDBY);
     }
 
     public String getSessionTag() {
@@ -171,7 +169,7 @@ public class SensorFlow implements
     }
 
     public void setSessionTag(String sessionTag) {
-        if (_status == SensorFlow.Status.STANDBY) {
+        if (_status == Manager.Status.STANDBY) {
             this.sessionTag = sessionTag;
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -184,13 +182,13 @@ public class SensorFlow implements
      *
      * @param input Device to add.
      */
-    public SensorFlow addInput(Input input) {
-        if (_status == SensorFlow.Status.STANDBY) {
+    public Manager addInput(Input input) {
+        if (_status == Manager.Status.STANDBY) {
             // Check if only the name is already contained
             if (!_userDevices.containsKey(input.getName())) {
                 _userDevices.put(input.getName(), new InputManager(input, this));
                 for (Flow s : input.getFlows())
-                    s.addHandler(this);
+                    s.setHandler(this);
             }
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -209,7 +207,7 @@ public class SensorFlow implements
      * @param fromSensor Input flow retreived from a device.
      * @param toOutput   Output channel.
      */
-    public SensorFlow addLink(Flow fromSensor, Output toOutput) {
+    public Manager addLink(Flow fromSensor, Output toOutput) {
         if (fromSensor != null && toOutput != null)
             // Manual indexOf for performance
             for (OutputManager outMan : _userOutputs.values())
@@ -226,7 +224,7 @@ public class SensorFlow implements
      * @param fromSensor Input flow retrieved from a device.
      * @param toOutput   Output channel.
      */
-    public SensorFlow removeLink(Flow fromSensor, Output toOutput) {
+    public Manager removeLink(Flow fromSensor, Output toOutput) {
         // Manual indexOf for performance
         for (OutputManager outMan : _userOutputs.values())
             if (toOutput == outMan.getOutput()) { // for reference, safe
@@ -236,7 +234,7 @@ public class SensorFlow implements
         return this;
     }
 
-    public SensorFlow setOutputEnabled(boolean enabled, String name) {
+    public Manager setOutputEnabled(boolean enabled, String name) {
         if (_userOutputs.containsKey(name)) {
             (_userOutputs.get(name)).setEnabled(enabled);
         }
@@ -254,7 +252,7 @@ public class SensorFlow implements
      * @param outMan     OutputManager object.
      */
     private void addLink(Flow fromSensor, OutputManager outMan) {
-        if (_status == SensorFlow.Status.STANDBY) {
+        if (_status == Manager.Status.STANDBY) {
             fromSensor.addOutput(outMan);
             outMan.addFlow(fromSensor);
         } else
@@ -268,7 +266,7 @@ public class SensorFlow implements
      * @param outMan     OutputManager object.
      */
     private void removeLink(Flow fromSensor, OutputManager outMan) {
-        if (_status == SensorFlow.Status.STANDBY) {
+        if (_status == Manager.Status.STANDBY) {
             fromSensor.removeOutput(outMan);
             outMan.removeFlow(fromSensor);
         } else
@@ -280,8 +278,8 @@ public class SensorFlow implements
      *
      * @param output Output to add.
      */
-    public SensorFlow addOutput(Output output) {
-        if (_status == SensorFlow.Status.STANDBY) {
+    public Manager addOutput(Output output) {
+        if (_status == Manager.Status.STANDBY) {
             // Check if only the name is already contained
             if (!_userOutputs.containsKey(output.getName()))
                 _userOutputs.put(output.getName(), new OutputManager(output, this));
@@ -426,7 +424,7 @@ public class SensorFlow implements
 
     //      Engine operation
 
-    public SensorFlow routeAll() {
+    public Manager routeAll() {
         // SENSORS x OUTPUTS
         for (InputManager d : _userDevices.values())
             for (Flow s : d.getFlows())      // FOREACH SENSOR
@@ -435,7 +433,7 @@ public class SensorFlow implements
         return this;
     }
 
-    public SensorFlow routeNthToNth() {
+    public Manager routeNthToNth() {
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
@@ -454,7 +452,7 @@ public class SensorFlow implements
      * The session name is the date-timestamp string {@code Long.toString(System.currentTimeMillis())}
      * if the sessionTag has not been set.
      */
-    public SensorFlow start() {
+    public Manager start() {
         if (sessionTag == null || sessionTag.length() == 0)
             sessionTag = Long.toString(System.currentTimeMillis());
         return start(sessionTag);
@@ -469,10 +467,10 @@ public class SensorFlow implements
      * <p/>
      * Allows to give a name to the current session but it DOES NOT CHECK if it already exists.
      */
-    private SensorFlow start(String sessionName) {
-        if (getStatus() == SensorFlow.Status.STANDBY
-                || getStatus() == SensorFlow.Status.CLOSED) {
-            changeStatus(SensorFlow.Status.PREPARING);
+    private Manager start(String sessionName) {
+        if (getStatus() == Manager.Status.STANDBY
+                || getStatus() == Manager.Status.CLOSED) {
+            changeStatus(Manager.Status.PREPARING);
             _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
             for (InputManager d : _userDevices.values()) {
@@ -505,7 +503,7 @@ public class SensorFlow implements
      *
      * @param paused Boolean value.
      */
-    public SensorFlow setPaused(boolean paused) {
+    public Manager setPaused(boolean paused) {
         _paused = paused;
         return this;
     }
@@ -528,8 +526,8 @@ public class SensorFlow implements
     /**
      * This method finalizes every device and every output and waits the queues to get empty.
      */
-    public SensorFlow stop() {
-        changeStatus(SensorFlow.Status.FINALIZING);
+    public Manager stop() {
+        changeStatus(Manager.Status.FINALIZING);
         for (InputManager d : _userDevices.values()) {
             // only if INITIALIZED: checked in the method
             finalize(d);
@@ -538,7 +536,7 @@ public class SensorFlow implements
             // only if INITIALIZED: checked in the method
             finalize(o);
         }
-        changeStatus(SensorFlow.Status.FINALIZED);
+        changeStatus(Manager.Status.FINALIZED);
         return this;
     }
 
@@ -552,13 +550,13 @@ public class SensorFlow implements
             case STREAMING:
                 stop();
             case FINALIZED:
-                changeStatus(SensorFlow.Status.CLOSING);
+                changeStatus(Manager.Status.CLOSING);
                 for (InputManager d : _userDevices.values())
                     for (Flow s : d.getInput().getFlows())
                         s.close();
                 for (OutputManager o : _userOutputs.values())
                     o.close();
-                changeStatus(SensorFlow.Status.CLOSED);
+                changeStatus(Manager.Status.CLOSED);
                 break;
             case CLOSED:
                 break;
@@ -586,7 +584,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when the engine state changes.
      */
-    public SensorFlow setOnStatusChanged(Callback<SensorFlow, Status> callback) {
+    public Manager setOnStatusChanged(Callback<Manager, Status> callback) {
         _onStatusChanged = callback;
         return this;
     }
@@ -596,7 +594,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    public SensorFlow setOnInputStatusChanged(Callback<Input, InputManager.Status> callback) {
+    public Manager setOnInputStatusChanged(Callback<Input, InputManager.Status> callback) {
         _onDeviceStatusChanged = callback;
         return this;
     }
@@ -606,7 +604,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    public SensorFlow setOnOutputStatusChanged(Callback<Output, OutputManager.Status> callback) {
+    public Manager setOnOutputStatusChanged(Callback<Output, OutputManager.Status> callback) {
         _onOutputStatusChanged = callback;
         return this;
     }

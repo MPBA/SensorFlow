@@ -9,10 +9,8 @@ import eu.fbk.mpba.sensorsflows.Output;
 
 class FlowBlockingQueue {
 
-    /** The queued items */
     private final Flow[] flows;
     private final long[] longs;
-    private final boolean[] isData;
     private final double[][] doubles;
     private final int[] ints;
     private final String[] strings;
@@ -51,7 +49,6 @@ class FlowBlockingQueue {
         flows[putIndex] = f;
         longs[putIndex] = time;
         doubles[putIndex] = v;
-        isData[putIndex] = true;
         if (++putIndex == flows.length)
             putIndex = 0;
         count++;
@@ -69,7 +66,6 @@ class FlowBlockingQueue {
         longs[putIndex] = time;
         ints[putIndex] = code;
         strings[putIndex] = message;
-        isData[putIndex] = false;
         if (++putIndex == flows.length)
             putIndex = 0;
         count++;
@@ -85,13 +81,12 @@ class FlowBlockingQueue {
         notFull.signal();
     }
 
-    public FlowBlockingQueue(Output drain, int capacity, boolean fair) {
+    FlowBlockingQueue(Output drain, int capacity, boolean fair) {
         this.output = drain;
         if (capacity <= 0)
             throw new IllegalArgumentException();
         this.flows = new Flow[capacity];
         this.longs = new long[capacity];
-        this.isData = new boolean[capacity];
         this.doubles = new double[capacity][];
         this.strings = new String[capacity];
         this.ints = new int[capacity];
@@ -102,6 +97,8 @@ class FlowBlockingQueue {
 
 
     public void put(Flow f, long t, double[] v) throws InterruptedException {
+        if (v == null)
+            throw new NullPointerException("No support for null data");
         final ReentrantLock lock = this.lock;
 //        putw = -System.nanoTime();
         lock.lockInterruptibly();
@@ -165,13 +162,15 @@ class FlowBlockingQueue {
             }
             f = flows[takeIndex];
             t = longs[takeIndex];
-            dataIs = isData[takeIndex];
+            dataIs = doubles[takeIndex] == null;
             if (dataIs) {
                 d = doubles[takeIndex];
+                doubles[takeIndex] = null;
             }
             else {
                 c = ints[takeIndex];
                 s = strings[takeIndex];
+                strings[takeIndex] = null;
             }
             dequeue();
         } finally {

@@ -72,9 +72,12 @@ class FlowBuffer {
     private void dequeue() {
         // assert lock.getHoldCount() == 1;
         // assert items[takeIndex] != null;
-        if (++takeIndex == flows.length)
-            takeIndex = 0;
+        // cache optimization: --count == 0 --> init ==> improved locality on low queue usage
         count--;
+        if (count == 0 || ++takeIndex == flows.length)
+            takeIndex = 0;
+        if (count == 0)
+            putIndex = 0;
         notFull.signal();
     }
 
@@ -159,7 +162,7 @@ class FlowBuffer {
             }
             f = flows[takeIndex];
             t = longs[takeIndex];
-            dataIs = doubles[takeIndex] == null;
+            dataIs = doubles[takeIndex] != null;
             if (dataIs) {
                 d = doubles[takeIndex];
                 doubles[takeIndex] = null;

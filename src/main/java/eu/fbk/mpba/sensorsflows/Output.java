@@ -8,11 +8,8 @@ public interface Output extends Plugin {
 
     void onOutputStop();
 
-    void onEvent(Flow flow, long timestamp, int code, String message);
+    void onLog(Flow flow, long timestamp, int code, String message);
 
     void onValue(Flow flow, long timestamp, double[] value);
 
-    enum Status {
-        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
-    }
 }

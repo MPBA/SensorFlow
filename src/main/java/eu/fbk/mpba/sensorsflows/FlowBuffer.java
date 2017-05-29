@@ -4,9 +4,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import eu.fbk.mpba.sensorsflows.Flow;
-import eu.fbk.mpba.sensorsflows.Output;
-
 class FlowBuffer {
 
     private final Flow[] flows;
@@ -180,7 +177,7 @@ class FlowBuffer {
             output.onValue(f, t, d);
         }
         else {
-            output.onEvent(f, t, c, s);
+            output.onLog(f, t, c, s);
         }
     }
 

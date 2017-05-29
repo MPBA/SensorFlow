@@ -35,9 +35,9 @@ public class SensorFlow implements
      * @param state  arg
      */
     @Override
-    public void inputStatusChanged(InputManager sender, Input.Status state) {
+    public void inputStatusChanged(InputManager sender, InputManager.Status state) {
         if (sender != null) {
-            if (state == Input.Status.INITIALIZED) {
+            if (state == InputManager.Status.INITIALIZED) {
                 synchronized (_itemsToInitLock) {
                     if (_devicesToInit.contains(sender)) {
                         _devicesToInit.remove(sender);
@@ -63,9 +63,9 @@ public class SensorFlow implements
      * @param state  arg
      */
     @Override
-    public void outputStatusChanged(OutputManager sender, Output.Status state) {
+    public void outputStatusChanged(OutputManager sender, OutputManager.Status state) {
         if (sender != null) {
-            if (state == Output.Status.INITIALIZED) {
+            if (state == OutputManager.Status.INITIALIZED) {
                 synchronized (_itemsToInitLock) {
                     if (_outputsToInit.contains(sender)) {
                         _outputsToInit.remove(sender);
@@ -154,8 +154,8 @@ public class SensorFlow implements
     private List<OutputManager> _outputsToInit = new ArrayList<>();                        // null
 
     private Callback<SensorFlow, Status> _onStatusChanged = null;                 // null
-    private Callback<Input, Input.Status> _onDeviceStatusChanged = null;               // null
-    private Callback<Output, Output.Status> _onOutputStatusChanged = null;             // null
+    private Callback<Input, InputManager.Status> _onDeviceStatusChanged = null;               // null
+    private Callback<Output, OutputManager.Status> _onOutputStatusChanged = null;             // null
 
     // Engine implementation
 
@@ -371,7 +371,7 @@ public class SensorFlow implements
     private void initialize(InputManager device) {
         // The connection state is checked before the start end callback.
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getStatus() == Input.Status.NOT_INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == InputManager.Status.NOT_INITIALIZED) {
             device.initializeInput();
         } else {
 //            Log.w(LOG_TAG, "IInputManager not NOT_INITIALIZED: " + device.toString());
@@ -386,7 +386,7 @@ public class SensorFlow implements
      */
     private void initialize(OutputManager output, String sessionName) {
         //noinspection StatementWithEmptyBody
-        if (/*_decOutputs.contains(output) &&  */output.getStatus() == Output.Status.NOT_INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputManager.Status.NOT_INITIALIZED) {
             output.initializeOutput(sessionName);
         } else {
 //            Log.w(LOG_TAG, "IOutput not NOT_INITIALIZED: " + output.toString());
@@ -402,7 +402,7 @@ public class SensorFlow implements
     private void finalize(InputManager device) {
         // The connection state is not checked
         //noinspection StatementWithEmptyBody
-        if (/*_decDevices.contains(device) &&  */device.getStatus() == Input.Status.INITIALIZED) {
+        if (/*_decDevices.contains(device) &&  */device.getStatus() == InputManager.Status.INITIALIZED) {
             device.finalizeInput();
         } else {
 //            Log.w(LOG_TAG, "IInputManager not INITIALIZED: " + device.toString());
@@ -417,7 +417,7 @@ public class SensorFlow implements
      */
     private void finalize(OutputManager output) {
         //noinspection StatementWithEmptyBody
-        if (/*_decOutputs.contains(output) &&  */output.getStatus() == Output.Status.INITIALIZED) {
+        if (/*_decOutputs.contains(output) &&  */output.getStatus() == OutputManager.Status.INITIALIZED) {
             output.finalizeOutput();
         } else {
 //            Log.w(LOG_TAG, "IOutput not INITIALIZED: " + output.toString());
@@ -596,7 +596,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    public SensorFlow setOnInputStatusChanged(Callback<Input, Input.Status> callback) {
+    public SensorFlow setOnInputStatusChanged(Callback<Input, InputManager.Status> callback) {
         _onDeviceStatusChanged = callback;
         return this;
     }
@@ -606,7 +606,7 @@ public class SensorFlow implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    public SensorFlow setOnOutputStatusChanged(Callback<Output, Output.Status> callback) {
+    public SensorFlow setOnOutputStatusChanged(Callback<Output, OutputManager.Status> callback) {
         _onOutputStatusChanged = callback;
         return this;
     }

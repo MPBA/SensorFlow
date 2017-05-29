@@ -5,7 +5,7 @@ package eu.fbk.mpba.sensorsflows;
  */
 class InputManager {
     private SensorFlow _manager = null;
-    private Input.Status _status = Input.Status.NOT_INITIALIZED;
+    private Status _status = Status.NOT_INITIALIZED;
     private Input _input;
 
     InputManager(Input input, SensorFlow manager) {
@@ -13,21 +13,21 @@ class InputManager {
         _manager = manager;
     }
 
-    private void changeStatus(Input.Status s) {
+    private void changeStatus(Status s) {
         if (_manager != null)
             _manager.inputStatusChanged(this, _status = s);
     }
 
     void initializeInput() {
-        changeStatus(Input.Status.INITIALIZING);
+        changeStatus(Status.INITIALIZING);
         _input.onInputStart();
-        changeStatus(Input.Status.INITIALIZED);
+        changeStatus(Status.INITIALIZED);
     }
 
     void finalizeInput() {
-        changeStatus(Input.Status.FINALIZING);
+        changeStatus(Status.FINALIZING);
         _input.onInputStop();
-        changeStatus(Input.Status.FINALIZED);
+        changeStatus(Status.FINALIZED);
     }
 
     // Getters
@@ -36,7 +36,7 @@ class InputManager {
         return _input.getFlows();
     }
 
-    Input.Status getStatus() {
+    Status getStatus() {
         return _status;
     }
 
@@ -46,5 +46,9 @@ class InputManager {
 
     Input getInput() {
         return _input;
+    }
+
+    enum Status {
+        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
     }
 }

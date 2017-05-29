@@ -13,7 +13,7 @@ class OutputManager {
     private OutputObserver _manager = null;
 
     private boolean _stopPending = false;
-    private Output.Status _status = Output.Status.NOT_INITIALIZED;
+    private Status _status = Status.NOT_INITIALIZED;
     private Object sessionTag = "unspecified";
     private Output outputPlugIn;
     private Set<Flow> linkedSensors;
@@ -33,10 +33,10 @@ class OutputManager {
         @Override
         public void run() {
             outputPlugIn.onOutputStart(sessionTag, new ArrayList<>(linkedSensors));
-            changeStatus(Output.Status.INITIALIZED);
+            changeStatus(Status.INITIALIZED);
             dispatchLoopWhileNotStopPending();
             outputPlugIn.onOutputStop();
-            changeStatus(Output.Status.FINALIZED);
+            changeStatus(Status.FINALIZED);
         }
     });
 
@@ -48,7 +48,7 @@ class OutputManager {
         }
     }
 
-    private void changeStatus(Output.Status s) {
+    private void changeStatus(Status s) {
         if (_manager != null)
             _manager.outputStatusChanged(this, _status = s);
     }
@@ -57,13 +57,13 @@ class OutputManager {
 
     void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
-        changeStatus(Output.Status.INITIALIZING);
+        changeStatus(Status.INITIALIZING);
         // outputPlugIn.onOutputStart(...) in _thread
         _thread.start();
     }
 
     void finalizeOutput() {
-        changeStatus(Output.Status.FINALIZING);
+        changeStatus(Status.FINALIZING);
         _stopPending = true;
         try {
             _thread.join(); // Max time specified in queue poll call
@@ -81,7 +81,7 @@ class OutputManager {
             // FIXME WARN On full, locks the flow's thread
             _queue.put(sensor, time, type, message);
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onEvent() find-me:924nj89f8j2");
+//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onLog() find-me:924nj89f8j2");
         }
     }
 
@@ -106,7 +106,7 @@ class OutputManager {
 
     // Getters
 
-    Output.Status getStatus() {
+    Status getStatus() {
         return _status;
     }
 
@@ -133,5 +133,9 @@ class OutputManager {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public enum Status {
+        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
     }
 }

@@ -118,7 +118,7 @@ public abstract class Flow {
         }
     }
 
-    public void onEvent(long time, int type, String message) {
+    public void onLog(long time, int type, String message) {
         for (FlowObserver i : _handler) {
 //            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
 //                _handler.remove(i);

@@ -13,12 +13,12 @@ class OutputManager {
     private OutputObserver _manager = null;
 
     private boolean _stopPending = false;
-    private OutputStatus _status = OutputStatus.NOT_INITIALIZED;
+    private Output.Status _status = Output.Status.NOT_INITIALIZED;
     private Object sessionTag = "unspecified";
     private Output outputPlugIn;
     private Set<Flow> linkedSensors;
 
-    private FlowBlockingQueue _queue;
+    private FlowBuffer _queue;
     private boolean enabled = true;
 
     protected OutputManager(Output output, OutputObserver manager) {
@@ -26,17 +26,17 @@ class OutputManager {
         linkedSensors = new HashSet<>();
         outputPlugIn = output;
         int queueCapacity = 200;
-        _queue = new FlowBlockingQueue(outputPlugIn, queueCapacity, false);
+        _queue = new FlowBuffer(outputPlugIn, queueCapacity, false);
     }
 
     private Thread _thread = new Thread(new Runnable() {
         @Override
         public void run() {
             outputPlugIn.onOutputStart(sessionTag, new ArrayList<>(linkedSensors));
-            changeStatus(OutputStatus.INITIALIZED);
+            changeStatus(Output.Status.INITIALIZED);
             dispatchLoopWhileNotStopPending();
             outputPlugIn.onOutputStop();
-            changeStatus(OutputStatus.FINALIZED);
+            changeStatus(Output.Status.FINALIZED);
         }
     });
 
@@ -48,7 +48,7 @@ class OutputManager {
         }
     }
 
-    private void changeStatus(OutputStatus s) {
+    private void changeStatus(Output.Status s) {
         if (_manager != null)
             _manager.outputStatusChanged(this, _status = s);
     }
@@ -57,13 +57,13 @@ class OutputManager {
 
     void initializeOutput(Object sessionTag) {
         this.sessionTag = sessionTag;
-        changeStatus(OutputStatus.INITIALIZING);
+        changeStatus(Output.Status.INITIALIZING);
         // outputPlugIn.onOutputStart(...) in _thread
         _thread.start();
     }
 
     void finalizeOutput() {
-        changeStatus(OutputStatus.FINALIZING);
+        changeStatus(Output.Status.FINALIZING);
         _stopPending = true;
         try {
             _thread.join(); // Max time specified in queue poll call
@@ -72,7 +72,7 @@ class OutputManager {
         }
     }
 
-    void onStatusChanged(Flow sensor, long time, FlowStatus state) {
+    void onStatusChanged(Flow sensor, long time, Flow.Status state) {
         onEvent(sensor, time, 0, "onStatusChanged " + state.toString());
     }
 
@@ -106,7 +106,7 @@ class OutputManager {
 
     // Getters
 
-    OutputStatus getStatus() {
+    Output.Status getStatus() {
         return _status;
     }
 

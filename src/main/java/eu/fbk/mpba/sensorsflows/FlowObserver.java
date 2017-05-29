@@ -7,7 +7,7 @@ package eu.fbk.mpba.sensorsflows;
  */
 interface FlowObserver {
 
-    void onStatusChanged(Flow sensor, long time, FlowStatus state);
+    void onStatusChanged(Flow sensor, long time, Flow.Status state);
 
     void onEvent(Flow sensor, long time, int type, String message);
 

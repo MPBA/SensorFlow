@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
+import eu.fbk.mpba.sensorsflows.util.TimeSource;
 
 /**
  * This class adds internal support for the library data-paths.
@@ -16,7 +17,7 @@ public abstract class Flow {
     private Set<OutputManager> _outputs = new HashSet<>();
 
     private boolean mMuted = false;
-    protected FlowStatus mStatus = FlowStatus.OFF;
+    protected Status mStatus = Status.OFF;
     private static long _bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
     private static TimeSource _time = new TimeSource() {
 
@@ -67,9 +68,9 @@ public abstract class Flow {
 
     // Managed protected getters setters
 
-    protected void changeStatus(FlowStatus state) {
+    protected void changeStatus(Status state) {
         for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
+//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
 //                _handler.remove(i);
             i.onStatusChanged(this, Integer.MIN_VALUE, mStatus = state);
         }
@@ -95,7 +96,7 @@ public abstract class Flow {
         return _parent;
     }
 
-    public FlowStatus getStatus() {
+    public Status getStatus() {
         return mStatus;
     }
 
@@ -111,7 +112,7 @@ public abstract class Flow {
 
     public void onValue(long time, double[] value) {
         for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
+//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
 //                _handler.remove(i);
             i.onValue(this, time, value);
         }
@@ -119,7 +120,7 @@ public abstract class Flow {
 
     public void onEvent(long time, int type, String message) {
         for (FlowObserver i : _handler) {
-//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == EngineStatus.CLOSED)
+//            if (i instanceof SensorFlow && ((SensorFlow)i).getStatus() == Status.CLOSED)
 //                _handler.remove(i);
             i.onEvent(this, time, type, message);
         }
@@ -142,4 +143,8 @@ public abstract class Flow {
     public abstract void switchOnAsync();
 
     public abstract void switchOffAsync();
+
+    public enum Status {
+        OFF, ON, ERROR
+    }
 }

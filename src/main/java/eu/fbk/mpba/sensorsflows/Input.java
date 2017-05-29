@@ -7,4 +7,8 @@ public interface Input extends Plugin {
     void onInputStop();
 
     Iterable<Flow> getFlows();
+
+    enum Status {
+        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
+    }
 }

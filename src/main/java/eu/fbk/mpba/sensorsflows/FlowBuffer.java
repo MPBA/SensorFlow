@@ -7,7 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import eu.fbk.mpba.sensorsflows.Flow;
 import eu.fbk.mpba.sensorsflows.Output;
 
-class FlowBlockingQueue {
+class FlowBuffer {
 
     private final Flow[] flows;
     private final long[] longs;
@@ -81,7 +81,7 @@ class FlowBlockingQueue {
         notFull.signal();
     }
 
-    FlowBlockingQueue(Output drain, int capacity, boolean fair) {
+    FlowBuffer(Output drain, int capacity, boolean fair) {
         this.output = drain;
         if (capacity <= 0)
             throw new IllegalArgumentException();

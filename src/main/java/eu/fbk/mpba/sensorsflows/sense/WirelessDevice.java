@@ -10,6 +10,14 @@ import java.util.logging.Logger;
 import eu.fbk.mpba.sensorsflows.Flow;
 import eu.fbk.mpba.sensorsflows.Input;
 
+/**
+ * WirelessDevice enables by extension interactining with devices that have a battery, a wireless connection and
+ * can lose data.
+ * 
+ * To notify such data methods of the form protected boolean onX() are provided. These control internal Flows that
+ * send the data in a standard form.
+ * 
+ */
 public abstract class WirelessDevice implements Input {
     @Override
     public String getName() {
@@ -68,56 +76,60 @@ public abstract class WirelessDevice implements Input {
     // Control of built-in flows
 
     /**
-     *
+     * Notifies a change in the remaining battery time (in seconds). Should be called at least once to notify that
+     * the device has a battery.
      * @param seconds
-     * @return
+     * @return Weather the current flow is ON
      */
     protected boolean onBatteryETA(double seconds) {
         return batteryETA.onValue(seconds);
     }
 
     /**
-     *
-     * @param percentage
-     * @return
+     * Notifies a change in the battery State Of Charge (SOC %). Should be called at least once to notify that
+     * the device has a battery.
+     * @param percentage Value from 0 (Empty) to 100 Fully charged.
+     * @return Weather the current flow is ON
      */
     protected boolean onBatterySOC(double percentage) {
         return batterySOC.onValue(percentage);
     }
 
     /**
-     *
+     * Notifies a change in the status of the datalink connection. (Standard not yet defined).
      * @param status
-     * @return
+     * @return Weather the current flow is ON
      */
     protected boolean onConnectionStatus(String status) {
         return connectionStatusLog.onLog(status);
     }
 
     /**
-     *
+     * Notifies a change in the physical wireless connection strength in percentage.
+     * The reference for the value is 0 (Unable to connect) to 100 (Excellent).
      * @param percentage
-     * @return
+     * @return Weather the current flow is ON
      */
     protected boolean onConnectionStrength(double percentage) {
         return connectionStrength.onValue(percentage);
     }
 
     /**
-     *
+     * Notifies a detected loss of data in the connection.
      * @param bytes
-     * @return
+     * @return Weather the current flow is ON
      */
     protected boolean onDataLoss(double bytes) {
         return dataLoss.onValue(bytes);
     }
 
     /**
-     *
-     * @param gravity
-     * @param code
-     * @param message
-     * @return
+     * Custom logs from the device software/hardware. Should contain information about the hardware and firmware
+     * versions for reproducibiliti (TODO: Standard enumeration of codes)
+     * @param gravity Gravity of the log, may be ignored
+     * @param code Identification code of the log type
+     * @param message String containing the log message
+     * @return Weather the current flow is ON
      */
     protected boolean onDeviceLog(Level gravity, int code, String message) {
         return deviceLog.onLog(String.format(Locale.ENGLISH, "[%d] %d %s", gravity.intValue(), code, message));

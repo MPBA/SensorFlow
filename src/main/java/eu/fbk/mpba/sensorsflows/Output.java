@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface Output extends Plugin {
 
-    void onOutputStart(Object sessionTag, List<Flow> streamingSensors);
+    void onOutputStart(String sessionId, List<Flow> flows);
 
     void onOutputStop();
 

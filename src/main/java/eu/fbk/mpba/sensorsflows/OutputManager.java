@@ -81,7 +81,7 @@ class OutputManager {
             // FIXME WARN On full, locks the flow's thread
             _queue.put(sensor, time, message);
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onLog() find-me:924nj89f8j2");
+//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.pushLog() find-me:924nj89f8j2");
         }
     }
 
@@ -90,7 +90,7 @@ class OutputManager {
             // FIXME WARN On full, locks the flow's thread
             _queue.put(sensor, time, value);
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.onValue() find-me:24bhi5ti89");
+//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.pushValue() find-me:24bhi5ti89");
         }
     }
 

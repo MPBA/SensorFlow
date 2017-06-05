@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorsflows;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,6 +14,8 @@ import eu.fbk.mpba.sensorsflows.util.TimeSource;
  */
 public abstract class Flow {
     private Input parent;
+    private String name;
+    private Collection<String> header;
     private Manager manager;
     private Set<OutputManager> outputs = new HashSet<>();
 
@@ -42,7 +46,17 @@ public abstract class Flow {
     };
 
     protected Flow(Input parent) {
+        this(parent, Flow.class.getSimpleName());
+    }
+
+    protected Flow(Input parent, String name) {
+        this(parent, name, null);
+    }
+
+    protected Flow(Input parent, String name, Collection<String> header) {
         this.parent = parent;
+        this.name = name;
+        this.header = new ArrayList<>(header);
     }
 
     void addOutput(OutputManager _output) {
@@ -94,10 +108,6 @@ public abstract class Flow {
         return status;
     }
 
-    public String getName() {
-        return this.getClass().getSimpleName();
-    }
-
     public static TimeSource getTimeSource() {
         return time;
     }
@@ -114,17 +124,23 @@ public abstract class Flow {
 
     // Notify methods
 
-    public void onValue(long time, double[] value) {
+    public void pushValue(long time, double[] value) {
         getManager().onValue(this, time, value);
     }
 
-    public void onLog(long time, String message) {
+    public void pushLog(long time, String message) {
         getManager().onLog(this, time, message);
     }
 
     // To implement
 
-    public abstract String[] getHeader();
+    public String getName() {
+        return name;
+    }
+
+    public Collection<String> getHeader(){
+        return header;
+    }
 
     public abstract void switchOn();
 

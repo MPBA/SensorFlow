@@ -10,8 +10,8 @@ package eu.fbk.mpba.sensorsflows.sense;
  * 
  */
 public abstract class WirelessDevice extends InputModule {
-    public WirelessDevice(String settings) {
-        super(settings);
+    public WirelessDevice(String name, String settings) {
+        super(name, settings);
     }
 
     // Control of built-in flows
@@ -61,14 +61,14 @@ public abstract class WirelessDevice extends InputModule {
 
     // OOP stuff
 
-    private Stream batteryETA = new Stream(this, "time", "BatteryETA");
-    private Stream batterySOC = new Stream(this, "percentage", "BatterySOC");
-    private Stream connection = new Stream(this, "percentage", "Connection");
-    private Stream dataLoss = new Stream(this, "bytes", "DataLoss");
+    private Stream batteryETA = new Stream(thisModule, "time", "BatteryETA");
+    private Stream batterySOC = new Stream(thisModule, "percentage", "BatterySOC");
+    private Stream connection = new Stream(thisModule, "percentage", "Connection");
+    private Stream dataLoss = new Stream(thisModule, "bytes", "DataLoss");
     {
-        addFlow(batteryETA);
-        addFlow(batterySOC);
-        addFlow(connection);
-        addFlow(dataLoss);
+        addStream(batteryETA);
+        addStream(batterySOC);
+        addStream(connection);
+        addStream(dataLoss);
     }
 }

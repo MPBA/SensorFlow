@@ -6,7 +6,7 @@ package eu.fbk.mpba.sensorsflows;
  */
 interface FlowObserver {
 
-    void onLog(Flow sensor, long time, String message);
+    void onLog(Input sensor, long time, String message);
 
-    void onValue(Flow sensor, long time, double[] value);
+    void onValue(Input sensor, long time, double[] value);
 }

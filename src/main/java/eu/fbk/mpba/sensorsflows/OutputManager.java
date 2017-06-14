@@ -14,11 +14,11 @@ class OutputManager {
 
     private boolean _stopPending = false;
     private Status _status = Status.NOT_INITIALIZED;
-    private Object sessionTag = "unspecified";
+    private String sessionTag = "unspecified";
     private Output outputPlugIn;
-    private Set<Flow> linkedSensors;
+    private Set<Input> linkedSensors;
 
-    private FlowBuffer _queue;
+    private FlowQueue _queue;
     private boolean enabled = true;
 
     protected OutputManager(Output output, OutputObserver manager) {
@@ -26,7 +26,7 @@ class OutputManager {
         linkedSensors = new HashSet<>();
         outputPlugIn = output;
         int queueCapacity = 200;
-        _queue = new FlowBuffer(outputPlugIn, queueCapacity, false);
+        _queue = new FlowQueue(outputPlugIn, queueCapacity, false);
     }
 
     private Thread _thread = new Thread(new Runnable() {
@@ -43,7 +43,7 @@ class OutputManager {
     private void dispatchLoopWhileNotStopPending() {
         while (!_stopPending) {
             try {
-                _queue.poll(100, TimeUnit.MILLISECONDS);
+                _queue.pollToHandler(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) { }
         }
     }
@@ -55,7 +55,7 @@ class OutputManager {
 
     // Implemented Callbacks
 
-    void initializeOutput(Object sessionTag) {
+    void initializeOutput(String sessionTag) {
         this.sessionTag = sessionTag;
         changeStatus(Status.INITIALIZING);
         // outputPlugIn.onOutputStart(...) in _thread
@@ -66,17 +66,17 @@ class OutputManager {
         changeStatus(Status.FINALIZING);
         _stopPending = true;
         try {
-            _thread.join(); // Max time specified in queue poll call
+            _thread.join(); // Max time specified in queue pollToHandler call
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    void onStatusChanged(Flow sensor, long time, Flow.Status state) {
+    void onStatusChanged(Input sensor, long time, Input.Status state) {
         onLog(sensor, time, "onStatusChanged " + state.toString());
     }
 
-    void onLog(Flow sensor, long time, String message) {
+    void onLog(Input sensor, long time, String message) {
         try {
             // FIXME WARN On full, locks the flow's thread
             _queue.put(sensor, time, message);
@@ -85,7 +85,7 @@ class OutputManager {
         }
     }
 
-    void onValue(Flow sensor, long time, double[] value) {
+    void onValue(Input sensor, long time, double[] value) {
         try {
             // FIXME WARN On full, locks the flow's thread
             _queue.put(sensor, time, value);
@@ -96,11 +96,11 @@ class OutputManager {
 
     // Setters
 
-    void addFlow(Flow s) {
+    void addFlow(Input s) {
         linkedSensors.add(s);
     }
 
-    void removeFlow(Flow s) {
+    void removeFlow(Input s) {
         linkedSensors.remove(s);
     }
 

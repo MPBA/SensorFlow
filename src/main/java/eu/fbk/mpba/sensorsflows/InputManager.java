@@ -6,10 +6,10 @@ package eu.fbk.mpba.sensorsflows;
 class InputManager {
     private Manager _manager = null;
     private Status _status = Status.NOT_INITIALIZED;
-    private Input _input;
+    private InputGroup _inputGroup;
 
-    InputManager(Input input, Manager manager) {
-        _input = input;
+    InputManager(InputGroup inputGroup, Manager manager) {
+        _inputGroup = inputGroup;
         _manager = manager;
     }
 
@@ -20,20 +20,20 @@ class InputManager {
 
     void initializeInput() {
         changeStatus(Status.INITIALIZING);
-        _input.onInputStart();
+        _inputGroup.onInputStart();
         changeStatus(Status.INITIALIZED);
     }
 
     void finalizeInput() {
         changeStatus(Status.FINALIZING);
-        _input.onInputStop();
+        _inputGroup.onInputStop();
         changeStatus(Status.FINALIZED);
     }
 
     // Getters
 
-    Iterable<Flow> getFlows() {
-        return _input.getFlows();
+    Iterable<Input> getFlows() {
+        return _inputGroup.getChildren();
     }
 
     Status getStatus() {
@@ -44,8 +44,8 @@ class InputManager {
         return _manager;
     }
 
-    Input getInput() {
-        return _input;
+    InputGroup getInput() {
+        return _inputGroup;
     }
 
     public enum Status {

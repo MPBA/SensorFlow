@@ -4,17 +4,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-class FlowBuffer {
+class FlowQueue {
 
-    private final Flow[] flows;
+    private final Input[] flows;
     private final long[] longs;
     private final double[][] doubles;
     private final String[] strings;
 
     private int takeIndex;
-
     private int putIndex;
-
     private int count;
 
     private final Output output;
@@ -39,7 +37,7 @@ class FlowBuffer {
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
      */
-    private void enqueue(Flow f, long time, double[] v) {
+    private void enqueue(Input f, long time, double[] v) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
         flows[putIndex] = f;
@@ -55,7 +53,7 @@ class FlowBuffer {
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
      */
-    private void enqueue(Flow f, long time, String message) {
+    private void enqueue(Input f, long time, String message) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
         flows[putIndex] = f;
@@ -79,11 +77,11 @@ class FlowBuffer {
         notFull.signal();
     }
 
-    FlowBuffer(Output drain, int capacity, boolean fair) {
+    FlowQueue(Output drain, int capacity, boolean fair) {
         this.output = drain;
         if (capacity <= 0)
             throw new IllegalArgumentException();
-        this.flows = new Flow[capacity];
+        this.flows = new Input[capacity];
         this.longs = new long[capacity];
         this.doubles = new double[capacity][];
         this.strings = new String[capacity];
@@ -93,7 +91,7 @@ class FlowBuffer {
     }
 
 
-    public void put(Flow f, long t, double[] v) throws InterruptedException {
+    public void put(Input f, long t, double[] v) throws InterruptedException {
         if (v == null)
             throw new NullPointerException("No support for null data");
         final ReentrantLock lock = this.lock;
@@ -123,7 +121,7 @@ class FlowBuffer {
 //    long last = 0, pollw = 0, putw = 0;
 //    float pollwAvg = 0, putwAvg = 0;
 
-    public void put(Flow f, long t, String v) throws InterruptedException {
+    public void put(Input f, long t, String v) throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -135,10 +133,10 @@ class FlowBuffer {
         }
     }
 
-    public void poll(long timeout, TimeUnit unit) throws InterruptedException {
+    public void pollToHandler(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
-        Flow f;
+        Input f;
         long t;
         boolean dataIs;
         double[] d = null;

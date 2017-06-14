@@ -4,20 +4,30 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 
-import eu.fbk.mpba.sensorsflows.Flow;
 import eu.fbk.mpba.sensorsflows.Input;
+import eu.fbk.mpba.sensorsflows.InputGroup;
 
 
-public class Stream extends Flow {
+public class Stream extends Input {
     private String[] header;
     private String name;
     private boolean on;
 
-    Stream(Input parent, String header, String name) {
+    Stream(String header, String name) {
+        this(null, header, name);
+    }
+
+    Stream(InputGroup parent, String header, String name) {
         this(parent, new String[] { header }, name);
     }
 
-    Stream(Input parent, String[] header, String name) {
+    Stream(String[] header, String name) {
+        super(null);
+        this.header = header;
+        this.name = name;
+    }
+
+    Stream(InputGroup parent, String[] header, String name) {
         super(parent);
         this.header = header;
         this.name = name;
@@ -64,12 +74,7 @@ public class Stream extends Flow {
     public void pushLog(long timestamp, int type, String tag, String message) {
         // URL escape just the ':' char
         super.pushLog(timestamp,
-                String.format(Locale.ENGLISH,
-                        "%d\t%s\t%s",
-                        type,
-                        tag.replace("\\", "\\\\").replace("\t", "\\t"),
-                        message
-                )
+                Log.format(type, tag, message)
         );
     }
 
@@ -82,7 +87,7 @@ public class Stream extends Flow {
     }
 
     @Override
-    public String getName() {
+    public String getSimpleName() {
         return name;
     }
 
@@ -94,12 +99,12 @@ public class Stream extends Flow {
     }
 
     @Override
-    public void switchOn() {
+    public void turnOn() {
         on = true;
     }
 
     @Override
-    public void switchOff() {
+    public void turnOff() {
         on = false;
     }
 }

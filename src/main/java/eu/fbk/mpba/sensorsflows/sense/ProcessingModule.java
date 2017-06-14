@@ -5,35 +5,36 @@ import java.util.List;
 import eu.fbk.mpba.sensorsflows.Input;
 import eu.fbk.mpba.sensorsflows.Output;
 
-public abstract class OutputModule extends Module implements Output, IOutputModule {
-    private boolean flowing = false;
+public abstract class ProcessingModule extends InputModule implements Output, IOutputModule {
+
+    private String sessionId;
+    private List<Input> inputList;
 
     /**
      * Constructor of abstract class
      *
-     * @param name Name of the Module.
+     * @param name     Name of the Module.
      * @param settings Configuration string (e.g. json) to be passed to the Module.
      */
-    OutputModule(String name, String settings) {
+    public ProcessingModule(String name, String settings) {
         super(name, settings);
-        addSFChild(this);
     }
 
     @Override
-    public final void onOutputStart(String sessionId, List<Input> inputList) {
-        flowing = true;
+    protected final void start() {
+        // Waited for the input to init, other than the output.
         start(sessionId, inputList);
     }
 
     @Override
-    public final void onOutputStop() {
-        flowing = false;
-        stop();
+    public final void onOutputStart(String sessionId, List<Input> inputList) {
+        this.sessionId = sessionId;
+        this.inputList = inputList;
     }
 
     @Override
-    public final boolean isFlowing() {
-        return flowing;
+    public final void onOutputStop() {
+        stop();
     }
 
     /**

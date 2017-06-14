@@ -90,7 +90,7 @@ public class Manager implements
      * @param sender sender
      * @param state  arg
      */
-    public void onStatusChanged(Flow sender, long time, Flow.Status state) {
+    public void onStatusChanged(Input sender, long time, Input.Status state) {
         // TODO 3 Implement an 'internal input' with an 'internal flow' for log utilities.
         // The flow has to send also an event on a status change.
     }
@@ -106,8 +106,8 @@ public class Manager implements
      * @param value  value
      */
     @Override
-    public void onValue(Flow sender, long time, double[] value) {
-        if (!sender.isMuted() && !_paused) {
+    public void onValue(Input sender, long time, double[] value) {
+        if (sender.isListened() && !_paused) {
             for (OutputManager o : sender.getOutputs()) {
                 if (o.isEnabled())
                     //noinspection unchecked
@@ -123,8 +123,8 @@ public class Manager implements
      * @param message message text
      */
     @Override
-    public void onLog(Flow sender, long time, String message) {
-        if (!sender.isMuted() && !_paused) {
+    public void onLog(Input sender, long time, String message) {
+        if (sender.isListened() && !_paused) {
             for (OutputManager o : sender.getOutputs()) {
                 if (o.isEnabled())
                     //noinspection unchecked
@@ -152,7 +152,7 @@ public class Manager implements
     private List<OutputManager> _outputsToInit = new ArrayList<>();                        // null
 
     private Callback<Manager, Status> _onStatusChanged = null;                 // null
-    private Callback<Input, InputManager.Status> _onDeviceStatusChanged = null;               // null
+    private Callback<InputGroup, InputManager.Status> _onDeviceStatusChanged = null;               // null
     private Callback<Output, OutputManager.Status> _onOutputStatusChanged = null;             // null
 
     // Engine implementation
@@ -180,14 +180,14 @@ public class Manager implements
     /**
      * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-mapping.
      *
-     * @param input Device to add.
+     * @param inputGroup Device to add.
      */
-    public Manager addInput(Input input) {
+    public Manager addInput(InputGroup inputGroup) {
         if (_status == Manager.Status.STANDBY) {
             // Check if only the name is already contained
-            if (!_userDevices.containsKey(input.getName())) {
-                _userDevices.put(input.getName(), new InputManager(input, this));
-                for (Flow s : input.getFlows())
+            if (!_userDevices.containsKey(inputGroup.getName())) {
+                _userDevices.put(inputGroup.getName(), new InputManager(inputGroup, this));
+                for (Input s : inputGroup.getChildren())
                     s.setHandler(this);
             }
         } else
@@ -195,7 +195,7 @@ public class Manager implements
         return this;
     }
 
-    public Input getInput(String name) {
+    public InputGroup getInput(String name) {
         InputManager r = _userDevices.get(name);
         //noinspection unchecked
         return r == null ? null : r.getInput();
@@ -204,10 +204,10 @@ public class Manager implements
     /**
      * Adds a link between a flow and an output (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor Input flow retreived from a device.
+     * @param fromSensor InputGroup flow retreived from a device.
      * @param toOutput   Output channel.
      */
-    public Manager addLink(Flow fromSensor, Output toOutput) {
+    public Manager addLink(Input fromSensor, Output toOutput) {
         if (fromSensor != null && toOutput != null)
             // Manual indexOf for performance
             for (OutputManager outMan : _userOutputs.values())
@@ -221,10 +221,10 @@ public class Manager implements
     /**
      * Removes a link between a flow and an output (N to M relation) before the {@code start} call.
      * TODO: test
-     * @param fromSensor Input flow retrieved from a device.
+     * @param fromSensor InputGroup flow retrieved from a device.
      * @param toOutput   Output channel.
      */
-    public Manager removeLink(Flow fromSensor, Output toOutput) {
+    public Manager removeLink(Input fromSensor, Output toOutput) {
         // Manual indexOf for performance
         for (OutputManager outMan : _userOutputs.values())
             if (toOutput == outMan.getOutput()) { // for reference, safe
@@ -248,10 +248,10 @@ public class Manager implements
     /**
      * Adds a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor Input flow retrieved from a device.
+     * @param fromSensor InputGroup flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    private void addLink(Flow fromSensor, OutputManager outMan) {
+    private void addLink(Input fromSensor, OutputManager outMan) {
         if (_status == Manager.Status.STANDBY) {
             fromSensor.addOutput(outMan);
             outMan.addFlow(fromSensor);
@@ -262,10 +262,10 @@ public class Manager implements
     /**
      * Removes a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
      * TODO: test
-     * @param fromSensor Input flow retrieved from a device.
+     * @param fromSensor InputGroup flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    private void removeLink(Flow fromSensor, OutputManager outMan) {
+    private void removeLink(Input fromSensor, OutputManager outMan) {
         if (_status == Manager.Status.STANDBY) {
             fromSensor.removeOutput(outMan);
             outMan.removeFlow(fromSensor);
@@ -297,33 +297,30 @@ public class Manager implements
     //      STANDBY aux gets (proper)
 
     /**
-     * Enumerates every Input managed.
+     * Enumerates every InputGroup managed.
      *
      * @return Enumerator usable trough a for (IInputManager d : enumerator)
      */
-    public Iterable<Input> getInputs() {
-        return new Iterable<Input>() {
-            @Override
-            public Iterator<Input> iterator() {
-                final Iterator<InputManager> i = _userDevices.values().iterator();
-                return new Iterator<Input>() {
+    public Iterable<InputGroup> getInputs() {
+        return () -> {
+            final Iterator<InputManager> i = _userDevices.values().iterator();
+            return new Iterator<InputGroup>() {
 
-                    @Override
-                    public boolean hasNext() {
-                        return i.hasNext();
-                    }
+                @Override
+                public boolean hasNext() {
+                    return i.hasNext();
+                }
 
-                    @Override
-                    public Input next() {
-                        return i.next().getInput();
-                    }
+                @Override
+                public InputGroup next() {
+                    return i.next().getInput();
+                }
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("Cannot remove objects from here.");
-                    }
-                };
-            }
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("Cannot remove objects from here.");
+                }
+            };
         };
     }
 
@@ -333,28 +330,25 @@ public class Manager implements
      * @return Enumerator usable trough a for (IOutput o : enumerator)
      */
     public Iterable<Output> getOutputs() {
-        return new Iterable<Output>() {
-            @Override
-            public Iterator<Output> iterator() {
-                final Iterator<OutputManager> i = _userOutputs.values().iterator();
-                return new Iterator<Output>() {
+        return () -> {
+            final Iterator<OutputManager> i = _userOutputs.values().iterator();
+            return new Iterator<Output>() {
 
-                    @Override
-                    public boolean hasNext() {
-                        return i.hasNext();
-                    }
+                @Override
+                public boolean hasNext() {
+                    return i.hasNext();
+                }
 
-                    @Override
-                    public Output next() {
-                        return i.next().getOutput();
-                    }
+                @Override
+                public Output next() {
+                    return i.next().getOutput();
+                }
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("Cannot remove objects from here.");
-                    }
-                };
-            }
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("Cannot remove objects from here.");
+                }
+            };
         };
     }
 
@@ -427,7 +421,7 @@ public class Manager implements
     public Manager routeAll() {
         // SENSORS x OUTPUTS
         for (InputManager d : _userDevices.values())
-            for (Flow s : d.getFlows())      // FOREACH SENSOR
+            for (Input s : d.getFlows())      // FOREACH SENSOR
                 for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
                     addLink(s, o);
         return this;
@@ -437,7 +431,7 @@ public class Manager implements
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-            for (Flow s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getFlows())      // LINK MODULE LOOPING ON THE SHORTEST
+            for (Input s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getFlows())      // LINK MODULE LOOPING ON THE SHORTEST
                 addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
         return this;
     }
@@ -473,10 +467,8 @@ public class Manager implements
             changeStatus(Manager.Status.PREPARING);
             _devicesToInit.addAll(_userDevices.values());
             // Launches the initializations
-            for (InputManager d : _userDevices.values()) {
-                // only if NOT_INITIALIZED: checked in the initializeInput method
-                initialize(d);
-            }
+            // only if NOT_INITIALIZED: checked in the initializeInput method
+            _userDevices.values().forEach(this::initialize);
             _outputsToInit.addAll(_userOutputs.values());
             for (OutputManager o : _userOutputs.values()) {
                 // only if NOT_INITIALIZED: checked in the initializeInput method
@@ -528,14 +520,10 @@ public class Manager implements
      */
     public Manager stop() {
         changeStatus(Manager.Status.FINALIZING);
-        for (InputManager d : _userDevices.values()) {
-            // only if INITIALIZED: checked in the method
-            finalize(d);
-        }
-        for (OutputManager o : _userOutputs.values()) {
-            // only if INITIALIZED: checked in the method
-            finalize(o);
-        }
+        // only if INITIALIZED: checked in the method
+        _userDevices.values().forEach(this::finalize);
+        // only if INITIALIZED: checked in the method
+        _userOutputs.values().forEach(this::finalize);
         changeStatus(Manager.Status.FINALIZED);
         return this;
     }
@@ -552,10 +540,9 @@ public class Manager implements
             case FINALIZED:
                 changeStatus(Manager.Status.CLOSING);
                 for (InputManager d : _userDevices.values())
-                    for (Flow s : d.getInput().getFlows())
+                    for (Input s : d.getInput().getChildren())
                         s.close();
-                for (OutputManager o : _userOutputs.values())
-                    o.close();
+                _userOutputs.values().forEach(OutputManager::close);
                 changeStatus(Manager.Status.CLOSED);
                 break;
             case CLOSED:
@@ -594,7 +581,7 @@ public class Manager implements
      *
      * @param callback Callback to call when any device's state changes.
      */
-    public Manager setOnInputStatusChanged(Callback<Input, InputManager.Status> callback) {
+    public Manager setOnInputStatusChanged(Callback<InputGroup, InputManager.Status> callback) {
         _onDeviceStatusChanged = callback;
         return this;
     }

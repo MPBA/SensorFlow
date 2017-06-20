@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorsflows;
 
-public interface InputGroup extends Plugin {
+public interface InputGroup extends NamedPlugin {
 
     void onInputStart();
 

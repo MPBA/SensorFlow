@@ -14,7 +14,7 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      * @param name Name of the Module.
      * @param settings Configuration string (e.g. json) to be passed to the Module.
      */
-    OutputModule(String name, String settings) {
+    public OutputModule(String name, String settings) {
         super(name, settings);
         addSFChild(this);
     }
@@ -37,19 +37,6 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     }
 
     /**
-     * This method is called when a new log message is available to be used, transmitted or
-     * persisted. This method can be overridden to skip the parsing of the log type and tag.
-     * @param input Input that generated the log.
-     * @param timestamp Timestamp of the generation of the message
-     * @param text String encoding the type, the tag and the message.
-     */
-    @Override
-    public void onLog(Input input, long timestamp, String text) {
-        Log l = new Log(text).invoke();
-        onLog(input, timestamp, l.getType(), l.getTag(), l.getText());
-    }
-
-    /**
      * This method is called when a new value vector is available to be used, transmitted or
      * persisted.
      * @param input Input that generated the data.
@@ -58,6 +45,19 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      */
     @Override
     public abstract void onValue(Input input, long timestamp, double[] value);
+
+    /**
+     * This method is called when a new log message is available to be used, transmitted or
+     * persisted. This method can be overridden to skip the parsing of the log type and tag.
+     * @param input Input that generated the log.
+     * @param timestamp Timestamp of the generation of the message
+     * @param text String encoding the type, the tag and the message.
+     */
+    @Override
+    public void onLog(Input input, long timestamp, String text) {
+        LogMessage l = new LogMessage(text).invoke();
+        onLog(input, timestamp, l.getType(), l.getTag(), l.getText());
+    }
 
     /**
      * This method is called when a new log message is available to be used, transmitted or

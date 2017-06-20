@@ -1,9 +1,9 @@
 package eu.fbk.mpba.sensorsflows.sense;
 
 import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.Plugin;
+import eu.fbk.mpba.sensorsflows.NamedPlugin;
 
-class PluginLogInput extends Input {
+class LogInput extends Input {
     @Override
     public void turnOn() {
 
@@ -14,13 +14,17 @@ class PluginLogInput extends Input {
 
     }
 
-    public PluginLogInput(Plugin parent) {
+    /**
+     * Log that can be child of both Inputs and Outputs
+     * @param parent    The NamedPlugin parent of this Input.
+     */
+    LogInput(NamedPlugin parent) {
         super(null, parent.getName());
     }
 
     public void pushLog(int type, String tag, String message) {
         super.pushLog(getTimeSource().getMonoUTCNanos(),
-                Log.format(type, tag, message)
+                LogMessage.format(type, tag, message)
         );
     }
 }

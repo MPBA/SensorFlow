@@ -19,7 +19,8 @@ public abstract class WirelessDevice extends InputModule {
     /**
      * Notifies a change in the remaining battery time (in seconds). Should be called at least once to notify that
      * the device has a battery.
-     * @param seconds
+     * @param seconds   Estimated remaining time before power off due to low battery. This time,
+     *                  despite being in seconds, has neither to change every second nor to be monotonic.
      */
     protected void onBatteryETA(double seconds) {
         batteryETA.pushValue(seconds);
@@ -28,7 +29,8 @@ public abstract class WirelessDevice extends InputModule {
     /**
      * Notifies a change in the battery State Of Charge (SOC %). Should be called at least once to notify that
      * the device has a battery.
-     * @param percentage Value from 0 (Empty) to 100 Fully charged.
+     * @param percentage Value from 0 (Empty) to 100 Fully charged. Neither granularity, nor
+     *                   monotonicity requirements.
      */
     protected void onBatterySOC(double percentage) {
         batterySOC.pushValue(percentage);
@@ -45,15 +47,18 @@ public abstract class WirelessDevice extends InputModule {
     /**
      * Notifies a change in the physical wireless connection strength in percentage.
      * The reference for the value is 0 (Unable to connect) to 100 (Excellent).
-     * @param percentage
+     * @param percentage    Percentage linearly indicating the quality or power of the connection
+     *                      where 0% is the complete loss of connection and 100% is the maximal
+     *                      power receivable.
      */
     protected void onConnectionStrength(double percentage) {
         connection.pushValue(percentage);
     }
 
     /**
-     * Notifies a detected loss of data in the connection.
-     * @param bytes
+     * Notifies a loss of data in the connection.
+     * @param bytes Indicative quantity of information lost. If the data is retransmitted due to
+     *              some Transmission Control mechanism it has not to be considered lost.
      */
     protected void onDataLoss(double bytes) {
         dataLoss.pushValue(bytes);

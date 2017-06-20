@@ -3,22 +3,22 @@ package eu.fbk.mpba.sensorsflows.sense;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import eu.fbk.mpba.sensorsflows.Plugin;
+import eu.fbk.mpba.sensorsflows.NamedPlugin;
 
 /**
  * Base class for every sense plugin. It implements a common interface
  */
-public abstract class Module implements Plugin {
-    private final PluginLogInput moduleLog;
+public abstract class Module implements NamedPlugin {
+    private final LogInput moduleLog;
     private final String settings;
     private final String simpleName = getClass().getSimpleName();
-    private final ArrayList<Plugin> sfChildren = new ArrayList<>(4);
+    private final ArrayList<NamedPlugin> sfChildren = new ArrayList<>(4);
 
-    void addSFChild(Plugin child) {
+    void addSFChild(NamedPlugin child) {
         sfChildren.add(child);
     }
 
-    Collection<Plugin> getSFChildren() {
+    Collection<NamedPlugin> getSFChildren() {
         return sfChildren;
     }
 
@@ -62,7 +62,7 @@ public abstract class Module implements Plugin {
      */
     Module(String name, String settings) {
         this.settings = settings;
-        this.moduleLog = new PluginLogInput(this);
+        this.moduleLog = new LogInput(this);
         addSFChild(moduleLog);
     }
 

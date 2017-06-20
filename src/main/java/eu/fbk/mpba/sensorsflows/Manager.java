@@ -178,7 +178,7 @@ public class Manager implements
     //      STANDBY inputs (proper)
 
     /**
-     * Adds a device to the enumeration, this is to be used before the {@code start} call, before the internal IO-mapping.
+     * Adds an input or input group to the manager, this is to be used before the {@code start} call, before the internal IO-mapping.
      *
      * @param inputGroup Device to add.
      */
@@ -188,7 +188,7 @@ public class Manager implements
             if (!_userDevices.containsKey(inputGroup.getName())) {
                 _userDevices.put(inputGroup.getName(), new InputManager(inputGroup, this));
                 for (Input s : inputGroup.getChildren())
-                    s.setHandler(this);
+                    s.setManager(this);
             }
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
@@ -202,33 +202,32 @@ public class Manager implements
     }
 
     /**
-     * Adds a link between a flow and an output (N to M relation) before the {@code start} call.
+     * Adds a route between an input and an output (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor InputGroup flow retreived from a device.
-     * @param toOutput   Output channel.
+     * @param from InputGroup flow retreived from a device.
+     * @param to   Output channel.
      */
-    public Manager addLink(Input fromSensor, Output toOutput) {
-        if (fromSensor != null && toOutput != null)
+    public Manager addRoute(Input from, Output to) {
+        if (from != null && to != null)
             // Manual indexOf for performance
             for (OutputManager outMan : _userOutputs.values())
-                if (toOutput == outMan.getOutput()) { // for reference, safe
-                    addLink(fromSensor, outMan);
+                if (to == outMan.getOutput()) { // for reference, safe
+                    addRoute(from, outMan);
                     break;
                 }
         return this;
     }
 
     /**
-     * Removes a link between a flow and an output (N to M relation) before the {@code start} call.
-     * TODO: test
-     * @param fromSensor InputGroup flow retrieved from a device.
-     * @param toOutput   Output channel.
+     * Removes the route between an input and an output (N to M relation) before the {@code start} call.
+     * @param from InputGroup flow retrieved from a device.
+     * @param to   Output channel.
      */
-    public Manager removeLink(Input fromSensor, Output toOutput) {
+    public Manager removeRoute(Input from, Output to) {
         // Manual indexOf for performance
         for (OutputManager outMan : _userOutputs.values())
-            if (toOutput == outMan.getOutput()) { // for reference, safe
-                removeLink(fromSensor, outMan);
+            if (to == outMan.getOutput()) { // for reference, safe
+                removeRoute(from, outMan);
                 break;
             }
         return this;
@@ -246,26 +245,25 @@ public class Manager implements
     }
 
     /**
-     * Adds a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
+     * Adds a link between an input and an output-decorator (N to M relation) before the {@code start} call.
      *
-     * @param fromSensor InputGroup flow retrieved from a device.
+     * @param from InputGroup flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    private void addLink(Input fromSensor, OutputManager outMan) {
+    private void addRoute(Input from, OutputManager outMan) {
         if (_status == Manager.Status.STANDBY) {
-            fromSensor.addOutput(outMan);
-            outMan.addFlow(fromSensor);
+            from.addOutput(outMan);
+            outMan.addFlow(from);
         } else
             throw new UnsupportedOperationException(_emAlreadyRendered);
     }
 
     /**
-     * Removes a link between a flow and an output-decorator object (N to M relation) before the {@code start} call.
-     * TODO: test
+     * Removes a route between an input and an output-decorator (N to M relation) before the {@code start} call.=
      * @param fromSensor InputGroup flow retrieved from a device.
      * @param outMan     OutputManager object.
      */
-    private void removeLink(Input fromSensor, OutputManager outMan) {
+    private void removeRoute(Input fromSensor, OutputManager outMan) {
         if (_status == Manager.Status.STANDBY) {
             fromSensor.removeOutput(outMan);
             outMan.removeFlow(fromSensor);
@@ -274,7 +272,7 @@ public class Manager implements
     }
 
     /**
-     * Adds an output to the enumeration, this is to be used before the {@code start} call, before the internal in-out map rendering.
+     * Adds an output to the manager, this is to be used before the {@code start} call, before the internal in-out map rendering.
      *
      * @param output Output to add.
      */
@@ -423,7 +421,7 @@ public class Manager implements
         for (InputManager d : _userDevices.values())
             for (Input s : d.getFlows())      // FOREACH SENSOR
                 for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
-                    addLink(s, o);
+                    addRoute(s, o);
         return this;
     }
 
@@ -432,7 +430,7 @@ public class Manager implements
         int maxi = Math.max(_userDevices.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
             for (Input s : new ArrayList<>(_userDevices.values()).get(i % _userDevices.size()).getFlows())      // LINK MODULE LOOPING ON THE SHORTEST
-                addLink(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
+                addRoute(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
         return this;
     }
 

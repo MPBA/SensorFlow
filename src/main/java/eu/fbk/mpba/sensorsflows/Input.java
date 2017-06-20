@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.naming.OperationNotSupportedException;
+
 import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
 import eu.fbk.mpba.sensorsflows.util.TimeSource;
 
@@ -71,8 +73,25 @@ public abstract class Input implements InputGroup {
         outputs.remove(_output);
     }
 
-    void setHandler(Manager man) {
+    void setManager(Manager man) {
         manager = man;
+    }
+
+    protected void setHeader(Collection<String> header) {
+        if (!isFlowing())
+            this.header = header;
+        else
+            throw new RuntimeException(
+                    new OperationNotSupportedException("Hot header changes are not supported."));
+    }
+
+    public boolean isFlowing() {
+        switch (manager.getStatus()) {
+            case STANDBY:
+            case CLOSED:
+                return true;
+        }
+        return false;
     }
 
     Manager getManager() {
@@ -86,7 +105,7 @@ public abstract class Input implements InputGroup {
     // Managed protected getters setters
 
     protected void changeStatus(Status state) {
-        manager.onStatusChanged(this, Integer.MIN_VALUE, status = state);
+        manager.onStatusChanged(this, getTimeSource().getMonoUTCNanos(), status = state);
     }
 
     /**

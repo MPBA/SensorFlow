@@ -10,6 +10,8 @@ package eu.fbk.mpba.sensorsflows.sense;
  * 
  */
 public abstract class WirelessDevice extends InputModule {
+    private String connectionStatus = "";
+
     public WirelessDevice(String name, String settings) {
         super(name, settings);
     }
@@ -41,7 +43,15 @@ public abstract class WirelessDevice extends InputModule {
      * @param status
      */
     protected void onConnectionStatus(String status) {
-        connection.pushLog(status);
+        connectionStatus = status;
+        connection.pushLog(0, "", status);
+    }
+
+    /**
+     * Gets the last notified status of the datalink connection. (Standard not yet defined).
+     */
+    protected String getConnectionStatus() {
+        return connectionStatus;
     }
 
     /**
@@ -63,6 +73,12 @@ public abstract class WirelessDevice extends InputModule {
     protected void onDataLoss(double bytes) {
         dataLoss.pushValue(bytes);
     }
+
+    /**
+     * Called by the developer who uses this module to connect the device. The output flows from
+     * onConnectionStatus, and is available through the getter getConnectionStatus.
+     */
+    public abstract void connect(Runnable done);
 
     // OOP stuff
 

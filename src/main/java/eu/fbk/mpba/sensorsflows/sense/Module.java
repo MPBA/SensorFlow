@@ -84,4 +84,8 @@ public abstract class Module implements NamedPlugin {
     protected void pushLog(int type, String tag, String message) {
         moduleLog.pushLog(type, tag, message);
     }
+
+    public static final String TAG_DEV_ID = "DEV_ID";
+    public static final String TAG_DEV_HW = "DEV_HW";
+    public static final String TAG_DEV_INFO = "DEV_INFO";
 }

@@ -39,6 +39,8 @@ public abstract class InputModule extends Module {
      * Special Flows are already present such as BatteryETA, BatterySOC, DataLoss, ConnectionStatus
      * and InternalErrors (getChildren).
      *
+     * turnOn and turnOff are automatically called on start and stop.
+     *
      * @param input The flow to add to the InputModule.
      */
     protected void addStream(Stream input) {

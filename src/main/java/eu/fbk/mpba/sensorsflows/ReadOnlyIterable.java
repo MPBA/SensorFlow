@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.util;
+package eu.fbk.mpba.sensorsflows;
 
 import java.util.Iterator;
 

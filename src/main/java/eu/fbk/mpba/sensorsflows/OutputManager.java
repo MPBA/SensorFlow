@@ -21,7 +21,7 @@ class OutputManager {
     private FlowQueue _queue;
     private boolean enabled = true;
 
-    protected OutputManager(Output output, OutputObserver manager) {
+    OutputManager(Output output, OutputObserver manager) {
         _manager = manager;
         linkedSensors = new HashSet<>();
         outputPlugIn = output;
@@ -72,10 +72,6 @@ class OutputManager {
         }
     }
 
-    void onStatusChanged(Input sensor, long time, Input.Status state) {
-        onLog(sensor, time, "onStatusChanged " + state.toString());
-    }
-
     void onLog(Input sensor, long time, String message) {
         try {
             // FIXME WARN On full, locks the flow's thread
@@ -114,9 +110,6 @@ class OutputManager {
         return outputPlugIn;
     }
 
-    /**
-     * Unregisters every flow linked
-     */
     public void close() {
         linkedSensors.clear();
     }

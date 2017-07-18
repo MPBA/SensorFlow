@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.util;
+package eu.fbk.mpba.sensorsflows;
 
 /**
  * Gives support to keep a monotonic timestamp reference

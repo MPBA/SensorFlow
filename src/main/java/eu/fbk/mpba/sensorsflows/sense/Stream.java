@@ -11,7 +11,7 @@ import eu.fbk.mpba.sensorsflows.InputGroup;
 public class Stream extends Input {
 
     public static final Collection<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
-    public static final Collection<String> HEADER_VAL = Collections.singletonList("value");
+    public static final Collection<String> HEADER_VALUE = Collections.singletonList("value");
 
     private String name;
     private boolean on;

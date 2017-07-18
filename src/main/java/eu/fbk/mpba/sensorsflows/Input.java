@@ -8,9 +8,6 @@ import java.util.Set;
 
 import javax.naming.OperationNotSupportedException;
 
-import eu.fbk.mpba.sensorsflows.util.ReadOnlyIterable;
-import eu.fbk.mpba.sensorsflows.util.TimeSource;
-
 /**
  * This class adds internal support for the library data-paths.
  */
@@ -18,7 +15,7 @@ public abstract class Input implements InputGroup {
     private InputGroup parent;
     private String name;
     private Collection<String> header;
-    private Manager manager;
+    private FlowObserver manager;
     private Set<OutputManager> outputs = new HashSet<>();
 
     private boolean listened = true;
@@ -73,7 +70,7 @@ public abstract class Input implements InputGroup {
         outputs.remove(_output);
     }
 
-    void setManager(Manager man) {
+    void setManager(FlowObserver man) {
         manager = man;
     }
 
@@ -85,16 +82,12 @@ public abstract class Input implements InputGroup {
                     new OperationNotSupportedException("Hot header changes are not supported."));
     }
 
+    @Deprecated
     public boolean isFlowing() {
-        switch (manager.getStatus()) {
-            case STANDBY:
-            case CLOSED:
-                return true;
-        }
-        return false;
+        return true;
     }
 
-    Manager getManager() {
+    FlowObserver getManager() {
         return manager;
     }
 
@@ -105,7 +98,8 @@ public abstract class Input implements InputGroup {
     // Managed protected getters setters
 
     protected void changeStatus(Status state) {
-        manager.onStatusChanged(this, getTimeSource().getMonoUTCNanos(), status = state);
+        // Not notified to SF
+        status = state;
     }
 
     /**
@@ -152,12 +146,16 @@ public abstract class Input implements InputGroup {
 
     // Listening
 
-    public boolean isListened() {
-        return listened;
+    public boolean isMuted() {
+        return !listened;
     }
 
-    public void setListened(boolean listened) {
-        this.listened = listened;
+    public void mute() {
+        this.listened = false;
+    }
+
+    public void unmute() {
+        this.listened = true;
     }
 
     // Notify methods

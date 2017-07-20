@@ -1,12 +1,12 @@
 package eu.fbk.mpba.sensorsflows;
 
-import java.util.List;
-
 public interface Output extends NamedPlugin {
 
-    void onOutputStart(String sessionId, List<Input> inputList);
+    void onCreate(String sessionId);
 
-    void onOutputStop();
+    void onInputAdded(Input input);
+
+    void onInputRemoved(Input input);
 
     /**
      * This method is called when a new value vector is available to be used, transmitted or

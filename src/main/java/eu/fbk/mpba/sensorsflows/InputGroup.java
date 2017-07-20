@@ -2,9 +2,11 @@ package eu.fbk.mpba.sensorsflows;
 
 public interface InputGroup extends NamedPlugin {
 
-    void onInputStart();
+    void onCreate();
 
-    void onInputStop();
+    void onStart();
+
+    void onStop();
 
     Iterable<Input> getChildren();
 

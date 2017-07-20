@@ -5,45 +5,43 @@ import java.util.Collections;
 
 import eu.fbk.mpba.sensorsflows.Input;
 import eu.fbk.mpba.sensorsflows.InputGroup;
+import eu.fbk.mpba.sensorsflows.NamedPlugin;
 
-abstract class InputGroupImpl implements InputGroup {
+class InputGroupImpl implements InputGroup {
     private final ArrayList<Input> children = new ArrayList<>();
-    boolean flowing = true;
     private String name;
 
     InputGroupImpl(String name) {
         this.name = name;
     }
 
-    void addChild(Input child) {
-        if (!flowing) {
-            children.add(child);
-        } else {
-            throw new RuntimeException("Flowing");
-        }
+    synchronized void addChild(Input child) {
+        children.add(child);
     }
 
     @Override
-    public synchronized void onInputStart() {
-        flowing = true;
-        children.forEach(Input::turnOn);
-        start();
+    public synchronized void onCreate() {
+        children.forEach(Input::onCreate);
     }
 
     @Override
-    public synchronized void onInputStop() {
-        children.forEach(Input::turnOff);
+    public synchronized void onStart() {
+        children.forEach(Input::onStart);
+    }
+
+    @Override
+    public synchronized void onStop() {
+        children.forEach(Input::onStop);
+    }
+
+    @Override
+    public synchronized void onClose() {
+        children.forEach(Input::onClose);
         children.clear();
-        flowing = false;
-        stop();
     }
 
-    public abstract void start();
-
-    public abstract void stop();
-
     @Override
-    public Iterable<Input> getChildren() {
+    public synchronized Iterable<Input> getChildren() {
         return Collections.unmodifiableList(children);
     }
 
@@ -55,11 +53,5 @@ abstract class InputGroupImpl implements InputGroup {
     @Override
     public String getName() {
         return getSimpleName();
-    }
-
-    @Override
-    public synchronized void close() {
-        if (!flowing)
-            children.forEach(Input::turnOff);
     }
 }

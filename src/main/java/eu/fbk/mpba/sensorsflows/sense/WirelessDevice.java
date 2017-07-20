@@ -10,7 +10,6 @@ package eu.fbk.mpba.sensorsflows.sense;
  * 
  */
 public abstract class WirelessDevice extends InputModule {
-    private String connectionStatus = "";
 
     public WirelessDevice(String name, String settings) {
         super(name, settings);
@@ -43,15 +42,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param status
      */
     protected void onConnectionStatus(String status) {
-        connectionStatus = status;
         connection.pushLog(0, "", status);
-    }
-
-    /**
-     * Gets the last notified status of the datalink connection. (Standard not yet defined).
-     */
-    protected String getConnectionStatus() {
-        return connectionStatus;
     }
 
     /**

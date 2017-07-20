@@ -4,15 +4,6 @@ import eu.fbk.mpba.sensorsflows.Input;
 import eu.fbk.mpba.sensorsflows.NamedPlugin;
 
 class LogInput extends Input {
-    @Override
-    public void turnOn() {
-
-    }
-
-    @Override
-    public void turnOff() {
-
-    }
 
     /**
      * Log that can be child of both Inputs and Outputs
@@ -26,5 +17,25 @@ class LogInput extends Input {
         super.pushLog(getTimeSource().getMonoUTCNanos(),
                 LogMessage.format(type, tag, message)
         );
+    }
+
+    @Override
+    public void onCreate() {
+
+    }
+
+    @Override
+    public void onStart() {
+
+    }
+
+    @Override
+    public void onStop() {
+
+    }
+
+    @Override
+    public void onClose() {
+
     }
 }

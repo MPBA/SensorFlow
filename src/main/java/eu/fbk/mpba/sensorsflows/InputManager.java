@@ -1,50 +1,64 @@
 package eu.fbk.mpba.sensorsflows;
 
-/**
- * This class adds internal support for the library data-paths.
- */
 class InputManager {
-    private InputObserver _manager = null;
-    private Status _status = Status.NOT_INITIALIZED;
-    private InputGroup _inputGroup;
+    private InputObserver manager = null;
+    private PluginStatus status = PluginStatus.INSTANTIATED;
+    private InputGroup inputGroup;
 
     InputManager(InputGroup inputGroup, InputObserver manager) {
-        _inputGroup = inputGroup;
-        _manager = manager;
+        this.inputGroup = inputGroup;
+        this.manager = manager;
+        changeStatus(PluginStatus.INSTANTIATED);
     }
 
-    private void changeStatus(Status s) {
-        if (_manager != null)
-            _manager.inputStatusChanged(this, _status = s);
+    private void changeStatus(PluginStatus s) {
+        if (manager != null)
+            manager.inputStatusChanged(this, status = s);
     }
 
-    void initializeInput() {
-        changeStatus(Status.INITIALIZING);
-        _inputGroup.onInputStart();
-        changeStatus(Status.INITIALIZED);
+    // Events
+
+    void onCreate() {
+        switch (status) {
+            case INSTANTIATED:
+                inputGroup.onCreate();
+                changeStatus(PluginStatus.CREATED);
+            case CREATED:
+                inputGroup.onStart();
+                changeStatus(PluginStatus.RESUMED);
+                break;
+            default:
+                System.out.println("onCreate out of place 3290erj28, current status: " + status.toString());
+        }
     }
 
-    void finalizeInput() {
-        changeStatus(Status.FINALIZING);
-        _inputGroup.onInputStop();
-        changeStatus(Status.FINALIZED);
+    void onClose() {
+        switch (status) {
+            case RESUMED:
+                inputGroup.onStop();
+                changeStatus(PluginStatus.PAUSED);
+            case CREATED:
+            case PAUSED:
+                inputGroup.onClose();
+                changeStatus(PluginStatus.CLOSED);
+                break;
+            default:
+                System.out.println("onClose out of place 3290erj29, current status: " + status.toString());
+        }
     }
 
     // Getters
 
     Iterable<Input> getFlows() {
-        return _inputGroup.getChildren();
+        return inputGroup.getChildren();
     }
 
-    Status getStatus() {
-        return _status;
+    PluginStatus getStatus() {
+        return status;
     }
 
     InputGroup getInput() {
-        return _inputGroup;
+        return inputGroup;
     }
 
-    public enum Status {
-        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
-    }
 }

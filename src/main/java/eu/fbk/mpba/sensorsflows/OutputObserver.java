@@ -1,5 +1,5 @@
 package eu.fbk.mpba.sensorsflows;
 
 interface OutputObserver {
-    void outputStatusChanged(OutputManager sender, OutputManager.Status status);
+    void outputStatusChanged(OutputManager sender, PluginStatus status);
 }

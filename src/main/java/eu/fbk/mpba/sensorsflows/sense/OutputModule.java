@@ -20,13 +20,13 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     }
 
     @Override
-    public final void onOutputStart(String sessionId, List<Input> inputList) {
+    public final void onInputAdded(String sessionId, List<Input> inputList) {
         flowing = true;
         start(sessionId, inputList);
     }
 
     @Override
-    public final void onOutputStop() {
+    public final void onInputRemoved() {
         flowing = false;
         stop();
     }

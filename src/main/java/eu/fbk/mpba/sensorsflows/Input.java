@@ -8,18 +8,21 @@ import java.util.Set;
 
 import javax.naming.OperationNotSupportedException;
 
+import static eu.fbk.mpba.sensorsflows.PluginStatus.RESUMED;
+
 /**
  * This class adds internal support for the library data-paths.
  */
 public abstract class Input implements InputGroup {
-    private InputGroup parent;
+    private boolean listened = true;
     private String name;
+    protected Status status = Status.OFF;
+
+    private InputGroup parent;
+    private DataObserver manager;
     private Collection<String> header;
-    private FlowObserver manager;
     private Set<OutputManager> outputs = new HashSet<>();
 
-    private boolean listened = true;
-    protected Status status = Status.OFF;
     private static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
     private static TimeSource time = new TimeSource() {
 
@@ -44,16 +47,12 @@ public abstract class Input implements InputGroup {
         }
     };
 
-    protected Input() {
-        this(null, Input.class.getSimpleName());
+    protected Input(Collection<String> header) {
+        this(null, Input.class.getSimpleName(), header);
     }
 
-    protected Input(InputGroup parent) {
-        this(parent, Input.class.getSimpleName());
-    }
-
-    protected Input(InputGroup parent, String name) {
-        this(parent, name, null);
+    protected Input(InputGroup parent, Collection<String> header) {
+        this(parent, Input.class.getSimpleName(), header);
     }
 
     protected Input(InputGroup parent, String name, Collection<String> header) {
@@ -62,37 +61,20 @@ public abstract class Input implements InputGroup {
         this.header = new ArrayList<>(header);
     }
 
-    void addOutput(OutputManager _output) {
-        outputs.add(_output);
+    void addOutput(OutputManager output) {
+        outputs.add(output);
     }
 
-    void removeOutput(OutputManager _output) {
-        outputs.remove(_output);
+    void removeOutput(OutputManager output) {
+        outputs.remove(output);
     }
 
-    void setManager(FlowObserver man) {
+    void setManager(DataObserver man) {
         manager = man;
     }
 
-    protected void setHeader(Collection<String> header) {
-        if (!isFlowing())
-            this.header = header;
-        else
-            throw new RuntimeException(
-                    new OperationNotSupportedException("Hot header changes are not supported."));
-    }
-
-    @Deprecated
-    public boolean isFlowing() {
-        return true;
-    }
-
-    FlowObserver getManager() {
-        return manager;
-    }
-
-    Iterable<OutputManager> getOutputs() {
-        return new ReadOnlyIterable<>(outputs.iterator());
+    Collection<OutputManager> getOutputs() {
+        return Collections.unmodifiableSet(outputs);
     }
 
     // Managed protected getters setters
@@ -102,9 +84,6 @@ public abstract class Input implements InputGroup {
         status = state;
     }
 
-    /**
-     * Unregisters every outputDecorator
-     */
     public void close() {
         outputs.clear();
     }
@@ -130,16 +109,6 @@ public abstract class Input implements InputGroup {
     }
 
     @Override
-    public void onInputStart() {
-        turnOn();
-    }
-
-    @Override
-    public void onInputStop() {
-        turnOff();
-    }
-
-    @Override
     public Iterable<Input> getChildren() {
         return Collections.singletonList(this);
     }
@@ -161,11 +130,13 @@ public abstract class Input implements InputGroup {
     // Notify methods
 
     public void pushValue(long time, double[] value) {
-        getManager().onValue(this, time, value);
+        // Shouldn't be called before onCreate
+        manager.onValue(this, time, value);
     }
 
     public void pushLog(long time, String message) {
-        getManager().onLog(this, time, message);
+        // Shouldn't be called before onCreate
+        manager.onLog(this, time, message);
     }
 
     // To be implemented
@@ -182,10 +153,6 @@ public abstract class Input implements InputGroup {
     public Collection<String> getHeader(){
         return header;
     }
-
-    public abstract void turnOn();
-
-    public abstract void turnOff();
 
     public enum Status {
         OFF, ON, ERROR

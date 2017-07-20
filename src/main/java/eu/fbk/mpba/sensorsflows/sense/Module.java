@@ -10,8 +10,8 @@ import eu.fbk.mpba.sensorsflows.NamedPlugin;
  */
 public abstract class Module implements NamedPlugin {
     private final LogInput moduleLog;
-    private final String settings;
-    private final String simpleName = getClass().getSimpleName();
+    private final String configuration;
+    private final String simpleName;
     private final ArrayList<NamedPlugin> sfChildren = new ArrayList<>(4);
 
     void addSFChild(NamedPlugin child) {
@@ -38,31 +38,13 @@ public abstract class Module implements NamedPlugin {
     }
 
     /**
-     * True when the acquisition is in progress i.e. between the start and stop calls. When it
-     * returns true, some attributes of the InputModule can not be altered.
-     *
-     * @return True if it is flowing, false otherwise.
-     */
-    public abstract boolean isFlowing();
-
-    /**
-     * This method is called when the acquisition is stopping. After this method returns, data can
-     * be pushed, and the method isFlowing returns false.
-     */
-    protected abstract void stop();
-
-    /**
-     * This method is called when SensorFlow is asked to free the resources.
-     */
-    public abstract void close();
-
-    /**
      * Constructor of abstract class
-     * @param settings Configuration string (e.g. json) to be passed to the Module.
+     * @param configuration Configuration string (e.g. json) to be passed to the Module.
      */
-    Module(String name, String settings) {
-        this.settings = settings;
+    Module(String name, String configuration) {
+        this.configuration = configuration;
         this.moduleLog = new LogInput(this);
+        simpleName = name == null ? getClass().getSimpleName() : name;
         addSFChild(moduleLog);
     }
 
@@ -70,8 +52,8 @@ public abstract class Module implements NamedPlugin {
      * Returns the configuration string set by the constructor.
      * @return String, as-is.
      */
-    public String getSettings() {
-        return settings;
+    public String getConfiguration() {
+        return configuration;
     }
 
     /**

@@ -37,8 +37,7 @@ public class Stream extends Input {
     }
 
     public Stream(InputGroup parent, Collection<String> header, String name) {
-        super(parent);
-        setHeader(header);
+        super(parent, header);
         this.name = name;
     }
 
@@ -53,6 +52,28 @@ public class Stream extends Input {
      */
     public void pushQuality(long timestamp, String quality) {
         pushLog(timestamp, 0, "quality", quality);
+    }
+
+    /**
+     * Logs now the quality of the signal with the synchronous time reference.
+     * @param quality InputModule-dependent codification of the quality.
+     */
+    public void pushQuality(String quality) {
+        pushLog(getTimeSource().getMonoUTCNanos(), 0, "quality", quality);
+    }
+
+    /**
+     * Formatted log.
+     * @param timestamp Time reference of this log line.
+     * @param type Identification code of the log type
+     * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
+     * @param message String containing the log message
+     */
+    public void pushLog(long timestamp, int type, String tag, String message) {
+        // URL escape just the ':' char
+        super.pushLog(timestamp,
+                LogMessage.format(type, tag, message)
+        );
     }
 
     /**
@@ -73,21 +94,27 @@ public class Stream extends Input {
         pushLog(getTimeSource().getMonoUTCMillis(), type, tag, message);
     }
 
-    /**
-     * Formatted log.
-     * @param timestamp Time reference of this log line.
-     * @param type Identification code of the log type
-     * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
-     * @param message String containing the log message
-     */
-    public void pushLog(long timestamp, int type, String tag, String message) {
-        // URL escape just the ':' char
-        super.pushLog(timestamp,
-                LogMessage.format(type, tag, message)
-        );
+    // May not be for the end developer
+
+    @Override
+    public void onCreate() {
+
     }
 
-    // May not be for the end developer
+    @Override
+    public void onStart() {
+        on = true;
+    }
+
+    @Override
+    public void onStop() {
+        on = false;
+    }
+
+    @Override
+    public void onClose() {
+
+    }
 
     @Override
     public String getSimpleName() {
@@ -99,15 +126,5 @@ public class Stream extends Input {
 
     public boolean isOn() {
         return on;
-    }
-
-    @Override
-    public void turnOn() {
-        on = true;
-    }
-
-    @Override
-    public void turnOff() {
-        on = false;
     }
 }

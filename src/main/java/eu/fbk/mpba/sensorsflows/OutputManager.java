@@ -1,109 +1,185 @@
 package eu.fbk.mpba.sensorsflows;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-/**
- * This class adds internal support for the library data-paths.
- * Polls but has a fixed sleep time in the case that each queue is empty.
- */
 class OutputManager {
-    private OutputObserver _manager = null;
+    private OutputObserver manager = null;
 
-    private boolean _stopPending = false;
-    private Status _status = Status.NOT_INITIALIZED;
-    private String sessionTag = "unspecified";
+    private boolean stopPending = false;
+    private PluginStatus status = PluginStatus.INSTANTIATED;
+    private String sessionTag;
     private Output outputPlugIn;
-    private Set<Input> linkedSensors;
+    private boolean threaded;
+    private Set<Input> linkedInputs = new HashSet<>();
+    private Set<Input> linkedInputsSnapshot = new HashSet<>();
 
-    private FlowQueue _queue;
+    private SFQueue queue;
     private boolean enabled = true;
 
     OutputManager(Output output, OutputObserver manager) {
-        _manager = manager;
-        linkedSensors = new HashSet<>();
-        outputPlugIn = output;
-        int queueCapacity = 200;
-        _queue = new FlowQueue(outputPlugIn, queueCapacity, false);
+        this(output, manager, true);
     }
 
-    private Thread _thread = new Thread(new Runnable() {
+    OutputManager(Output output, OutputObserver manager, boolean threaded) {
+        this.manager = manager;
+        outputPlugIn = output;
+        this.threaded = threaded;
+        if (threaded)
+            queue = new SFQueue(outputPlugIn, 800, false);
+        else
+            // Ugly practice but effective, TODO extract an interface and build another class
+            queue = new SFQueue(null, 0, false) {
+                @Override
+                public void put(Input f, long t, double[] v) throws InterruptedException {
+                    outputPlugIn.onValue(f, t, v);
+                }
+
+                @Override
+                public void put(Input f, long t, String v) throws InterruptedException {
+                    outputPlugIn.onLog(f, t, v);
+                }
+
+                @Override
+                public void putAdded(Input f) throws InterruptedException {
+                    outputPlugIn.onInputAdded(f);
+                }
+
+                @Override
+                public void putRemoved(Input f) throws InterruptedException {
+                    outputPlugIn.onInputRemoved(f);
+                }
+            };
+        changeStatus(PluginStatus.INSTANTIATED);
+    }
+
+    private Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            outputPlugIn.onOutputStart(sessionTag, new ArrayList<>(linkedSensors));
-            changeStatus(Status.INITIALIZED);
+            outputPlugIn.onCreate(sessionTag);
+            changeStatus(PluginStatus.CREATED);
+            linkedInputs.forEach(outputPlugIn::onInputAdded);
             dispatchLoopWhileNotStopPending();
-            outputPlugIn.onOutputStop();
-            changeStatus(Status.FINALIZED);
+            linkedInputs.forEach(outputPlugIn::onInputRemoved);
+            outputPlugIn.onClose();
+            changeStatus(PluginStatus.CLOSED);
         }
     });
 
     private void dispatchLoopWhileNotStopPending() {
-        while (!_stopPending) {
+        while (!stopPending) {
             try {
-                _queue.pollToHandler(100, TimeUnit.MILLISECONDS);
+                queue.pollToHandler(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) { }
         }
     }
 
-    private void changeStatus(Status s) {
-        if (_manager != null)
-            _manager.outputStatusChanged(this, _status = s);
+    private void changeStatus(PluginStatus s) {
+        if (manager != null)
+            manager.outputStatusChanged(this, status = s);
     }
 
     // Implemented Callbacks
 
-    void initializeOutput(String sessionTag) {
-        this.sessionTag = sessionTag;
-        changeStatus(Status.INITIALIZING);
-        // outputPlugIn.onOutputStart(...) in _thread
-        _thread.start();
+    void onCreate(String sessionTag) {
+        if (status == PluginStatus.INSTANTIATED) {
+            this.sessionTag = sessionTag;
+            if (threaded)
+                thread.start();
+        } else
+            System.out.println("onCreate out of place 4353453ewdr, current status: " + status.toString());
     }
 
-    void finalizeOutput() {
-        changeStatus(Status.FINALIZING);
-        _stopPending = true;
+    void onClose() {
+        if (status == PluginStatus.CREATED && !stopPending) {
+            stopPending = true;
+            if (threaded)
+                try {
+                    thread.join(); // Max time specified in queue pollToHandler call
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+        } else
+            System.out.println("onCreate out of place 4353453ewdr, current status: " + status.toString()
+                    + ", stopPending: " + stopPending);
+    }
+
+    void pushLog(Input sensor, long time, String message) {
         try {
-            _thread.join(); // Max time specified in queue pollToHandler call
+            // FIXME WARN On full, locks the input's thread
+            queue.put(sensor, time, message);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            System.out.println("InterruptedException 238rh2390");
         }
     }
 
-    void onLog(Input sensor, long time, String message) {
+    void pushValue(Input sensor, long time, double[] value) {
         try {
-            // FIXME WARN On full, locks the flow's thread
-            _queue.put(sensor, time, message);
+            // FIXME WARN On full, locks the input's thread
+            queue.put(sensor, time, value);
         } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.pushLog() find-me:924nj89f8j2");
-        }
-    }
-
-    void onValue(Input sensor, long time, double[] value) {
-        try {
-            // FIXME WARN On full, locks the flow's thread
-            _queue.put(sensor, time, value);
-        } catch (InterruptedException e) {
-//            Log.w(LOG_TAG, "InterruptedException in OutputImpl.pushValue() find-me:24bhi5ti89");
+            System.out.println("InterruptedException 9234rhyu2");
         }
     }
 
     // Setters
 
-    void addFlow(Input s) {
-        linkedSensors.add(s);
+    synchronized void addInput(Input s) {
+        if (linkedInputs.add(s))
+            try {
+                // FIXME WARN On full, locks the input's thread
+                queue.putAdded(s);
+            } catch (InterruptedException e) {
+                System.out.println("InterruptedException 9234rhyu3");
+            }
     }
 
-    void removeFlow(Input s) {
-        linkedSensors.remove(s);
+    synchronized void removeInput(Input s) {
+        if (linkedInputs.remove(s))
+            try {
+                // FIXME WARN On full, locks the input's thread
+                queue.putRemoved(s);
+            } catch (InterruptedException e) {
+                System.out.println("InterruptedException 923w5hyu3");
+            }
+    }
+
+    synchronized void setEnabled(boolean enabled) {
+        if (!enabled) {
+            linkedInputsSnapshot.clear();
+            linkedInputsSnapshot.addAll(linkedInputs);
+        } else {
+            HashSet<Input> toRemove = new HashSet<>(linkedInputsSnapshot);
+            toRemove.removeAll(linkedInputs);
+            HashSet<Input> toAdd = new HashSet<>(linkedInputs);
+            toAdd.removeAll(linkedInputsSnapshot);
+
+            linkedInputs.clear();
+            linkedInputs.addAll(linkedInputsSnapshot);
+
+            toRemove.forEach(this::removeInput);
+            toAdd.forEach(this::addInput);
+        }
+        this.enabled = enabled;
     }
 
     // Getters
 
-    Status getStatus() {
-        return _status;
+    Collection<Input> getInputs() {
+        ArrayList<Input> copy = new ArrayList<>(linkedInputs);
+        return Collections.unmodifiableCollection(copy);
+    }
+
+    boolean isEnabled() {
+        return enabled;
+    }
+
+    PluginStatus getStatus() {
+        return status;
     }
 
     Output getOutput() {
@@ -111,24 +187,17 @@ class OutputManager {
     }
 
     public void close() {
-        linkedSensors.clear();
+        if (outputPlugIn != null) {
+            outputPlugIn.onClose();
+            outputPlugIn = null;
+        }
+        linkedInputs.clear();
+        linkedInputs = null;
     }
 
     @Override
     protected void finalize() throws Throwable {
         close();
         super.finalize();
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public enum Status {
-        NOT_INITIALIZED, INITIALIZING, INITIALIZED, FINALIZING, FINALIZED
     }
 }

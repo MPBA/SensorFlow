@@ -27,13 +27,13 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
     }
 
     @Override
-    public final void onOutputStart(String sessionId, List<Input> inputList) {
+    public final void onInputAdded(String sessionId, List<Input> inputList) {
         this.sessionId = sessionId;
         this.inputList = inputList;
     }
 
     @Override
-    public final void onOutputStop() {
+    public final void onInputRemoved() {
         stop();
     }
 

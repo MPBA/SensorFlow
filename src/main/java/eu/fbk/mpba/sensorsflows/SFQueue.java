@@ -3,8 +3,18 @@ package eu.fbk.mpba.sensorsflows;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.ConsoleHandler;
 
-class FlowQueue {
+class SFQueue {
+
+    // nulls encoding
+    // flows NotNull
+    // null doubles AND null events --> schema-event
+    // null doubles --> event
+    // null events  --> values
+
+    private final long INPUT_ADDED = 0L;
+    private final long INPUT_REMOVED = -1L;
 
     private final Input[] flows;
     private final long[] longs;
@@ -33,6 +43,13 @@ class FlowQueue {
 
     // Internal helper methods
 
+    private void enqueued() {
+        if (++putIndex == flows.length)
+            putIndex = 0;
+        count++;
+        notEmpty.signal();
+    }
+
     /**
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
@@ -43,10 +60,7 @@ class FlowQueue {
         flows[putIndex] = f;
         longs[putIndex] = time;
         doubles[putIndex] = v;
-        if (++putIndex == flows.length)
-            putIndex = 0;
-        count++;
-        notEmpty.signal();
+        enqueued();
     }
 
     /**
@@ -59,10 +73,19 @@ class FlowQueue {
         flows[putIndex] = f;
         longs[putIndex] = time;
         strings[putIndex] = message;
-        if (++putIndex == flows.length)
-            putIndex = 0;
-        count++;
-        notEmpty.signal();
+        enqueued();
+    }
+
+    /**
+     * Inserts element at current put position, advances, and signals.
+     * Call only when holding lock.
+     */
+    private void enqueue(Input f, long added) {
+        // assert lock.getHoldCount() == 1;
+        // assert items[putIndex] == null;
+        flows[putIndex] = f;
+        longs[putIndex] = added;
+        enqueued();
     }
 
     private void dequeue() {
@@ -77,7 +100,7 @@ class FlowQueue {
         notFull.signal();
     }
 
-    FlowQueue(Output drain, int capacity, boolean fair) {
+    SFQueue(Output drain, int capacity, boolean fair) {
         this.output = drain;
         if (capacity <= 0)
             throw new IllegalArgumentException();
@@ -133,12 +156,37 @@ class FlowQueue {
         }
     }
 
+    public void putAdded(Input f) throws InterruptedException {
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            while (count == flows.length)
+                notFull.await();
+            enqueue(f, INPUT_ADDED);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void putRemoved(Input f) throws InterruptedException {
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            while (count == flows.length)
+                notFull.await();
+            enqueue(f, INPUT_REMOVED);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void pollToHandler(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         Input f;
         long t;
-        boolean dataIs;
+        boolean isVal;
+        boolean isLog;
         double[] d = null;
         String s = null;
 //        pollw = -System.nanoTime();
@@ -155,13 +203,17 @@ class FlowQueue {
                 }
             }
             f = flows[takeIndex];
+            flows[takeIndex] = null;
             t = longs[takeIndex];
-            dataIs = doubles[takeIndex] != null;
-            if (dataIs) {
+            isVal = doubles[takeIndex] != null;
+            isLog = strings[takeIndex] != null;
+            if (isVal) {
+                // Value
                 d = doubles[takeIndex];
                 doubles[takeIndex] = null;
             }
-            else {
+            if (isLog) {
+                // Log
                 s = strings[takeIndex];
                 strings[takeIndex] = null;
             }
@@ -169,11 +221,18 @@ class FlowQueue {
         } finally {
             lock.unlock();
         }
-        if (dataIs) {
+        if (isVal) {
+            // Is Value
             output.onValue(f, t, d);
-        }
-        else {
+        } else if (isLog) {
+            // Is Log
             output.onLog(f, t, s);
+        } else {
+            // Is Schema Event
+            if (t == INPUT_ADDED)
+                output.onInputAdded(f);
+            else
+                output.onInputRemoved(f);
         }
     }
 

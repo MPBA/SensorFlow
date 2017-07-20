@@ -4,7 +4,7 @@ package eu.fbk.mpba.sensorsflows;
  * Multiple sensors call this so the sender parameter is the sender flow.
  * The receiver should implement this.
  */
-interface FlowObserver {
+interface DataObserver {
 
     void onLog(Input sensor, long time, String message);
 

@@ -58,8 +58,8 @@ public abstract class Module implements NamedPlugin {
 
     /**
      * Custom logs from the device software/hardware. Should contain information about the hardware
-     * and firmware versions for reproducibility (TODO: Standard enumeration of codes)
-     * @param type Identification code of the log type
+     * and firmware versions for reproducibility
+     * @param type Identification code of the log type, 0 for metadata (TYPE_METADATA)
      * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
      * @param message String containing the log message
      */
@@ -67,7 +67,10 @@ public abstract class Module implements NamedPlugin {
         moduleLog.pushLog(type, tag, message);
     }
 
+    public static final int TYPE_METADATA = 0;
+
     public static final String TAG_DEV_ID = "DEV_ID";
-    public static final String TAG_DEV_HW = "DEV_HW";
     public static final String TAG_DEV_INFO = "DEV_INFO";
+    public static final String TAG_HW_VER = "DEV_HW";
+    public static final String TAG_SW_VER = "DEV_SW";
 }

@@ -1,12 +1,11 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.InputGroup;
-
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.InputGroup;
 
 public class Stream extends Input {
 
@@ -120,7 +119,6 @@ public class Stream extends Input {
     public String getSimpleName() {
         return name;
     }
-
 
     // Maybe useless still inherited
 

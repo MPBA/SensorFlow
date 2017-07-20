@@ -1,11 +1,10 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.InputGroup;
-import eu.fbk.mpba.sensorsflows.NamedPlugin;
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.InputGroup;
 
 class InputGroupImpl implements InputGroup {
     private final ArrayList<Input> children = new ArrayList<>();

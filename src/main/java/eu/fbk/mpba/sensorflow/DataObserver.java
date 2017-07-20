@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 /**
  * Multiple sensors call this so the sender parameter is the sender flow.

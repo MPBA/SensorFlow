@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 class InputManager {
     private InputObserver manager = null;
@@ -25,7 +25,7 @@ class InputManager {
                 changeStatus(PluginStatus.CREATED);
             case CREATED:
                 inputGroup.onStart();
-                changeStatus(PluginStatus.RESUMED);
+                changeStatus(PluginStatus.STARTED);
                 break;
             default:
                 System.out.println("onCreate out of place 3290erj28, current status: " + status.toString());
@@ -34,11 +34,11 @@ class InputManager {
 
     void onClose() {
         switch (status) {
-            case RESUMED:
+            case STARTED:
                 inputGroup.onStop();
-                changeStatus(PluginStatus.PAUSED);
+                changeStatus(PluginStatus.STOPPED);
             case CREATED:
-            case PAUSED:
+            case STOPPED:
                 inputGroup.onClose();
                 changeStatus(PluginStatus.CLOSED);
                 break;

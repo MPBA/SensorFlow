@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
 /**
  * Base class for an InputModule
@@ -14,7 +14,27 @@ public abstract class InputModule extends Module {
      */
     public InputModule(String name, String settings) {
         super(name, settings);
-        thisModule = new InputGroupImpl(name);
+        thisModule = new InputGroupImpl(name) {
+            @Override
+            public synchronized void onCreate() {
+                InputModule.this.onCreate();
+            }
+
+            @Override
+            public synchronized void onStart() {
+                InputModule.this.onStart();
+            }
+
+            @Override
+            public synchronized void onStop() {
+                InputModule.this.onStop();
+            }
+
+            @Override
+            public synchronized void onClose() {
+                InputModule.this.onClose();
+            }
+        };
         addSFChild(thisModule);
     }
 
@@ -27,9 +47,14 @@ public abstract class InputModule extends Module {
      * @param input The flow to add to the InputModule.
      */
     protected void addStream(Stream input) {
-        if (isFlowing()) {
-            thisModule.addChild(input);
-        } else
-            throw new UnsupportedOperationException("Can't alter inputs during acquisition.");
+        thisModule.addChild(input);
     }
+
+    public abstract void onCreate();
+
+    public abstract void onStart();
+
+    public abstract void onStop();
+
+    public abstract void onClose();
 }

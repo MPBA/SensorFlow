@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
 
 /**

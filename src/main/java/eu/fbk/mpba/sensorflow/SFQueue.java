@@ -1,9 +1,8 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.ConsoleHandler;
 
 class SFQueue {
 

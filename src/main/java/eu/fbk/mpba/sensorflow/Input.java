@@ -1,14 +1,10 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.naming.OperationNotSupportedException;
-
-import static eu.fbk.mpba.sensorsflows.PluginStatus.RESUMED;
 
 /**
  * This class adds internal support for the library data-paths.
@@ -57,7 +53,7 @@ public abstract class Input implements InputGroup {
 
     protected Input(InputGroup parent, String name, Collection<String> header) {
         this.parent = parent;
-        this.name = name;
+        this.name = name != null ? name : getClass().getSimpleName() + "-" + hashCode();
         this.header = new ArrayList<>(header);
     }
 

@@ -1,9 +1,9 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-import eu.fbk.mpba.sensorsflows.NamedPlugin;
+import eu.fbk.mpba.sensorflow.NamedPlugin;
 
 /**
  * Base class for every sense plugin. It implements a common interface

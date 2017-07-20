@@ -1,7 +1,9 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
-import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.NamedPlugin;
+import java.util.Collections;
+
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.NamedPlugin;
 
 class LogInput extends Input {
 
@@ -10,7 +12,7 @@ class LogInput extends Input {
      * @param parent    The NamedPlugin parent of this Input.
      */
     LogInput(NamedPlugin parent) {
-        super(null, parent.getName());
+        super(null, parent.getName(), Collections.emptyList());
     }
 
     public void pushLog(int type, String tag, String message) {

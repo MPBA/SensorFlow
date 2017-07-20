@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 import java.util.ArrayList;
 import java.util.Collection;

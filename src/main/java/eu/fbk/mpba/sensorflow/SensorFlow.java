@@ -1,4 +1,4 @@
-package eu.fbk.mpba.sensorsflows;
+package eu.fbk.mpba.sensorflow;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,6 +88,10 @@ public class SensorFlow {
     }
 
     public SensorFlow add(Output p) {
+        return add(p, true);
+    }
+
+    public SensorFlow add(Output p, boolean threaded) {
         OutputManager added = null;
         // Check if only the name is already contained
         synchronized (_userOutputs) {

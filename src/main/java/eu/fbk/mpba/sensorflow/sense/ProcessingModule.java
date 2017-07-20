@@ -1,14 +1,9 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
-import java.util.List;
-
-import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.Output;
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.Output;
 
 public abstract class ProcessingModule extends InputModule implements Output, IOutputModule {
-
-    private String sessionId;
-    private List<Input> inputList;
 
     /**
      * Constructor of abstract class
@@ -18,23 +13,6 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
      */
     public ProcessingModule(String name, String settings) {
         super(name, settings);
-    }
-
-    @Override
-    protected final void start() {
-        // Waited for the input to init, other than the output.
-        start(sessionId, inputList);
-    }
-
-    @Override
-    public final void onInputAdded(String sessionId, List<Input> inputList) {
-        this.sessionId = sessionId;
-        this.inputList = inputList;
-    }
-
-    @Override
-    public final void onInputRemoved() {
-        stop();
     }
 
     /**
@@ -71,12 +49,4 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
      */
     @Override
     public abstract void onLog(Input input, long timestamp, int type, String tag, String message);
-
-    /**
-     * This method is called when the acquisition is beginning. After this method returns, data may
-     * be pushed, and the method isFlowing returns true.
-     * @param acquisitionId Identification of the acquisition that is being started.
-     * @param inputs Inputs that will stream to this OutputModule
-     */
-    protected abstract void start(String acquisitionId, List<Input> inputs);
 }

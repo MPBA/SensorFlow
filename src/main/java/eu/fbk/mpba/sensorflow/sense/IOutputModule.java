@@ -1,6 +1,6 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
-import eu.fbk.mpba.sensorsflows.Input;
+import eu.fbk.mpba.sensorflow.Input;
 
 interface IOutputModule {
     /**

@@ -1,12 +1,9 @@
-package eu.fbk.mpba.sensorsflows.sense;
+package eu.fbk.mpba.sensorflow.sense;
 
-import java.util.List;
-
-import eu.fbk.mpba.sensorsflows.Input;
-import eu.fbk.mpba.sensorsflows.Output;
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.Output;
 
 public abstract class OutputModule extends Module implements Output, IOutputModule {
-    private boolean flowing = false;
 
     /**
      * Constructor of abstract class
@@ -17,23 +14,6 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     public OutputModule(String name, String settings) {
         super(name, settings);
         addSFChild(this);
-    }
-
-    @Override
-    public final void onInputAdded(String sessionId, List<Input> inputList) {
-        flowing = true;
-        start(sessionId, inputList);
-    }
-
-    @Override
-    public final void onInputRemoved() {
-        flowing = false;
-        stop();
-    }
-
-    @Override
-    public final boolean isFlowing() {
-        return flowing;
     }
 
     /**
@@ -70,12 +50,4 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      */
     @Override
     public abstract void onLog(Input input, long timestamp, int type, String tag, String message);
-
-    /**
-     * This method is called when the acquisition is beginning. After this method returns, data may
-     * be pushed, and the method isFlowing returns true.
-     * @param acquisitionId Identification of the acquisition that is being started.
-     * @param inputs Inputs that will stream to this OutputModule
-     */
-    protected abstract void start(String acquisitionId, List<Input> inputs);
 }

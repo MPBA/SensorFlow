@@ -19,7 +19,7 @@ class OutputManager {
     private Set<Input> linkedInputsSnapshot = new HashSet<>();
 
     private SFQueue queue;
-    private boolean enabled = true;
+    private volatile boolean enabled = true;
 
     OutputManager(Output output, OutputObserver manager) {
         this(output, manager, true);
@@ -54,28 +54,39 @@ class OutputManager {
                     outputPlugIn.onInputRemoved(f);
                 }
             };
+        setEnabled(false);
         changeStatus(PluginStatus.INSTANTIATED);
     }
 
     private Thread thread = new Thread(new Runnable() {
         @Override
         public void run() {
-            outputPlugIn.onCreate(sessionTag);
-            changeStatus(PluginStatus.CREATED);
-            linkedInputs.forEach(outputPlugIn::onInputAdded);
-            dispatchLoopWhileNotStopPending();
-            linkedInputs.forEach(outputPlugIn::onInputRemoved);
-            outputPlugIn.onClose();
-            changeStatus(PluginStatus.CLOSED);
+            try {
+                while (!stopPending) {
+                    queue.pollToHandler(100, TimeUnit.MILLISECONDS);
+                }
+            } catch (InterruptedException ignored) { }
         }
     });
 
-    private void dispatchLoopWhileNotStopPending() {
-        while (!stopPending) {
-            try {
-                queue.pollToHandler(100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ignored) { }
-        }
+    private void beforeDispatch() {
+        // Create plugin
+        outputPlugIn.onCreate(sessionTag);
+        changeStatus(PluginStatus.CREATED);
+        // Here input add/removal differentially buffered
+        // Enable plugin
+        //   Here every linked input will be added
+        //   This call is sync: mutexes with addInput and removeInput
+        setEnabled(true);
+        // Here input add/removal in queue
+    }
+
+    private void afterDispatch() {
+        setEnabled(false);
+        // Here input add/removal differentially buffered, but no more useful
+        linkedInputsSnapshot.forEach(outputPlugIn::onInputRemoved);
+        outputPlugIn.onClose();
+        changeStatus(PluginStatus.CLOSED);
     }
 
     private void changeStatus(PluginStatus s) {
@@ -88,6 +99,7 @@ class OutputManager {
     void onCreate(String sessionTag) {
         if (status == PluginStatus.INSTANTIATED) {
             this.sessionTag = sessionTag;
+            beforeDispatch();
             if (threaded)
                 thread.start();
         } else
@@ -103,6 +115,7 @@ class OutputManager {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+            afterDispatch();
         } else
             System.out.println("onCreate out of place 4353453ewdr, current status: " + status.toString()
                     + ", stopPending: " + stopPending);
@@ -110,7 +123,6 @@ class OutputManager {
 
     void pushLog(Input sensor, long time, String message) {
         try {
-            // FIXME WARN On full, locks the input's thread
             queue.put(sensor, time, message);
         } catch (InterruptedException e) {
             System.out.println("InterruptedException 238rh2390");
@@ -119,7 +131,6 @@ class OutputManager {
 
     void pushValue(Input sensor, long time, double[] value) {
         try {
-            // FIXME WARN On full, locks the input's thread
             queue.put(sensor, time, value);
         } catch (InterruptedException e) {
             System.out.println("InterruptedException 9234rhyu2");
@@ -129,9 +140,8 @@ class OutputManager {
     // Setters
 
     synchronized void addInput(Input s) {
-        if (linkedInputs.add(s))
+        if (linkedInputs.add(s) && enabled)
             try {
-                // FIXME WARN On full, locks the input's thread
                 queue.putAdded(s);
             } catch (InterruptedException e) {
                 System.out.println("InterruptedException 9234rhyu3");
@@ -139,9 +149,8 @@ class OutputManager {
     }
 
     synchronized void removeInput(Input s) {
-        if (linkedInputs.remove(s))
+        if (linkedInputs.remove(s) && enabled)
             try {
-                // FIXME WARN On full, locks the input's thread
                 queue.putRemoved(s);
             } catch (InterruptedException e) {
                 System.out.println("InterruptedException 923w5hyu3");
@@ -149,6 +158,7 @@ class OutputManager {
     }
 
     synchronized void setEnabled(boolean enabled) {
+        this.enabled = enabled;
         if (!enabled) {
             linkedInputsSnapshot.clear();
             linkedInputsSnapshot.addAll(linkedInputs);
@@ -164,7 +174,6 @@ class OutputManager {
             toRemove.forEach(this::removeInput);
             toAdd.forEach(this::addInput);
         }
-        this.enabled = enabled;
     }
 
     // Getters

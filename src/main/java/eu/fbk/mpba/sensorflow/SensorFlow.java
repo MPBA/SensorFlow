@@ -1,6 +1,7 @@
 package eu.fbk.mpba.sensorflow;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,39 +71,73 @@ public class SensorFlow {
 
     //      Plugins
 
-    public SensorFlow add(Input p) {
-            InputManager added = null;
-            // Check if only the name is already contained
-            synchronized (_userInputs) {
-                if (!_userInputs.containsKey(p.getName())) {
-                    added = new InputManager(p, this.input);
-                    _userInputs.put(p.getName(), added);
-                }
+    private SensorFlow add(Input p, boolean routedEverywhere) {
+        InputManager added = null;
+        // Check if only the name is already contained
+        synchronized (_userInputs) {
+            if (!_userInputs.containsKey(p.getName())) {
+                added = new InputManager(p, this.input);
+                _userInputs.put(p.getName(), added);
             }
-            if (added != null) {
-                // InputGroups are not recursive, just one level
-                p.setManager(this.flow);
-                added.onCreate();
-            }
+        }
+        if (added != null) {
+            // InputGroups are not recursive, just one level
+            p.setManager(this.flow);
+            if (routedEverywhere)
+                routeAll(added);
+            added.onCreateAndStart();
+        }
         return this;
     }
 
-    public SensorFlow add(Output p) {
+    public SensorFlow add(Input p) {
         return add(p, true);
     }
 
-    public SensorFlow add(Output p, boolean threaded) {
+    public SensorFlow add(Collection<Input> p) {
+        p.forEach(this::add);
+        return this;
+    }
+
+    public SensorFlow addNotRouted(Input p) {
+        return add(p, false);
+    }
+
+    public SensorFlow addNotRouted(Collection<Input> p) {
+        p.forEach(this::addNotRouted);
+        return this;
+    }
+
+    private SensorFlow add(Output p, boolean threaded, boolean routeEverywhere) {
         OutputManager added = null;
         // Check if only the name is already contained
         synchronized (_userOutputs) {
             if (!_userOutputs.containsKey(p.getName())) {
-                _userOutputs.put(p.getName(), added = new OutputManager(p, this.output));
+                _userOutputs.put(p.getName(), added = new OutputManager(p, this.output, threaded));
             }
         }
         if (added != null) {
+            if (routeEverywhere)
+                routeAll(added);
             added.onCreate(sessionTag);
         }
         return this;
+    }
+
+    public SensorFlow add(Output p) {
+        return add(p, true, true);
+    }
+
+    public SensorFlow addNotRouted(Output p) {
+        return add(p, true, false);
+    }
+
+    public SensorFlow addNotThreaded(Output p) {
+        return add(p, false, true);
+    }
+
+    public SensorFlow addNotThreadedNotRouted(Output p) {
+        return add(p, false, false);
     }
 
     public SensorFlow remove(Input p) {
@@ -119,7 +154,7 @@ public class SensorFlow {
                 ArrayList<OutputManager> outputs = new ArrayList<>(s.getOutputs());
                 outputs.forEach((o) -> removeRoute(s, o));
             }
-            removed.onClose();
+            removed.onStopAndClose();
             p.setManager(null);
         }
         return this;
@@ -265,10 +300,22 @@ public class SensorFlow {
     // Does not create duplicates
     public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
+        _userInputs.values().forEach(this::routeAll);
+        return this;
+    }
+
+    SensorFlow routeAll(InputManager d) {
+        for (Input s : d.getFlows())      // FOREACH SENSOR
+            for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
+                addRoute(s, o);
+        return this;
+    }
+
+    SensorFlow routeAll(OutputManager o) {
+        // SENSORS x OUTPUTS
         for (InputManager d : _userInputs.values())
             for (Input s : d.getFlows())      // FOREACH SENSOR
-                for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
-                    addRoute(s, o);
+                addRoute(s, o);
         return this;
     }
 

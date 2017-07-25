@@ -101,7 +101,7 @@ class SFQueue {
 
     SFQueue(Output drain, int capacity, boolean fair) {
         this.output = drain;
-        if (capacity <= 0)
+        if (capacity < 0)
             throw new IllegalArgumentException();
         this.flows = new Input[capacity];
         this.longs = new long[capacity];
@@ -109,7 +109,7 @@ class SFQueue {
         this.strings = new String[capacity];
         lock = new ReentrantLock(fair);
         notEmpty = lock.newCondition();
-        notFull =  lock.newCondition();
+        notFull = lock.newCondition();
     }
 
 
@@ -144,6 +144,9 @@ class SFQueue {
 //    float pollwAvg = 0, putwAvg = 0;
 
     public void put(Input f, long t, String v) throws InterruptedException {
+        if (v == null)
+            throw new IllegalArgumentException("Logs can't be null.");
+
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {

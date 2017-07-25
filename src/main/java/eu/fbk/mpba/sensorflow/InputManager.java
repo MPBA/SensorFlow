@@ -18,7 +18,7 @@ class InputManager {
 
     // Events
 
-    void onCreate() {
+    void onCreateAndStart() {
         switch (status) {
             case INSTANTIATED:
                 inputGroup.onCreate();
@@ -32,7 +32,7 @@ class InputManager {
         }
     }
 
-    void onClose() {
+    void onStopAndClose() {
         switch (status) {
             case STARTED:
                 inputGroup.onStop();

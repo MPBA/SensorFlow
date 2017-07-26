@@ -18,7 +18,7 @@ class OutputManager {
     private Set<Input> linkedInputs = new HashSet<>();
     private Set<Input> linkedInputsSnapshot = new HashSet<>();
 
-    private SFQueue queue;
+    private Output queue;
     private volatile boolean enabled = true;
 
     OutputManager(Output output, OutputObserver manager) {
@@ -30,43 +30,20 @@ class OutputManager {
         outputPlugIn = output;
         this.threaded = threaded;
         if (threaded)
-            queue = new SFQueue(outputPlugIn, 800, false);
+            queue = new OutputBuffer(outputPlugIn, 800, false);
         else
-            // Ugly practice but effective, TODO extract an interface and build another class
-            queue = new SFQueue(null, 0, false) {
-                @Override
-                public void put(Input f, long t, double[] v) throws InterruptedException {
-                    outputPlugIn.onValue(f, t, v);
-                }
-
-                @Override
-                public void put(Input f, long t, String v) throws InterruptedException {
-                    outputPlugIn.onLog(f, t, v);
-                }
-
-                @Override
-                public void putAdded(Input f) throws InterruptedException {
-                    outputPlugIn.onInputAdded(f);
-                }
-
-                @Override
-                public void putRemoved(Input f) throws InterruptedException {
-                    outputPlugIn.onInputRemoved(f);
-                }
-            };
+            queue = outputPlugIn;
         setEnabled(false);
         changeStatus(PluginStatus.INSTANTIATED);
     }
 
-    private Thread thread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            try {
-                while (!stopPending) {
-                    queue.pollToHandler(100, TimeUnit.MILLISECONDS);
-                }
-            } catch (InterruptedException ignored) { }
-        }
+    private Thread thread = new Thread(() -> {
+        try {
+            OutputBuffer queue = (OutputBuffer)OutputManager.this.queue;
+            while (!stopPending) {
+                queue.pollToHandler(100, TimeUnit.MILLISECONDS);
+            }
+        } catch (InterruptedException ignored) { }
     });
 
     private void beforeDispatch() {
@@ -123,17 +100,21 @@ class OutputManager {
 
     void pushLog(Input sensor, long time, String message) {
         try {
-            queue.put(sensor, time, message);
-        } catch (InterruptedException e) {
-            System.out.println("InterruptedException 238rh2390");
+            queue.onLog(sensor, time, message);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InterruptedException)
+                System.out.println("InterruptedException 9234rhyu1");
+            else throw e;
         }
     }
 
     void pushValue(Input sensor, long time, double[] value) {
         try {
-            queue.put(sensor, time, value);
-        } catch (InterruptedException e) {
-            System.out.println("InterruptedException 9234rhyu2");
+            queue.onValue(sensor, time, value);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InterruptedException)
+                System.out.println("InterruptedException 9234rhyu2");
+            else throw e;
         }
     }
 
@@ -142,18 +123,22 @@ class OutputManager {
     synchronized void addInput(Input s) {
         if (linkedInputs.add(s) && enabled)
             try {
-                queue.putAdded(s);
-            } catch (InterruptedException e) {
-                System.out.println("InterruptedException 9234rhyu3");
+                queue.onInputAdded(s);
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof InterruptedException)
+                    System.out.println("InterruptedException 9234rhyu3");
+                else throw e;
             }
     }
 
     synchronized void removeInput(Input s) {
         if (linkedInputs.remove(s) && enabled)
             try {
-                queue.putRemoved(s);
-            } catch (InterruptedException e) {
-                System.out.println("InterruptedException 923w5hyu3");
+                queue.onInputRemoved(s);
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof InterruptedException)
+                    System.out.println("InterruptedException 9234rhyu4");
+                else throw e;
             }
     }
 
@@ -195,7 +180,7 @@ class OutputManager {
         return outputPlugIn;
     }
 
-    public void close() {
+    public synchronized void close() {
         if (outputPlugIn != null) {
             outputPlugIn.onClose();
             outputPlugIn = null;

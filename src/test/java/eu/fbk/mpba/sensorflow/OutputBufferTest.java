@@ -6,13 +6,13 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-public class SFQueueTest {
+public class OutputBufferTest {
     @Test
     public void test_sequential() throws InterruptedException {
         final String sequence = "aaavlvalvlvllvvlvlvrvllrvvrrvvvvvvarvllvlvvvvrrvr";
         final boolean[] done = new boolean[]{false};
 
-        final SFQueue q = new SFQueue(new Output() {
+        final OutputBuffer q = new OutputBuffer(new Output() {
             @Override
             public void onCreate(String sessionId) { }
             @Override
@@ -54,16 +54,16 @@ public class SFQueueTest {
             Assert.assertTrue(q.remainingCapacity() == sequence.length() + 1 - i);
             switch (sequence.charAt(i)) {
                 case 'a':
-                    q.putAdded(a);
+                    q.onInputAdded(a);
                     break;
                 case 'r':
-                    q.putRemoved(a);
+                    q.onInputRemoved(a);
                     break;
                 case 'v':
-                    q.put(a, Input.getTimeSource().getMonoUTCNanos(), new double[]{1});
+                    q.onValue(a, Input.getTimeSource().getMonoUTCNanos(), new double[]{1});
                     break;
                 case 'l':
-                    q.put(a, Input.getTimeSource().getMonoUTCNanos(), "hi");
+                    q.onLog(a, Input.getTimeSource().getMonoUTCNanos(), "hi");
                     break;
             }
             Assert.assertTrue(q.size() == i + 1);
@@ -141,7 +141,7 @@ public class SFQueueTest {
             mi.add(i, in);
         }
 
-        final SFQueue q = new SFQueue(o, 1000, false);
+        final OutputBuffer q = new OutputBuffer(o, 1000, false);
         new Thread(() -> {
             try {
                 //noinspection InfiniteLoopStatement
@@ -154,14 +154,14 @@ public class SFQueueTest {
 
         for (int i = 0; i < mi.size() * 1000; i++) {
             if (i % 1000 == 0) {
-                q.putAdded(mi.get(i / 1000));
+                q.onInputAdded(mi.get(i / 1000));
             } else if (i % 1000 == 999) {
-                q.putRemoved(mi.get(i / 1000));
+                q.onInputRemoved(mi.get(i / 1000));
             } else {
                 if (i % 3 == 0) {
-                    q.put(mi.get(i / 1000), Input.getTimeSource().getMonoUTCNanos(), "HiPedro " + i);
+                    q.onLog(mi.get(i / 1000), Input.getTimeSource().getMonoUTCNanos(), "HiPedro " + i);
                 } else {
-                    q.put(mi.get(i / 1000), Input.getTimeSource().getMonoUTCNanos(), new double[]{i / 1000, i % 3, i});
+                    q.onValue(mi.get(i / 1000), Input.getTimeSource().getMonoUTCNanos(), new double[]{i / 1000, i % 3, i});
                 }
             }
         }

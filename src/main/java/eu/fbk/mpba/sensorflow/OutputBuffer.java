@@ -4,13 +4,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-class SFQueue {
+class OutputBuffer implements Output {
 
-    // nulls encoding
-    // flows NotNull
-    // null doubles AND null events --> schema-event
-    // null doubles --> event
-    // null events  --> values
+    /*
+        nulls encoding
+        flows NotNull
+        null doubles AND null events --> schema-event
+        null doubles --> event
+        null events  --> values
+    */
 
     private final long INPUT_ADDED = 0L;
     private final long INPUT_REMOVED = -1L;
@@ -26,18 +28,10 @@ class SFQueue {
 
     private final Output output;
 
-    /*
-     * Concurrency control uses the classic two-condition algorithm
-     * found in any textbook.
-     */
-
-    /** Main lock guarding all access */
     private final ReentrantLock lock;
 
-    /** Condition for waiting takes */
     private final Condition notEmpty;
 
-    /** Condition for waiting puts */
     private final Condition notFull;
 
     // Internal helper methods
@@ -49,10 +43,6 @@ class SFQueue {
         notEmpty.signal();
     }
 
-    /**
-     * Inserts element at current put position, advances, and signals.
-     * Call only when holding lock.
-     */
     private void enqueue(Input f, long time, double[] v) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
@@ -62,10 +52,6 @@ class SFQueue {
         enqueued();
     }
 
-    /**
-     * Inserts element at current put position, advances, and signals.
-     * Call only when holding lock.
-     */
     private void enqueue(Input f, long time, String message) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
@@ -75,10 +61,6 @@ class SFQueue {
         enqueued();
     }
 
-    /**
-     * Inserts element at current put position, advances, and signals.
-     * Call only when holding lock.
-     */
     private void enqueue(Input f, long added) {
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
@@ -99,7 +81,7 @@ class SFQueue {
         notFull.signal();
     }
 
-    SFQueue(Output drain, int capacity, boolean fair) {
+    OutputBuffer(Output drain, int capacity, boolean fair) {
         this.output = drain;
         if (capacity < 0)
             throw new IllegalArgumentException();
@@ -112,73 +94,76 @@ class SFQueue {
         notFull = lock.newCondition();
     }
 
-
-    public void put(Input f, long t, double[] v) throws InterruptedException {
+    @Override
+    public void onValue(Input f, long t, double[] v) {
         if (v == null)
             throw new NullPointerException("No support for null data");
         final ReentrantLock lock = this.lock;
-//        putw = -System.nanoTime();
-        lock.lockInterruptibly();
-//        putw += System.nanoTime();
-//        putwAvg *= .9;
-//        putwAvg += .1 * putw;
         try {
-            while (count == flows.length)
-                notFull.await();
-            enqueue(f, t, v);
-//            if (System.nanoTime() - last > 100_000_000L) {
-//                Manager.face.println("count:    " + count);
-//                Manager.face.println("remaing:  " + (flows.length - count));
-//                Manager.face.println("pollw:    " + pollw);
-//                Manager.face.println("putw:     " + putw);
-//                Manager.face.println("pollwAvg: " + pollwAvg);
-//                Manager.face.println("putwAvg:  " + putwAvg);
-//                last = System.nanoTime();
-//            }
-        } finally {
-            lock.unlock();
+            lock.lockInterruptibly();
+            try {
+                while (count == flows.length)
+                    notFull.await();
+                enqueue(f, t, v);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-//    long last = 0, pollw = 0, putw = 0;
-//    float pollwAvg = 0, putwAvg = 0;
-
-    public void put(Input f, long t, String v) throws InterruptedException {
+    @Override
+    public void onLog(Input f, long t, String v) {
         if (v == null)
-            throw new IllegalArgumentException("Logs can't be null.");
+            throw new IllegalArgumentException("No support for null logs");
 
         final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
         try {
-            while (count == flows.length)
-                notFull.await();
-            enqueue(f, t, v);
-        } finally {
-            lock.unlock();
+            lock.lockInterruptibly();
+            try {
+                while (count == flows.length)
+                    notFull.await();
+                enqueue(f, t, v);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public void putAdded(Input f) throws InterruptedException {
+    @Override
+    public void onInputAdded(Input f) {
         final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
         try {
-            while (count == flows.length)
-                notFull.await();
-            enqueue(f, INPUT_ADDED);
-        } finally {
-            lock.unlock();
+            lock.lockInterruptibly();
+            try {
+                while (count == flows.length)
+                    notFull.await();
+                enqueue(f, INPUT_ADDED);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public void putRemoved(Input f) throws InterruptedException {
+    @Override
+    public void onInputRemoved(Input f) {
         final ReentrantLock lock = this.lock;
-        lock.lockInterruptibly();
         try {
-            while (count == flows.length)
-                notFull.await();
-            enqueue(f, INPUT_REMOVED);
-        } finally {
-            lock.unlock();
+            lock.lockInterruptibly();
+            try {
+                while (count == flows.length)
+                    notFull.await();
+                enqueue(f, INPUT_REMOVED);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -276,5 +261,20 @@ class SFQueue {
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public String getName() {
+        return output.getName();
+    }
+
+    @Override
+    public void onCreate(String sessionId) {
+        output.onCreate(sessionId);
+    }
+
+    @Override
+    public void onClose() {
+        output.onClose();
     }
 }

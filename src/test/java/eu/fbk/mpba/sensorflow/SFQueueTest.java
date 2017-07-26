@@ -8,14 +8,84 @@ import java.util.concurrent.TimeUnit;
 
 public class SFQueueTest {
     @Test
-    public void testSimple() {
+    public void test_sequential() throws InterruptedException {
+        final String sequence = "aaavlvalvlvllvvlvlvrvllrvvrrvvvvvvarvllvlvvvvrrvr";
+        final boolean[] done = new boolean[]{false};
 
+        final SFQueue q = new SFQueue(new Output() {
+            @Override
+            public void onCreate(String sessionId) { }
+            @Override
+            public String getName() { return null; }
+
+            @Override
+            public void onClose() {
+                Assert.assertTrue(counter == sequence.length());
+                done[0] = true;
+            }
+
+            int counter = 0;
+
+            @Override
+            public void onInputAdded(Input input) {
+                Assert.assertTrue(sequence.charAt(counter++) == 'a');
+            }
+
+            @Override
+            public void onInputRemoved(Input input) {
+                Assert.assertTrue(sequence.charAt(counter++) == 'r');
+            }
+
+            @Override
+            public void onValue(Input input, long timestamp, double[] value) {
+                Assert.assertTrue(sequence.charAt(counter++) == 'v');
+            }
+
+            @Override
+            public void onLog(Input input, long timestamp, String text) {
+                Assert.assertTrue(sequence.charAt(counter++) == 'l');
+            }
+        }, sequence.length() + 1, false);
+
+        Input a = new MockInput(null, null);
+
+        for (int i = 0; i < sequence.length(); i++) {
+            Assert.assertTrue(q.size() == i);
+            Assert.assertTrue(q.remainingCapacity() == sequence.length() + 1 - i);
+            switch (sequence.charAt(i)) {
+                case 'a':
+                    q.putAdded(a);
+                    break;
+                case 'r':
+                    q.putRemoved(a);
+                    break;
+                case 'v':
+                    q.put(a, Input.getTimeSource().getMonoUTCNanos(), new double[]{1});
+                    break;
+                case 'l':
+                    q.put(a, Input.getTimeSource().getMonoUTCNanos(), "hi");
+                    break;
+            }
+            Assert.assertTrue(q.size() == i + 1);
+            Assert.assertTrue(q.remainingCapacity() == sequence.length() - i);
+        }
+
+        Assert.assertTrue(q.remainingCapacity() == 1);
+
+        for (int i = 0; i < sequence.length(); i++) {
+            Assert.assertTrue(q.size() == sequence.length() - i);
+            Assert.assertTrue(q.remainingCapacity() == i + 1);
+            q.pollToHandler(1, TimeUnit.SECONDS);
+        }
+
+        Assert.assertTrue(q.size() == 0);
+
+        q.getHandler().onClose();
+        Assert.assertTrue(done[0]);
     }
 
     @Test
-    public void testComplex() throws InterruptedException {
-        Log.enabled = true;
-
+    public void test_full_complex() throws InterruptedException {
         Output o = new Output() {
             @Override
             public void onCreate(String sessionId) { }

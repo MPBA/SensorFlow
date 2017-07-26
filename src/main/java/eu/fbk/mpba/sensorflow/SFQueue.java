@@ -258,6 +258,10 @@ class SFQueue {
         }
     }
 
+    public Output getHandler() {
+        return output;
+    }
+
     public void clear() {
         final ReentrantLock lock = this.lock;
         lock.lock();

@@ -11,8 +11,7 @@ public class SensorFlow {
     // Fields
 
     private final String sessionTag;
-    private Status _status = SensorFlow.Status.READY;
-    private boolean muted = false;
+    private Status status = SensorFlow.Status.READY;
 
     private final Map<String, InputManager> _userInputs = new TreeMap<>();
     private final Map<String, OutputManager> _userOutputs = new TreeMap<>();
@@ -27,32 +26,7 @@ public class SensorFlow {
         // onStatusChanged
     };
 
-    // Data and Events Interface
-
-    private final DataObserver flow = new DataObserver() {
-
-        @Override
-        public void onValue(Input sender, long time, double[] value) {
-            if (!sender.isMuted() && !muted) {
-                for (OutputManager o : sender.getOutputs()) {
-                    if (o.isEnabled())
-                        //noinspection unchecked
-                        o.pushValue(sender, time, value);
-                }
-            }
-        }
-
-        @Override
-        public void onLog(Input sender, long time, String message) {
-            if (!sender.isMuted() && !muted) {
-                for (OutputManager o : sender.getOutputs()) {
-                    if (o.isEnabled())
-                        //noinspection unchecked
-                        o.pushLog(sender, time, message);
-                }
-            }
-        }
-    };
+    // Data and Events Interface, will be re-added for profiling
 
     // Engine implementation
 
@@ -82,7 +56,7 @@ public class SensorFlow {
         }
         if (added != null) {
             // InputGroups are not recursive, just one level
-            p.setManager(this.flow);
+//            p.setManager(this.flow);
             if (routedEverywhere)
                 routeAll(added);
             added.onCreateAndStart();
@@ -155,7 +129,7 @@ public class SensorFlow {
                 outputs.forEach((o) -> removeRoute(s, o));
             }
             removed.onStopAndClose();
-            p.setManager(null);
+//            p.setManager(null);
         }
         return this;
     }
@@ -228,10 +202,6 @@ public class SensorFlow {
 
     //      Gets
 
-    public boolean isStreamingEnabled() {
-        return muted;
-    }
-
     public boolean isOutputEnabled(String name) {
         synchronized (_userOutputs) {
             return _userOutputs.containsKey(name) && (_userOutputs.get(name)).isEnabled();
@@ -273,19 +243,6 @@ public class SensorFlow {
     }
 
     //      Engine operation
-
-    public void disableStreaming() {
-        setStreamsMuted(true);
-    }
-
-    public void enableStreaming() {
-        setStreamsMuted(true);
-    }
-
-    public SensorFlow setStreamsMuted(boolean muted) {
-        this.muted = muted;
-        return this;
-    }
 
     // Does not create duplicates
     public SensorFlow routeClear() {
@@ -330,11 +287,11 @@ public class SensorFlow {
     }
 
     private void changeStatus(Status status) {
-        _status = status;
+        this.status = status;
     }
 
     public Status getStatus() {
-        return _status;
+        return status;
     }
 
     public void close() {

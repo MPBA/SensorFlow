@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class adds internal support for the library data-paths.
@@ -15,7 +16,6 @@ public abstract class Input implements InputGroup {
     protected Status status = Status.OFF;
 
     private InputGroup parent;
-    private DataObserver manager;
     private Collection<String> header;
     private Set<OutputManager> outputs = new HashSet<>();
 
@@ -30,16 +30,6 @@ public abstract class Input implements InputGroup {
         @Override
         public long getMonoUTCNanos(long realTimeNanos) {
             return realTimeNanos + bootTime;
-        }
-
-        @Override
-        public long getMonoUTCMillis() {
-            return getMonoUTCNanos() / 1_000_000;
-        }
-
-        @Override
-        public long getMonoUTCMillis(long realTimeNanos) {
-            return getMonoUTCNanos(realTimeNanos) / 1_000_000;
         }
     };
 
@@ -57,20 +47,25 @@ public abstract class Input implements InputGroup {
         this.header = new ArrayList<>(header);
     }
 
+    private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
+
     void addOutput(OutputManager output) {
+        outputsAccess.writeLock().lock();
         outputs.add(output);
+        outputsAccess.writeLock().unlock();
     }
 
     void removeOutput(OutputManager output) {
+        outputsAccess.writeLock().lock();
         outputs.remove(output);
-    }
-
-    void setManager(DataObserver man) {
-        manager = man;
+        outputsAccess.writeLock().unlock();
     }
 
     Collection<OutputManager> getOutputs() {
-        return Collections.unmodifiableSet(outputs);
+        outputsAccess.readLock().lock();
+        ArrayList<OutputManager> outputManagers = new ArrayList<>(outputs);
+        outputsAccess.readLock().unlock();
+        return outputManagers;
     }
 
     // Managed protected getters setters
@@ -81,7 +76,9 @@ public abstract class Input implements InputGroup {
     }
 
     public void close() {
+        outputsAccess.writeLock().lock();
         outputs.clear();
+        outputsAccess.writeLock().unlock();
     }
 
     @Override
@@ -127,12 +124,21 @@ public abstract class Input implements InputGroup {
 
     public void pushValue(long time, double[] value) {
         // Shouldn't be called before onCreate
-        manager.onValue(this, time, value);
+        outputsAccess.readLock().lock();
+        outputs.stream()
+                .filter(OutputManager::isEnabled)
+                .forEach(o -> o.pushValue(this, time, value));
+        outputsAccess.readLock().unlock();
+
     }
 
     public void pushLog(long time, String message) {
         // Shouldn't be called before onCreate
-        manager.onLog(this, time, message);
+        outputsAccess.readLock().lock();
+        outputs.stream()
+                .filter(OutputManager::isEnabled)
+                .forEach(o -> o.pushLog(this, time, message));
+        outputsAccess.readLock().unlock();
     }
 
     // To be implemented

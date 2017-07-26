@@ -1,11 +1,13 @@
 package eu.fbk.mpba.sensorflow;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 
 public class SensorFlowTest {
+
     @Test
     public void test_sf_oneOutputThreaded() throws InterruptedException {
         Log.enabled = true;
@@ -30,7 +32,7 @@ public class SensorFlowTest {
 
         Log.l("Sent:     " + sent);
         Log.l("Received: " + mo.receivedLines);
-        Assert.assertTrue(sent == mo.receivedLines);
+        Assert.assertTrue(sent == mo.receivedLines.get());
     }
 
     @Test
@@ -57,6 +59,43 @@ public class SensorFlowTest {
 
         Log.l("Sent:     " + sent);
         Log.l("Received: " + mo.receivedLines);
-        Assert.assertTrue(sent == mo.receivedLines);
+        Assert.assertTrue(sent == mo.receivedLines.get());
+    }
+
+    @Test
+    public void test_sf_routing() throws InterruptedException {
+        final int NUM = 10;
+
+        ArrayList<Input> mi = new ArrayList<>();
+        for (int i = 0; i < NUM; i++)
+            mi.add(i, new MockInput(null, "MockInput" + i));
+        ArrayList<Output> mo = new ArrayList<>();
+        for (int i = 0; i < NUM; i++)
+            mo.add(i, new MockOutput("MockOutput" + i));
+
+        SensorFlow sf = new SensorFlow();
+        mo.forEach(sf::addNotRouted);
+        sf.addNotRouted(mi);
+
+        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0));
+
+        sf.routeClear();
+        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0));
+
+        sf.routeAll();
+        Thread.sleep(100);
+        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() > 0));
+
+        sf.routeClear();
+        Thread.sleep(100);
+        final long[] sum = new long[]{0};
+        mo.forEach((o) -> sum[0] += ((MockOutput)o).receivedLines.get());
+
+        Assert.assertTrue("One for each assumption failed", sum[0] > NUM);
+
+        Thread.sleep(100);
+        mo.forEach((o) -> sum[0] -= ((MockOutput)o).receivedLines.get());
+
+        Assert.assertTrue("Things after routeClear", sum[0] == 0);
     }
 }

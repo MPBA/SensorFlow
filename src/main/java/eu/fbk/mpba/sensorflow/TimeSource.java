@@ -6,6 +6,4 @@ package eu.fbk.mpba.sensorflow;
 public interface TimeSource {
     long getMonoUTCNanos();
     long getMonoUTCNanos(long realTimeNanos);
-    long getMonoUTCMillis();
-    long getMonoUTCMillis(long realTimeNanos);
 }

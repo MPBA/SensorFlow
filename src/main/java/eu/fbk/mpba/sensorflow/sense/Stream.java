@@ -80,7 +80,7 @@ public class Stream extends Input {
      * @param message String containing the raw log text
      */
     public void pushLog(String message) {
-        pushLog(getTimeSource().getMonoUTCMillis(), message);
+        pushLog(getTimeSource().getMonoUTCNanos(), message);
     }
 
     /**
@@ -90,7 +90,7 @@ public class Stream extends Input {
      * @param message String containing the log message
      */
     public void pushLog(int type, String tag, String message) {
-        pushLog(getTimeSource().getMonoUTCMillis(), type, tag, message);
+        pushLog(getTimeSource().getMonoUTCNanos(), type, tag, message);
     }
 
     // May not be for the end developer

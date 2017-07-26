@@ -4,6 +4,7 @@ import org.junit.Assert;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MockOutput implements Output {
     private final String name;
@@ -52,15 +53,15 @@ public class MockOutput implements Output {
     public void onValue(Input input, long timestamp, double[] value) {
         Assert.assertTrue(lastValueTimes.get(input) < timestamp);
         lastValueTimes.put(input, timestamp);
-        receivedLines++;
+        receivedLines.incrementAndGet();
     }
 
     @Override
     public void onLog(Input input, long timestamp, String text) {
         Assert.assertTrue(lastLogTimes.get(input) < timestamp);
         lastValueTimes.put(input, timestamp);
-        receivedLines++;
+        receivedLines.incrementAndGet();
     }
 
-    long receivedLines = 0;
+    AtomicLong receivedLines = new AtomicLong(0);
 }

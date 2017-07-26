@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorflow;
 
-public interface Output extends NamedPlugin {
+public interface Output extends SFPlugin {
 
     void onCreate(String sessionId);
 

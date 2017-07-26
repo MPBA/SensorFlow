@@ -12,8 +12,6 @@ public class Stream extends Input {
     public static final Collection<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
     public static final Collection<String> HEADER_VALUE = Collections.singletonList("value");
 
-    private boolean on;
-
     public Stream(String header, String name) {
         this(null, header, name);
     }
@@ -94,28 +92,16 @@ public class Stream extends Input {
     // May not be for the end developer
 
     @Override
-    public void onCreate() {
-
-    }
+    public void onCreate() { }
 
     @Override
-    public void onAdded() {
-        on = true;
-    }
+    public void onAdded() { }
 
     @Override
-    public void onRemoved() {
-        on = false;
-    }
+    public void onRemoved() { }
 
     @Override
     public void onClose() {
 
-    }
-
-    // Maybe useless still inherited
-
-    public boolean isOn() {
-        return on;
     }
 }

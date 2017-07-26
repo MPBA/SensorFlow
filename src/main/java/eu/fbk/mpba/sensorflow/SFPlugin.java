@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorflow;
 
-public interface NamedPlugin {
+public interface SFPlugin {
     String getName();
     void onClose();
 }

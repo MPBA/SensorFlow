@@ -5,7 +5,7 @@ package eu.fbk.mpba.sensorflow.sense;
  * WirelessDevice enables by extension interacting with devices that have a battery, a wireless
  * connection and may lose data.
  * 
- * To notify such data, methods of the form protected boolean onX() are provided. These control
+ * To notify such data, methods of the form protected boolean pushX() are provided. These control
  * internal Flows that send the data in a standard form.
  * 
  */
@@ -23,7 +23,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param seconds   Estimated remaining time before power off due to low battery. This time,
      *                  despite being in seconds, has neither to change every second nor to be monotonic.
      */
-    protected void onBatteryETA(double seconds) {
+    protected void pushBatteryETA(double seconds) {
         batteryETA.pushValue(seconds);
     }
 
@@ -33,7 +33,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param percentage Value from 0 (Empty) to 100 Fully charged. Neither granularity, nor
      *                   monotonicity requirements.
      */
-    protected void onBatterySOC(double percentage) {
+    protected void pushBatterySOC(double percentage) {
         batterySOC.pushValue(percentage);
     }
 
@@ -41,7 +41,7 @@ public abstract class WirelessDevice extends InputModule {
      * Notifies a change in the status of the datalink connection. (Standard not yet defined).
      * @param status
      */
-    protected void onConnectionStatus(String status) {
+    protected void pushConnectionStatus(String status) {
         connection.pushLog(0, "", status);
     }
 
@@ -52,7 +52,7 @@ public abstract class WirelessDevice extends InputModule {
      *                      where 0% is the complete loss of connection and 100% is the maximal
      *                      power receivable.
      */
-    protected void onConnectionStrength(double percentage) {
+    protected void pushConnectionStrength(double percentage) {
         connection.pushValue(percentage);
     }
 
@@ -61,7 +61,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param bytes Indicative quantity of information lost. If the data is retransmitted due to
      *              some Transmission Control mechanism it has not to be considered lost.
      */
-    protected void onDataLoss(double bytes) {
+    protected void pushDataLoss(double bytes) {
         dataLoss.pushValue(bytes);
     }
 
@@ -73,10 +73,10 @@ public abstract class WirelessDevice extends InputModule {
 
     // OOP stuff
 
-    private Stream batteryETA = new Stream(thisModule, "time", "BatteryETA");
-    private Stream batterySOC = new Stream(thisModule, "percentage", "BatterySOC");
-    private Stream connection = new Stream(thisModule, "percentage", "Connection");
-    private Stream dataLoss = new Stream(thisModule, "bytes", "DataLoss");
+    private Stream batteryETA = new Stream(this, "time", "BatteryETA");
+    private Stream batterySOC = new Stream(this, "percentage", "BatterySOC");
+    private Stream connection = new Stream(this, "percentage", "Connection");
+    private Stream dataLoss = new Stream(this, "bytes", "DataLoss");
     {
         addStream(batteryETA);
         addStream(batterySOC);

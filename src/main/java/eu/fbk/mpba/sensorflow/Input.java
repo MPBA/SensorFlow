@@ -135,7 +135,7 @@ public abstract class Input implements InputGroup {
         return header;
     }
 
-    //      Gets - NamedPlugin non-final Overrides
+    //      Gets - SFPlugin non-final Overrides
 
     @Override
     public String getName() {

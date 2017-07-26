@@ -36,7 +36,7 @@ class OutputManager {
     private Thread sbufferingThread = new Thread(() -> {
         try {
             OutputBuffer queue = (OutputBuffer)OutputManager.this.queue;
-            while (!stopPending) {
+            while (!stopPending || queue.size() > 0) {
                 queue.pollToHandler(100, TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException ignored) { }
@@ -55,7 +55,6 @@ class OutputManager {
     }
 
     private void afterDispatch() {
-        setEnabled(false);
         // Here input add/removal differentially buffered, but no more useful
         linkedInputsSnapshot.forEach(outputPlugIn::onInputRemoved);
         outputPlugIn.onClose();
@@ -81,6 +80,7 @@ class OutputManager {
 
     void onStopAndClose() {
         if (status == PluginStatus.CREATED && !stopPending) {
+            setEnabled(false);
             stopPending = true;
             if (threaded)
                 try {

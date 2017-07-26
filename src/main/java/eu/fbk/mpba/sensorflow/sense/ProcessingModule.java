@@ -1,9 +1,14 @@
 package eu.fbk.mpba.sensorflow.sense;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import eu.fbk.mpba.sensorflow.Input;
 import eu.fbk.mpba.sensorflow.Output;
 
 public abstract class ProcessingModule extends InputModule implements Output, IOutputModule {
+
+    private final AtomicBoolean created = new AtomicBoolean(false);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
      * Constructor of abstract class
@@ -14,6 +19,37 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
     public ProcessingModule(String name, String settings) {
         super(name, settings);
     }
+
+    @Override
+    public void onCreate(String sessionId) {
+        onCreate();
+    }
+
+    @Override
+    public void onCreate() {
+        if (!created.getAndSet(true))
+            onProcessingCreate();
+    }
+
+    @Override
+    public void onClose() {
+        if (!closed.getAndSet(true))
+            onProcessingClose();
+    }
+
+    public abstract void onProcessingCreate();
+
+    @Override
+    public abstract void onAdded();
+
+    @Override
+    public abstract void onRemoved();
+
+    @Override
+    public abstract void onInputAdded(Input input);
+
+    @Override
+    public abstract void onInputRemoved(Input input);
 
     /**
      * This method is called when a new value vector is available to be used, transmitted or
@@ -49,4 +85,6 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
      */
     @Override
     public abstract void onLog(Input input, long timestamp, int type, String tag, String message);
+
+    public abstract void onProcessingClose();
 }

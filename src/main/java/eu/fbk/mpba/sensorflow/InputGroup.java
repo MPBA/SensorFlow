@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorflow;
 
-public interface InputGroup extends NamedPlugin {
+public interface InputGroup extends SFPlugin {
 
     void onCreate();
 

@@ -50,4 +50,16 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      */
     @Override
     public abstract void onLog(Input input, long timestamp, int type, String tag, String message);
+
+    @Override
+    public abstract void onCreate(String sessionId);
+
+    @Override
+    public abstract void onInputAdded(Input input);
+
+    @Override
+    public abstract void onInputRemoved(Input input);
+
+    @Override
+    public abstract void onClose();
 }

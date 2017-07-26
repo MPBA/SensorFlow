@@ -14,7 +14,7 @@ public class SensorFlowTest {
 
         SensorFlow sf = new SensorFlow();
         MockOutput mo = new MockOutput("consumer");
-        ArrayList<Input> mi = new ArrayList<>();
+        ArrayList<InputGroup> mi = new ArrayList<>();
         for (int i = 0; i < 10; i++)
             mi.add(i, new MockInput(null, "MockInput" + i));
 
@@ -23,10 +23,10 @@ public class SensorFlowTest {
 
         Thread.sleep(1500);
 
-        mi.forEach(Input::onRemoved);
+        mi.forEach(InputGroup::onRemoved);
 
         long sent = 0;
-        for (Input i : mi)
+        for (InputGroup i : mi)
             sent += ((MockInput)i).sentLines;
 
         Log.l("Sent:     " + sent);
@@ -41,7 +41,7 @@ public class SensorFlowTest {
 
         SensorFlow sf = new SensorFlow();
         MockOutput mo = new MockOutput("consumer");
-        ArrayList<Input> mi = new ArrayList<>();
+        ArrayList<InputGroup> mi = new ArrayList<>();
         for (int i = 0; i < 10; i++)
             mi.add(i, new MockInput(null, "MockInput" + i));
 
@@ -50,10 +50,10 @@ public class SensorFlowTest {
 
         Thread.sleep(1500);
 
-        mi.forEach(Input::onRemoved);
+        mi.forEach(InputGroup::onRemoved);
 
         long sent = 0;
-        for (Input i : mi)
+        for (InputGroup i : mi)
             sent += ((MockInput)i).sentLines;
 
         Log.l("Sent:     " + sent);
@@ -65,7 +65,7 @@ public class SensorFlowTest {
     public void test_sf_routing() throws InterruptedException {
         final int NUM = 10;
 
-        ArrayList<Input> mi = new ArrayList<>();
+        ArrayList<InputGroup> mi = new ArrayList<>();
         for (int i = 0; i < NUM; i++)
             mi.add(i, new MockInput(null, "MockInput" + i));
         ArrayList<Output> mo = new ArrayList<>();

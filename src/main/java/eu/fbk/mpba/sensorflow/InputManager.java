@@ -18,7 +18,21 @@ class InputManager {
 
     // Events
 
-    void onCreateAndStart() {
+    void onCreate() {
+        switch (status) {
+            case INSTANTIATED:
+                inputGroup.onCreate();
+                changeStatus(PluginStatus.CREATED);
+            case CREATED:
+                inputGroup.onAdded();
+                changeStatus(PluginStatus.STARTED);
+                break;
+            default:
+                System.out.println("onCreateAndStart out of place 3290erj28, current status: " + status.toString());
+        }
+    }
+
+    void onAdded() {
         switch (status) {
             case INSTANTIATED:
                 inputGroup.onCreate();

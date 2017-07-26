@@ -1,5 +1,5 @@
 package eu.fbk.mpba.sensorflow;
 
-enum PluginStatus {
+public enum PluginStatus {
     INSTANTIATED, CREATED, STARTED, STOPPED, CLOSED
 }

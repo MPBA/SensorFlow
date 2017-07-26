@@ -48,7 +48,7 @@ public class SensorFlow {
 
     //      Plugins
 
-    private SensorFlow add(Input p, boolean routedEverywhere) {
+    private SensorFlow add(InputGroup p, boolean routedEverywhere) {
         InputManager added = null;
         // Check if only the name is already contained
         synchronized (_userInputs) {
@@ -60,27 +60,28 @@ public class SensorFlow {
         if (added != null) {
             // InputGroups are not recursive, just one level
 //            p.setManager(this.flow);
+            added.onCreate();
             if (routedEverywhere)
                 routeAll(added);
-            added.onCreateAndStart();
+            added.onAdded();
         }
         return this;
     }
 
-    public SensorFlow add(Input p) {
+    public SensorFlow add(InputGroup p) {
         return add(p, true);
     }
 
-    public SensorFlow add(Collection<Input> p) {
+    public SensorFlow add(Collection<InputGroup> p) {
         p.forEach(this::add);
         return this;
     }
 
-    public SensorFlow addNotRouted(Input p) {
+    public SensorFlow addNotRouted(InputGroup p) {
         return add(p, false);
     }
 
-    public SensorFlow addNotRouted(Collection<Input> p) {
+    public SensorFlow addNotRouted(Collection<InputGroup> p) {
         p.forEach(this::addNotRouted);
         return this;
     }
@@ -117,7 +118,7 @@ public class SensorFlow {
         return add(p, false, false);
     }
 
-    public SensorFlow remove(Input p) {
+    public SensorFlow remove(InputGroup p) {
         InputManager removed = null;
         // Check if only the name is already contained
         synchronized (_userInputs) {
@@ -302,11 +303,15 @@ public class SensorFlow {
             case READY:
                 changeStatus(Status.CLOSING);
                 for (InputManager d : _userInputs.values()) {
-                    for (Input s : d.getInputGroup().getChildren())
+                    for (Input s : d.getInputGroup().getChildren()) {
+                        s.onRemoved();
                         s.onClose();
+                    }
+                    d.getInputGroup().onRemoved();
                     d.getInputGroup().onClose();
                 }
-                _userOutputs.values().forEach(OutputManager::close);
+                routeClear();
+                _userOutputs.values().forEach(OutputManager::onStopAndClose);
                 changeStatus(Status.CLOSED);
                 break;
             case CLOSED:

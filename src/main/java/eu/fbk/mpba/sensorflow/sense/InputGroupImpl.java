@@ -19,23 +19,16 @@ class InputGroupImpl implements InputGroup {
     }
 
     @Override
-    public synchronized void onCreate() {
-        children.forEach(Input::onCreate);
-    }
+    public void onCreate() { }
 
     @Override
-    public synchronized void onAdded() {
-        children.forEach(Input::onAdded);
-    }
+    public void onAdded() { }
 
     @Override
-    public synchronized void onRemoved() {
-        children.forEach(Input::onRemoved);
-    }
+    public void onRemoved() { }
 
     @Override
     public synchronized void onClose() {
-        children.forEach(Input::onClose);
         children.clear();
     }
 

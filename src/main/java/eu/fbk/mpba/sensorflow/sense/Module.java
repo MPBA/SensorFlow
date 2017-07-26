@@ -3,30 +3,42 @@ package eu.fbk.mpba.sensorflow.sense;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import eu.fbk.mpba.sensorflow.NamedPlugin;
+import eu.fbk.mpba.sensorflow.SFPlugin;
 
 /**
  * Base class for every sense plugin. It implements a common interface
  */
-public abstract class Module implements NamedPlugin {
+public abstract class Module implements SFPlugin {
     private final LogInput moduleLog;
     private final String configuration;
     private final String simpleName;
-    private final ArrayList<NamedPlugin> sfChildren = new ArrayList<>(4);
+    private final ArrayList<SFPlugin> sfChildren = new ArrayList<>(4);
 
-    void addSFChild(NamedPlugin child) {
+    /**
+     * Constructor of abstract class
+     * @param configuration Configuration string (e.g. json) to be passed to the Module.
+     */
+    Module(String name, String configuration) {
+        this.configuration = configuration;
+        this.moduleLog = new LogInput(name);
+        simpleName = name == null ? getClass().getSimpleName() : name;
+        addSFChild(moduleLog);
+    }
+
+    void addSFChild(SFPlugin child) {
         sfChildren.add(child);
     }
 
-    Collection<NamedPlugin> getSFChildren() {
+    Collection<SFPlugin> getSFChildren() {
         return sfChildren;
     }
 
     /**
      * Returns the path of the module considering InputGroups.
      */
+    @Override
     public String getName() {
-        return simpleName;
+        return getSimpleName();
     }
 
     /**
@@ -35,17 +47,6 @@ public abstract class Module implements NamedPlugin {
      */
     public String getSimpleName() {
         return simpleName;
-    }
-
-    /**
-     * Constructor of abstract class
-     * @param configuration Configuration string (e.g. json) to be passed to the Module.
-     */
-    Module(String name, String configuration) {
-        this.configuration = configuration;
-        this.moduleLog = new LogInput(this);
-        simpleName = name == null ? getClass().getSimpleName() : name;
-        addSFChild(moduleLog);
     }
 
     /**

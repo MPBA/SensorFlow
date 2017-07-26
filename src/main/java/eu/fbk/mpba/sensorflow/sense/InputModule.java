@@ -1,11 +1,16 @@
 package eu.fbk.mpba.sensorflow.sense;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.InputGroup;
+
 /**
  * Base class for an InputModule
  */
-public abstract class InputModule extends Module {
-
-    final InputGroupImpl thisModule;
+public abstract class InputModule extends Module implements InputGroup {
+    private final ArrayList<Input> children = new ArrayList<>();
 
     /**
      * Constructor of abstract class
@@ -14,47 +19,30 @@ public abstract class InputModule extends Module {
      */
     public InputModule(String name, String settings) {
         super(name, settings);
-        thisModule = new InputGroupImpl(name) {
-            @Override
-            public synchronized void onCreate() {
-                InputModule.this.onCreate();
-            }
-
-            @Override
-            public synchronized void onAdded() {
-                InputModule.this.onStart();
-            }
-
-            @Override
-            public synchronized void onRemoved() {
-                InputModule.this.onStop();
-            }
-
-            @Override
-            public synchronized void onClose() {
-                InputModule.this.onClose();
-            }
-        };
-        addSFChild(thisModule);
+        addSFChild(this);
     }
 
     /**
      * Adds a Stream to the InputModule. The Input must have an unique name within the device inputs.
      * An Input can be added to the WirelessDevice scheme in any moment.
-     * Special Inputs are already present such as BatteryETA, BatterySOC, DataLoss, ConnectionStatus
-     * and InternalErrors (getChildren).
+     * Special Inputs may be already present.
      *
      * @param input The flow to add to the InputModule.
      */
     protected void addStream(Stream input) {
-        thisModule.addChild(input);
+        children.add(input);
+    }
+
+    @Override
+    public Iterable<Input> getChildren() {
+        return Collections.unmodifiableList(children);
     }
 
     public abstract void onCreate();
 
-    public abstract void onStart();
+    public abstract void onAdded();
 
-    public abstract void onStop();
+    public abstract void onRemoved();
 
     public abstract void onClose();
 }

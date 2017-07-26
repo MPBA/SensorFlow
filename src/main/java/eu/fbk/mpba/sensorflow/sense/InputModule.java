@@ -21,12 +21,12 @@ public abstract class InputModule extends Module {
             }
 
             @Override
-            public synchronized void onStart() {
+            public synchronized void onAdded() {
                 InputModule.this.onStart();
             }
 
             @Override
-            public synchronized void onStop() {
+            public synchronized void onRemoved() {
                 InputModule.this.onStop();
             }
 

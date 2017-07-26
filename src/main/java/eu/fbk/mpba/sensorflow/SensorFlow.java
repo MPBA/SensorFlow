@@ -1,14 +1,17 @@
 package eu.fbk.mpba.sensorflow;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 public class SensorFlow {
 
-    // Fields
+    //      Fields
 
     private final String sessionTag;
     private Status status = SensorFlow.Status.READY;
@@ -16,7 +19,7 @@ public class SensorFlow {
     private final Map<String, InputManager> _userInputs = new TreeMap<>();
     private final Map<String, OutputManager> _userOutputs = new TreeMap<>();
 
-    // Status Interfaces
+    //      Status Interfaces
 
     private final InputObserver input = (sender, state) -> {
         // onStatusChanged
@@ -31,7 +34,7 @@ public class SensorFlow {
     // Engine implementation
 
     public SensorFlow() {
-        this(Long.toString(System.currentTimeMillis()));
+        this(new SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(new Date()));
     }
 
     public SensorFlow(String sessionTag) {
@@ -93,7 +96,7 @@ public class SensorFlow {
         if (added != null) {
             if (routeEverywhere)
                 routeAll(added);
-            added.onCreate(sessionTag);
+            added.onCreateAndStart(sessionTag);
         }
         return this;
     }
@@ -106,11 +109,11 @@ public class SensorFlow {
         return add(p, true, false);
     }
 
-    public SensorFlow addNotThreaded(Output p) {
+    public SensorFlow addInThread(Output p) {
         return add(p, false, true);
     }
 
-    public SensorFlow addNotThreadedNotRouted(Output p) {
+    public SensorFlow addInThreadNotRouted(Output p) {
         return add(p, false, false);
     }
 
@@ -145,7 +148,7 @@ public class SensorFlow {
             final OutputManager o = removed;
             ArrayList<Input> inputs = new ArrayList<>(o.getInputs());
             inputs.forEach((i) -> removeRoute(i, o));
-            o.onClose();
+            o.onStopAndClose();
         }
         return this;
     }
@@ -213,7 +216,7 @@ public class SensorFlow {
         synchronized (_userInputs) {
             r = _userInputs.get(name);
         }
-        return r == null ? null : r.getInput();
+        return r == null ? null : r.getInputGroup();
     }
 
     public Output getOutput(String name) {
@@ -228,7 +231,7 @@ public class SensorFlow {
         ArrayList<InputGroup> x;
         synchronized (_userInputs) {
             x = new ArrayList<>(_userInputs.size());
-            _userInputs.values().forEach((o) -> x.add(o.getInput()));
+            _userInputs.values().forEach((o) -> x.add(o.getInputGroup()));
         }
         return Collections.unmodifiableCollection(x);
     }
@@ -248,7 +251,7 @@ public class SensorFlow {
     public SensorFlow routeClear() {
         // REMOVE ALL
         for (InputManager d : _userInputs.values())
-            for (Input s : d.getFlows())      // FOREACH SENSOR
+            for (Input s : d.getInputs())      // FOREACH SENSOR
                 for (OutputManager o : _userOutputs.values())    // Remove LINK TO EACH OUTPUT
                     removeRoute(s, o);
         return this;
@@ -261,17 +264,17 @@ public class SensorFlow {
         return this;
     }
 
-    SensorFlow routeAll(InputManager d) {
-        for (Input s : d.getFlows())      // FOREACH SENSOR
+    private SensorFlow routeAll(InputManager d) {
+        for (Input s : d.getInputs())      // FOREACH SENSOR
             for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
                 addRoute(s, o);
         return this;
     }
 
-    SensorFlow routeAll(OutputManager o) {
+    private SensorFlow routeAll(OutputManager o) {
         // SENSORS x OUTPUTS
         for (InputManager d : _userInputs.values())
-            for (Input s : d.getFlows())      // FOREACH SENSOR
+            for (Input s : d.getInputs())      // FOREACH SENSOR
                 addRoute(s, o);
         return this;
     }
@@ -281,7 +284,7 @@ public class SensorFlow {
         // max SENSORS, OUTPUTS
         int maxi = Math.max(_userInputs.size(), _userOutputs.size());
         for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-            for (Input s : new ArrayList<>(_userInputs.values()).get(i % _userInputs.size()).getFlows())      // LINK MODULE LOOPING ON THE SHORTEST
+            for (Input s : new ArrayList<>(_userInputs.values()).get(i % _userInputs.size()).getInputs())      // LINK MODULE LOOPING ON THE SHORTEST
                 addRoute(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
         return this;
     }
@@ -299,9 +302,9 @@ public class SensorFlow {
             case READY:
                 changeStatus(Status.CLOSING);
                 for (InputManager d : _userInputs.values()) {
-                    for (Input s : d.getInput().getChildren())
+                    for (Input s : d.getInputGroup().getChildren())
                         s.onClose();
-                    d.getInput().onClose();
+                    d.getInputGroup().onClose();
                 }
                 _userOutputs.values().forEach(OutputManager::close);
                 changeStatus(Status.CLOSED);
@@ -318,7 +321,7 @@ public class SensorFlow {
     @Override
     protected void finalize() throws Throwable {
         close();
-        // After, Object.onClose()
+        // After, Object.onStopAndClose()
         super.finalize();
     }
 

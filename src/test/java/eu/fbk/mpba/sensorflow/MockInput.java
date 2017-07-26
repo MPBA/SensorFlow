@@ -18,7 +18,7 @@ public class MockInput extends Input {
 
     @Override
     public void onCreate() {
-//        System.out.println("MockInput onCreate");
+//        System.out.println("MockInput onCreateAndStart");
         Assert.assertEquals(testStatus, PluginStatus.INSTANTIATED);
         producer = new Thread(() -> {
             try {
@@ -45,13 +45,13 @@ public class MockInput extends Input {
     }
 
     @Override
-    public void onStart() {
+    public void onAdded() {
         Assert.assertTrue(testStatus == PluginStatus.CREATED || testStatus == PluginStatus.STOPPED);
         testStatus = PluginStatus.STARTED;
     }
 
     @Override
-    public void onStop() {
+    public void onRemoved() {
         Assert.assertEquals(testStatus, PluginStatus.STARTED);
         testStatus = PluginStatus.STOPPED;
     }

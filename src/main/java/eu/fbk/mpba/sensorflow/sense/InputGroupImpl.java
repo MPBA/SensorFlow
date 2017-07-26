@@ -24,13 +24,13 @@ class InputGroupImpl implements InputGroup {
     }
 
     @Override
-    public synchronized void onStart() {
-        children.forEach(Input::onStart);
+    public synchronized void onAdded() {
+        children.forEach(Input::onAdded);
     }
 
     @Override
-    public synchronized void onStop() {
-        children.forEach(Input::onStop);
+    public synchronized void onRemoved() {
+        children.forEach(Input::onRemoved);
     }
 
     @Override

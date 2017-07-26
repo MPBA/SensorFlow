@@ -21,15 +21,11 @@ class OutputManager {
     private Output queue;
     private volatile boolean enabled = true;
 
-    OutputManager(Output output, OutputObserver manager) {
-        this(output, manager, true);
-    }
-
-    OutputManager(Output output, OutputObserver manager, boolean threaded) {
+    OutputManager(Output output, OutputObserver manager, boolean buffered) {
         this.manager = manager;
         outputPlugIn = output;
-        this.threaded = threaded;
-        if (threaded)
+        this.threaded = buffered;
+        if (buffered)
             queue = new OutputBuffer(outputPlugIn, 800, false);
         else
             queue = outputPlugIn;
@@ -37,7 +33,7 @@ class OutputManager {
         changeStatus(PluginStatus.INSTANTIATED);
     }
 
-    private Thread thread = new Thread(() -> {
+    private Thread sbufferingThread = new Thread(() -> {
         try {
             OutputBuffer queue = (OutputBuffer)OutputManager.this.queue;
             while (!stopPending) {
@@ -71,30 +67,30 @@ class OutputManager {
             manager.outputStatusChanged(this, status = s);
     }
 
-    // Implemented Callbacks
+    // Implemented
 
-    void onCreate(String sessionTag) {
+    void onCreateAndStart(String sessionTag) {
         if (status == PluginStatus.INSTANTIATED) {
             this.sessionTag = sessionTag;
             beforeDispatch();
             if (threaded)
-                thread.start();
+                sbufferingThread.start();
         } else
-            System.out.println("onCreate out of place 4353453ewdr, current status: " + status.toString());
+            System.out.println("onCreateAndStart out of place 4353453ewdr, current status: " + status.toString());
     }
 
-    void onClose() {
+    void onStopAndClose() {
         if (status == PluginStatus.CREATED && !stopPending) {
             stopPending = true;
             if (threaded)
                 try {
-                    thread.join(); // Max time specified in queue pollToHandler call
+                    sbufferingThread.join(); // Max time specified in queue pollToHandler call
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             afterDispatch();
         } else
-            System.out.println("onCreate out of place 4353453ewdr, current status: " + status.toString()
+            System.out.println("onCreateAndStart out of place 4353453ewdr, current status: " + status.toString()
                     + ", stopPending: " + stopPending);
     }
 
@@ -179,6 +175,8 @@ class OutputManager {
     Output getOutput() {
         return outputPlugIn;
     }
+
+    // Finalization
 
     public synchronized void close() {
         if (outputPlugIn != null) {

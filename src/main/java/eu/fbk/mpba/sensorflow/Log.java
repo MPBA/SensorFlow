@@ -1,6 +1,6 @@
 package eu.fbk.mpba.sensorflow;
 
-public class Log {
+class Log {
     private static long ord = 1_000_000_000L;
     public static boolean enabled = false;
     public static void l(Object text) {

@@ -7,17 +7,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class adds internal support for the library data-paths.
- */
 public abstract class Input implements InputGroup {
-    private boolean listened = true;
-    private String name;
-    protected Status status = Status.OFF;
 
-    private InputGroup parent;
-    private Collection<String> header;
-    private Set<OutputManager> outputs = new HashSet<>();
+    //      Static time - things
 
     private static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
     private static TimeSource time = new TimeSource() {
@@ -28,10 +20,22 @@ public abstract class Input implements InputGroup {
         }
 
         @Override
-        public long getMonoUTCNanos(long realTimeNanos) {
-            return realTimeNanos + bootTime;
+        public long getMonoUTCNanos(long systemNanoTime) {
+            return systemNanoTime + bootTime;
         }
     };
+
+    //      Fields
+
+    private boolean listened = true;
+    private String name;
+
+    private InputGroup parent;
+    private Collection<String> header;
+    private Set<OutputManager> outputs = new HashSet<>();
+    private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
+
+    //      Constructors
 
     protected Input(Collection<String> header) {
         this(null, Input.class.getSimpleName(), header);
@@ -47,17 +51,31 @@ public abstract class Input implements InputGroup {
         this.header = new ArrayList<>(header);
     }
 
-    private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
+    //      Outputs access
 
     void addOutput(OutputManager output) {
         outputsAccess.writeLock().lock();
         outputs.add(output);
         outputsAccess.writeLock().unlock();
+        onOutputsAdded();
     }
 
     void removeOutput(OutputManager output) {
         outputsAccess.writeLock().lock();
         outputs.remove(output);
+        outputsAccess.writeLock().unlock();
+    }
+
+    void addOutput(Collection<OutputManager> output) {
+        outputsAccess.writeLock().lock();
+        outputs.addAll(output);
+        outputsAccess.writeLock().unlock();
+        onOutputsAdded();
+    }
+
+    void removeOutput(Collection<OutputManager> output) {
+        outputsAccess.writeLock().lock();
+        outputs.removeAll(output);
         outputsAccess.writeLock().unlock();
     }
 
@@ -68,45 +86,28 @@ public abstract class Input implements InputGroup {
         return outputManagers;
     }
 
-    // Managed protected getters setters
+    //      Outputs access - Notify
 
-    protected void changeStatus(Status state) {
-        // Not notified to SF
-        status = state;
+    public void pushValue(long time, double[] value) {
+        // Shouldn't be called before onCreateAndStart
+        outputsAccess.readLock().lock();
+        outputs.stream()
+                .filter(OutputManager::isEnabled)
+                .forEach(o -> o.pushValue(this, time, value));
+        outputsAccess.readLock().unlock();
+
     }
 
-    public void close() {
-        outputsAccess.writeLock().lock();
-        outputs.clear();
-        outputsAccess.writeLock().unlock();
+    public void pushLog(long time, String message) {
+        // Shouldn't be called before onCreateAndStart
+        outputsAccess.readLock().lock();
+        outputs.stream()
+                .filter(OutputManager::isEnabled)
+                .forEach(o -> o.pushLog(this, time, message));
+        outputsAccess.readLock().unlock();
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
-    }
-
-    // Managed Overrides
-
-    public InputGroup getParent() {
-        return parent;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public static TimeSource getTimeSource() {
-        return time;
-    }
-
-    @Override
-    public Iterable<Input> getChildren() {
-        return Collections.singletonList(this);
-    }
-
-    // Listening
+    //      Muting
 
     public boolean isMuted() {
         return !listened;
@@ -120,42 +121,75 @@ public abstract class Input implements InputGroup {
         this.listened = true;
     }
 
-    // Notify methods
+    //      Gets
 
-    public void pushValue(long time, double[] value) {
-        // Shouldn't be called before onCreate
-        outputsAccess.readLock().lock();
-        outputs.stream()
-                .filter(OutputManager::isEnabled)
-                .forEach(o -> o.pushValue(this, time, value));
-        outputsAccess.readLock().unlock();
-
+    public static TimeSource getTimeSource() {
+        return time;
     }
 
-    public void pushLog(long time, String message) {
-        // Shouldn't be called before onCreate
-        outputsAccess.readLock().lock();
-        outputs.stream()
-                .filter(OutputManager::isEnabled)
-                .forEach(o -> o.pushLog(this, time, message));
-        outputsAccess.readLock().unlock();
+    public InputGroup getParent() {
+        return parent;
     }
 
-    // To be implemented
+    public final Collection<String> getHeader(){
+        return header;
+    }
 
+    //      Gets - NamedPlugin non-final Overrides
+
+    @Override
     public String getName() {
         InputGroup parent = getParent();
         return parent != null ? parent.getName() + "/" + getSimpleName() : getSimpleName();
     }
 
-    public String getSimpleName() {
+    //      Gets - InputGroup final Overrides
+
+    @Override
+    public final String getSimpleName() {
         return name;
     }
 
-    public Collection<String> getHeader(){
-        return header;
+    @Override
+    public final Iterable<Input> getChildren() {
+        return Collections.singletonList(this);
     }
 
+    //      Extra events
+
+    public void onOutputsAdded() { }
+
+    //      Finalization
+
+    public void close() {
+        outputsAccess.writeLock().lock();
+        outputs.clear();
+        outputsAccess.writeLock().unlock();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    //      Deprecated
+
+    @Deprecated
+    protected Status status = Status.OFF;
+
+    @Deprecated
+    protected void changeStatus(Status state) {
+        // Not notified to SF
+        status = state;
+    }
+
+    @Deprecated
+    public Status getStatus() {
+        return status;
+    }
+
+    @Deprecated
     public enum Status {
         OFF, ON, ERROR
     }

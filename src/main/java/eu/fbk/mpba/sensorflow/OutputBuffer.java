@@ -34,7 +34,7 @@ class OutputBuffer implements Output {
 
     private final Condition notFull;
 
-    // Internal helper methods
+    //      Internal helper methods
 
     private void enqueued() {
         if (++putIndex == flows.length)
@@ -93,6 +93,8 @@ class OutputBuffer implements Output {
         notEmpty = lock.newCondition();
         notFull = lock.newCondition();
     }
+
+    //      Output interface
 
     @Override
     public void onValue(Input f, long t, double[] v) {
@@ -167,6 +169,23 @@ class OutputBuffer implements Output {
         }
     }
 
+    @Override
+    public String getName() {
+        return output.getName();
+    }
+
+    @Override
+    public void onCreate(String sessionId) {
+        output.onCreate(sessionId);
+    }
+
+    @Override
+    public void onClose() {
+        output.onClose();
+    }
+
+    //      Flushing
+
     public void pollToHandler(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -223,6 +242,8 @@ class OutputBuffer implements Output {
         }
     }
 
+    //      Control
+
     public int size() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -243,10 +264,6 @@ class OutputBuffer implements Output {
         }
     }
 
-    public Output getHandler() {
-        return output;
-    }
-
     public void clear() {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -263,18 +280,9 @@ class OutputBuffer implements Output {
         }
     }
 
-    @Override
-    public String getName() {
-        return output.getName();
-    }
+    //      Gets
 
-    @Override
-    public void onCreate(String sessionId) {
-        output.onCreate(sessionId);
-    }
-
-    @Override
-    public void onClose() {
-        output.onClose();
+    public Output getHandler() {
+        return output;
     }
 }

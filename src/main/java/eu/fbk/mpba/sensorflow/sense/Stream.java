@@ -12,7 +12,6 @@ public class Stream extends Input {
     public static final Collection<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
     public static final Collection<String> HEADER_VALUE = Collections.singletonList("value");
 
-    private String name;
     private boolean on;
 
     public Stream(String header, String name) {
@@ -36,8 +35,7 @@ public class Stream extends Input {
     }
 
     public Stream(InputGroup parent, Collection<String> header, String name) {
-        super(parent, header);
-        this.name = name;
+        super(parent, name, header);
     }
 
     public void pushValue(double value) {
@@ -101,23 +99,18 @@ public class Stream extends Input {
     }
 
     @Override
-    public void onStart() {
+    public void onAdded() {
         on = true;
     }
 
     @Override
-    public void onStop() {
+    public void onRemoved() {
         on = false;
     }
 
     @Override
     public void onClose() {
 
-    }
-
-    @Override
-    public String getSimpleName() {
-        return name;
     }
 
     // Maybe useless still inherited

@@ -27,12 +27,12 @@ class LogInput extends Input {
     }
 
     @Override
-    public void onStart() {
+    public void onAdded() {
 
     }
 
     @Override
-    public void onStop() {
+    public void onRemoved() {
 
     }
 

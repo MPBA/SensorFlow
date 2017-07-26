@@ -4,9 +4,9 @@ public interface InputGroup extends NamedPlugin {
 
     void onCreate();
 
-    void onStart();
+    void onAdded();
 
-    void onStop();
+    void onRemoved();
 
     Iterable<Input> getChildren();
 

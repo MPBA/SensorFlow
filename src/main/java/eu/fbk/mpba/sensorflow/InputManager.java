@@ -24,18 +24,18 @@ class InputManager {
                 inputGroup.onCreate();
                 changeStatus(PluginStatus.CREATED);
             case CREATED:
-                inputGroup.onStart();
+                inputGroup.onAdded();
                 changeStatus(PluginStatus.STARTED);
                 break;
             default:
-                System.out.println("onCreate out of place 3290erj28, current status: " + status.toString());
+                System.out.println("onCreateAndStart out of place 3290erj28, current status: " + status.toString());
         }
     }
 
     void onStopAndClose() {
         switch (status) {
             case STARTED:
-                inputGroup.onStop();
+                inputGroup.onRemoved();
                 changeStatus(PluginStatus.STOPPED);
             case CREATED:
             case STOPPED:
@@ -43,13 +43,13 @@ class InputManager {
                 changeStatus(PluginStatus.CLOSED);
                 break;
             default:
-                System.out.println("onClose out of place 3290erj29, current status: " + status.toString());
+                System.out.println("onStopAndClose out of place 3290erj29, current status: " + status.toString());
         }
     }
 
     // Getters
 
-    Iterable<Input> getFlows() {
+    Iterable<Input> getInputs() {
         return inputGroup.getChildren();
     }
 
@@ -57,7 +57,7 @@ class InputManager {
         return status;
     }
 
-    InputGroup getInput() {
+    InputGroup getInputGroup() {
         return inputGroup;
     }
 

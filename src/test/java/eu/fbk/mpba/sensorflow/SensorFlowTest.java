@@ -23,7 +23,7 @@ public class SensorFlowTest {
 
         Thread.sleep(1500);
 
-        mi.forEach(Input::onStop);
+        mi.forEach(Input::onRemoved);
 
         long sent = 0;
         for (Input i : mi)
@@ -45,12 +45,12 @@ public class SensorFlowTest {
         for (int i = 0; i < 10; i++)
             mi.add(i, new MockInput(null, "MockInput" + i));
 
-        sf.addNotThreaded(mo);
+        sf.addInThread(mo);
         sf.add(mi);
 
         Thread.sleep(1500);
 
-        mi.forEach(Input::onStop);
+        mi.forEach(Input::onRemoved);
 
         long sent = 0;
         for (Input i : mi)

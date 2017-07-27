@@ -1,12 +1,54 @@
 package eu.fbk.mpba.sensorflow;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class OutputBufferTest {
+
+    @Test(expected = NullPointerException.class)
+    public void test_nullDrain() {
+        new OutputBuffer(null, 0, false);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void test_sizeZero() {
+        new OutputBuffer(new MockOutput(""), 0, false);
+    }
+
+    @Test
+    public void test_getName_events() {
+        boolean[] cond = new boolean[2];
+        final String name = "CustomMockOutput20957";
+
+        MockOutput o = new MockOutput(name) {
+            @Override
+            public void onCreate(String sessionId) {
+                super.onCreate(sessionId);
+                cond[0] = true;
+            }
+
+            @Override
+            public void onClose() {
+                super.onClose();
+                cond[1] = true;
+            }
+        };
+        OutputBuffer outputBuffer = new OutputBuffer(o, 10, false);
+
+        outputBuffer.onCreate("TestSession523");
+        outputBuffer.onClose();
+
+        assertEquals(name, outputBuffer.getName());
+
+        assertTrue(cond[0]);
+        assertTrue(cond[1]);
+    }
+
     @Test
     public void test_sequential() throws InterruptedException {
         final String sequence = "aaavlvalvlvllvvlvlvrvllrvvrrvvvvvvarvllvlvvvvrrvr";
@@ -20,7 +62,7 @@ public class OutputBufferTest {
 
             @Override
             public void onClose() {
-                Assert.assertTrue(counter == sequence.length());
+                assertTrue(counter == sequence.length());
                 done[0] = true;
             }
 
@@ -28,30 +70,30 @@ public class OutputBufferTest {
 
             @Override
             public void onInputAdded(Input input) {
-                Assert.assertTrue(sequence.charAt(counter++) == 'a');
+                assertTrue(sequence.charAt(counter++) == 'a');
             }
 
             @Override
             public void onInputRemoved(Input input) {
-                Assert.assertTrue(sequence.charAt(counter++) == 'r');
+                assertTrue(sequence.charAt(counter++) == 'r');
             }
 
             @Override
             public void onValue(Input input, long timestamp, double[] value) {
-                Assert.assertTrue(sequence.charAt(counter++) == 'v');
+                assertTrue(sequence.charAt(counter++) == 'v');
             }
 
             @Override
             public void onLog(Input input, long timestamp, String text) {
-                Assert.assertTrue(sequence.charAt(counter++) == 'l');
+                assertTrue(sequence.charAt(counter++) == 'l');
             }
         }, sequence.length() + 1, false);
 
         Input a = new MockInput(null, null);
 
         for (int i = 0; i < sequence.length(); i++) {
-            Assert.assertTrue(q.size() == i);
-            Assert.assertTrue(q.remainingCapacity() == sequence.length() + 1 - i);
+            assertTrue(q.size() == i);
+            assertTrue(q.remainingCapacity() == sequence.length() + 1 - i);
             switch (sequence.charAt(i)) {
                 case 'a':
                     q.onInputAdded(a);
@@ -66,22 +108,22 @@ public class OutputBufferTest {
                     q.onLog(a, Input.getTimeSource().getMonoUTCNanos(), "hi");
                     break;
             }
-            Assert.assertTrue(q.size() == i + 1);
-            Assert.assertTrue(q.remainingCapacity() == sequence.length() - i);
+            assertTrue(q.size() == i + 1);
+            assertTrue(q.remainingCapacity() == sequence.length() - i);
         }
 
-        Assert.assertTrue(q.remainingCapacity() == 1);
+        assertTrue(q.remainingCapacity() == 1);
 
         for (int i = 0; i < sequence.length(); i++) {
-            Assert.assertTrue(q.size() == sequence.length() - i);
-            Assert.assertTrue(q.remainingCapacity() == i + 1);
+            assertTrue(q.size() == sequence.length() - i);
+            assertTrue(q.remainingCapacity() == i + 1);
             q.pollToHandler(1, TimeUnit.SECONDS);
         }
 
-        Assert.assertTrue(q.size() == 0);
+        assertTrue(q.size() == 0);
 
         q.getHandler().onClose();
-        Assert.assertTrue(done[0]);
+        assertTrue(done[0]);
     }
 
     @Test
@@ -98,13 +140,13 @@ public class OutputBufferTest {
 
             @Override
             public void onInputAdded(Input input) {
-                Assert.assertTrue("Input not removed before adding new one.", last == null);
+                assertTrue("Input not removed before adding new one.", last == null);
                 last = input;
             }
 
             @Override
             public void onInputRemoved(Input input) {
-                Assert.assertTrue("Input not added before removing it.", last != null);
+                assertTrue("Input not added before removing it.", last != null);
                 last = null;
             }
 
@@ -112,25 +154,25 @@ public class OutputBufferTest {
 
             @Override
             public void onValue(Input input, long timestamp, double[] value) {
-                Assert.assertTrue("Value without an input.", last != null);
-                Assert.assertTrue("Different input sending values.", last == input);
-                Assert.assertTrue("Wrong name composed with index.", input.getName().equals("MockInput" + (int) value[0]));
-                Assert.assertTrue("Time not monotonic.", timestamp >= lastTime);
-                Assert.assertTrue("Time not strictly monotonic.", timestamp > lastTime);
-                Assert.assertTrue(value[1] == 1 || value[1] == 2);
+                assertTrue("Value without an input.", last != null);
+                assertTrue("Different input sending values.", last == input);
+                assertTrue("Wrong name composed with index.", input.getName().equals("MockInput" + (int) value[0]));
+                assertTrue("Time not monotonic.", timestamp >= lastTime);
+                assertTrue("Time not strictly monotonic.", timestamp > lastTime);
+                assertTrue(value[1] == 1 || value[1] == 2);
             }
 
             int lastLogI = -1;
 
             @Override
             public void onLog(Input input, long timestamp, String text) {
-                Assert.assertTrue("Log without an input.", last != null);
-                Assert.assertTrue("Different input sending logs.", last == input);
-                Assert.assertTrue("Time not monotonic.", timestamp >= lastTime);
-                Assert.assertTrue("Time not strictly monotonic.", timestamp > lastTime);
-                Assert.assertTrue("Wrong text", text.startsWith("HiPedro "));
+                assertTrue("Log without an input.", last != null);
+                assertTrue("Different input sending logs.", last == input);
+                assertTrue("Time not monotonic.", timestamp >= lastTime);
+                assertTrue("Time not strictly monotonic.", timestamp > lastTime);
+                assertTrue("Wrong text", text.startsWith("HiPedro "));
                 int i = Integer.parseInt(text.substring("HiPedro ".length()), 10);
-                Assert.assertTrue("Wrong index", i > lastLogI);
+                assertTrue("Wrong index", i > lastLogI);
                 lastLogI = i;
             }
         };
@@ -146,7 +188,7 @@ public class OutputBufferTest {
             try {
                 //noinspection InfiniteLoopStatement
                 while (true)
-                    q.pollToHandler(1, TimeUnit.SECONDS);
+                    q.pollToHandler(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -165,5 +207,7 @@ public class OutputBufferTest {
                 }
             }
         }
+
+        q.clear();
     }
 }

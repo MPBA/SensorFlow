@@ -19,7 +19,7 @@ public class MockInput extends Input {
     @Override
     public void onCreate() {
 //        System.out.println("MockInput onCreateAndStart");
-        Assert.assertEquals(testStatus, PluginStatus.INSTANTIATED);
+        Assert.assertTrue(testStatus == PluginStatus.INSTANTIATED || testStatus == PluginStatus.CLOSED);
         producer = new Thread(() -> {
             try {
                 int i = 0;
@@ -34,7 +34,7 @@ public class MockInput extends Input {
                         }
                         Thread.sleep(8);
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(200);
                 }
             } catch (InterruptedException e) {
                 // exit
@@ -52,14 +52,24 @@ public class MockInput extends Input {
 
     @Override
     public void onRemoved() {
-        Assert.assertEquals(testStatus, PluginStatus.STARTED);
+        Assert.assertEquals(PluginStatus.STARTED, testStatus);
         testStatus = PluginStatus.STOPPED;
     }
 
     @Override
     public void onClose() {
-        Assert.assertEquals(testStatus, PluginStatus.STOPPED);
+        Assert.assertEquals(PluginStatus.STOPPED, testStatus);
         testStatus = PluginStatus.CLOSED;
+        try {
+            producer.interrupt();
+            producer.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public long getThreadId() {
+        return producer.getId();
     }
 
     long sentLines = 0;

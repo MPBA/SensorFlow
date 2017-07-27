@@ -23,30 +23,24 @@ class InputManager {
             case INSTANTIATED:
                 inputGroup.onCreate();
                 changeStatus(PluginStatus.CREATED);
-            case CREATED:
-                inputGroup.onAdded();
-                changeStatus(PluginStatus.STARTED);
                 break;
             default:
-                System.out.println("onCreateAndStart out of place 3290erj28, current status: " + status.toString());
+                throw new UnsupportedOperationException("onCreate out of place, current status: " + status.toString());
         }
     }
 
     void onAdded() {
         switch (status) {
-            case INSTANTIATED:
-                inputGroup.onCreate();
-                changeStatus(PluginStatus.CREATED);
             case CREATED:
                 inputGroup.onAdded();
                 changeStatus(PluginStatus.STARTED);
                 break;
             default:
-                System.out.println("onCreateAndStart out of place 3290erj28, current status: " + status.toString());
+                throw new UnsupportedOperationException("onAdded out of place, current status: " + status.toString());
         }
     }
 
-    void onStopAndClose() {
+    void onRemovedAndClose() {
         switch (status) {
             case STARTED:
                 inputGroup.onRemoved();
@@ -57,7 +51,7 @@ class InputManager {
                 changeStatus(PluginStatus.CLOSED);
                 break;
             default:
-                System.out.println("onStopAndClose out of place 3290erj29, current status: " + status.toString());
+                throw new UnsupportedOperationException("onRemovedAndClose out of place, current status: " + status.toString());
         }
     }
 
@@ -67,9 +61,9 @@ class InputManager {
         return inputGroup.getChildren();
     }
 
-    PluginStatus getStatus() {
-        return status;
-    }
+//    PluginStatus getStatus() {
+//        return status;
+//    }
 
     InputGroup getInputGroup() {
         return inputGroup;

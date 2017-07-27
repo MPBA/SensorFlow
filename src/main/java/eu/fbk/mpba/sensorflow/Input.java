@@ -27,7 +27,7 @@ public abstract class Input implements InputGroup {
 
     //      Fields
 
-    private boolean listened = true;
+    private volatile boolean listened = true;
     private String name;
 
     private InputGroup parent;
@@ -66,18 +66,18 @@ public abstract class Input implements InputGroup {
         outputsAccess.writeLock().unlock();
     }
 
-    void addOutput(Collection<OutputManager> output) {
-        outputsAccess.writeLock().lock();
-        outputs.addAll(output);
-        outputsAccess.writeLock().unlock();
-        onOutputsAdded();
-    }
-
-    void removeOutput(Collection<OutputManager> output) {
-        outputsAccess.writeLock().lock();
-        outputs.removeAll(output);
-        outputsAccess.writeLock().unlock();
-    }
+//    void addOutput(Collection<OutputManager> output) {
+//        outputsAccess.writeLock().lock();
+//        outputs.addAll(output);
+//        outputsAccess.writeLock().unlock();
+//        onOutputsAdded();
+//    }
+//
+//    void removeOutput(Collection<OutputManager> output) {
+//        outputsAccess.writeLock().lock();
+//        outputs.removeAll(output);
+//        outputsAccess.writeLock().unlock();
+//    }
 
     Collection<OutputManager> getOutputs() {
         outputsAccess.readLock().lock();
@@ -90,21 +90,24 @@ public abstract class Input implements InputGroup {
 
     public void pushValue(long time, double[] value) {
         // Shouldn't be called before onCreateAndStart
-        outputsAccess.readLock().lock();
-        outputs.stream()
-                .filter(OutputManager::isEnabled)
-                .forEach(o -> o.pushValue(this, time, value));
-        outputsAccess.readLock().unlock();
-
+        if (listened) {
+            outputsAccess.readLock().lock();
+            outputs.stream()
+                    .filter(OutputManager::isEnabled)
+                    .forEach(o -> o.pushValue(this, time, value));
+            outputsAccess.readLock().unlock();
+        }
     }
 
     public void pushLog(long time, String message) {
         // Shouldn't be called before onCreateAndStart
+        if (listened) {
         outputsAccess.readLock().lock();
         outputs.stream()
                 .filter(OutputManager::isEnabled)
                 .forEach(o -> o.pushLog(this, time, message));
         outputsAccess.readLock().unlock();
+        }
     }
 
     //      Muting
@@ -171,26 +174,5 @@ public abstract class Input implements InputGroup {
     protected void finalize() throws Throwable {
         close();
         super.finalize();
-    }
-
-    //      Deprecated
-
-    @Deprecated
-    protected Status status = Status.OFF;
-
-    @Deprecated
-    protected void changeStatus(Status state) {
-        // Not notified to SF
-        status = state;
-    }
-
-    @Deprecated
-    public Status getStatus() {
-        return status;
-    }
-
-    @Deprecated
-    public enum Status {
-        OFF, ON, ERROR
     }
 }

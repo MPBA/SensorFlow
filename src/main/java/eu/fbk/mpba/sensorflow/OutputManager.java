@@ -34,12 +34,12 @@ class OutputManager {
     }
 
     private Thread sbufferingThread = new Thread(() -> {
-        try {
-            OutputBuffer queue = (OutputBuffer)OutputManager.this.queue;
-            while (!stopPending || queue.size() > 0) {
-                queue.pollToHandler(100, TimeUnit.MILLISECONDS);
-            }
-        } catch (InterruptedException ignored) { }
+        OutputBuffer queue = (OutputBuffer) OutputManager.this.queue;
+        while (!stopPending || queue.size() > 0) {
+            try {
+                queue.pollToHandler(200, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) { }
+        }
     });
 
     private void beforeDispatch() {
@@ -75,7 +75,7 @@ class OutputManager {
             if (threaded)
                 sbufferingThread.start();
         } else
-            System.out.println("onCreateAndStart out of place 4353453ewdr, current status: " + status.toString());
+            throw new UnsupportedOperationException("onCreateAndStart out of place, current status: " + status.toString());
     }
 
     void onStopAndClose() {
@@ -84,13 +84,14 @@ class OutputManager {
             stopPending = true;
             if (threaded)
                 try {
-                    sbufferingThread.join(); // Max time specified in queue pollToHandler call
+                    sbufferingThread.interrupt(); // stopPending == true
+                    sbufferingThread.join();      // Max time specified in queue pollToHandler call
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             afterDispatch();
         } else
-            System.out.println("onCreateAndStart out of place 4353453ewdr, current status: " + status.toString()
+            throw new UnsupportedOperationException("onCreateAndStart out of place, current status: " + status.toString()
                     + ", stopPending: " + stopPending);
     }
 

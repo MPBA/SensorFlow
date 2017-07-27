@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
@@ -14,10 +15,10 @@ public class SensorFlow {
     //      Fields
 
     private final String sessionTag;
-    private Status status = SensorFlow.Status.READY;
+    private volatile boolean closed = false;
 
-    private final Map<String, InputManager> _userInputs = new TreeMap<>();
-    private final Map<String, OutputManager> _userOutputs = new TreeMap<>();
+    private final Map<String, InputManager> userInputs = new TreeMap<>();
+    private final Map<Output, OutputManager> userOutputs = new HashMap<>();
 
     //      Status Interfaces
 
@@ -39,7 +40,6 @@ public class SensorFlow {
 
     public SensorFlow(String sessionTag) {
         this.sessionTag = sessionTag;
-        changeStatus(Status.READY);
     }
 
     public String getSessionTag() {
@@ -51,10 +51,10 @@ public class SensorFlow {
     private SensorFlow add(InputGroup p, boolean routedEverywhere) {
         InputManager added = null;
         // Check if only the name is already contained
-        synchronized (_userInputs) {
-            if (!_userInputs.containsKey(p.getName())) {
+        synchronized (userInputs) {
+            if (!userInputs.containsKey(p.getName())) {
                 added = new InputManager(p, this.input);
-                _userInputs.put(p.getName(), added);
+                userInputs.put(p.getName(), added);
             }
         }
         if (added != null) {
@@ -86,12 +86,12 @@ public class SensorFlow {
         return this;
     }
 
-    private SensorFlow add(Output p, boolean threaded, boolean routeEverywhere) {
+    private void add(Output p, boolean threaded, boolean routeEverywhere) {
         OutputManager added = null;
         // Check if only the name is already contained
-        synchronized (_userOutputs) {
-            if (!_userOutputs.containsKey(p.getName())) {
-                _userOutputs.put(p.getName(), added = new OutputManager(p, this.output, threaded));
+        synchronized (userOutputs) {
+            if (!userOutputs.containsKey(p)) {
+                userOutputs.put(p, added = new OutputManager(p, this.output, threaded));
             }
         }
         if (added != null) {
@@ -99,31 +99,34 @@ public class SensorFlow {
                 routeAll(added);
             added.onCreateAndStart(sessionTag);
         }
-        return this;
     }
 
     public SensorFlow add(Output p) {
-        return add(p, true, true);
+        add(p, true, true);
+        return this;
     }
 
     public SensorFlow addNotRouted(Output p) {
-        return add(p, true, false);
+        add(p, true, false);
+        return this;
     }
 
     public SensorFlow addInThread(Output p) {
-        return add(p, false, true);
+        add(p, false, true);
+        return this;
     }
 
     public SensorFlow addInThreadNotRouted(Output p) {
-        return add(p, false, false);
+        add(p, false, false);
+        return this;
     }
 
     public SensorFlow remove(InputGroup p) {
         InputManager removed = null;
         // Check if only the name is already contained
-        synchronized (_userInputs) {
-            if (_userInputs.containsKey(p.getName())) {
-                removed = _userInputs.remove(p.getName());
+        synchronized (userInputs) {
+            if (userInputs.containsKey(p.getName())) {
+                removed = userInputs.remove(p.getName());
             }
         }
         if (removed != null) {
@@ -132,7 +135,7 @@ public class SensorFlow {
                 ArrayList<OutputManager> outputs = new ArrayList<>(s.getOutputs());
                 outputs.forEach((o) -> removeRoute(s, o));
             }
-            removed.onStopAndClose();
+            removed.onRemovedAndClose();
 //            p.setManager(null);
         }
         return this;
@@ -141,9 +144,9 @@ public class SensorFlow {
     public SensorFlow remove(Output p) {
         OutputManager removed = null;
         // Check if only the name is already contained
-        synchronized (_userOutputs) {
-            if (_userOutputs.containsKey(p.getName()))
-                removed = _userOutputs.remove(p.getName());
+        synchronized (userOutputs) {
+            if (userOutputs.containsKey(p))
+                removed = userOutputs.remove(p);
         }
         if (removed != null) {
             final OutputManager o = removed;
@@ -157,8 +160,8 @@ public class SensorFlow {
     public SensorFlow addRoute(Input from, Output to) {
         if (from != null && to != null) {
             OutputManager outMan;
-            synchronized (_userOutputs) {
-                outMan = _userOutputs.get(to.getName());
+            synchronized (userOutputs) {
+                outMan = userOutputs.get(to);
             }
             addRoute(from, outMan);
         }
@@ -168,18 +171,28 @@ public class SensorFlow {
     public SensorFlow removeRoute(Input from, Output to) {
         if (from != null && to != null) {
             OutputManager outMan;
-            synchronized (_userOutputs) {
-                outMan = _userOutputs.get(to.getName());
+            synchronized (userOutputs) {
+                outMan = userOutputs.get(to);
             }
             removeRoute(from, outMan);
         }
         return this;
     }
 
+    public boolean isRouted(Input from, Output to) {
+        if (from != null && to != null) {
+            OutputManager outMan;
+            synchronized (userOutputs) {
+                outMan = userOutputs.get(to);
+            }
+            return isRouted(from, outMan);
+        }
+        return false;
+    }
+
     private void addRoute(Input from, OutputManager outMan) {
-        // Put in sets: no duplicates
-        from.addOutput(outMan);
         outMan.addInput(from);
+        from.addOutput(outMan);
     }
 
     private void removeRoute(Input fromSensor, OutputManager outMan) {
@@ -187,61 +200,69 @@ public class SensorFlow {
         outMan.removeInput(fromSensor);
     }
 
-    public SensorFlow enableOutput(String name) {
-        return setOutputEnabled(true, name);
+    // Concurrently unsafe
+    private boolean isRouted(Input fromSensor, OutputManager outMan) {
+        return fromSensor.getOutputs().contains(outMan) && outMan.getInputs().contains(fromSensor);
     }
 
-    public SensorFlow disableOutput(String name) {
-        return setOutputEnabled(false, name);
+    public SensorFlow enableOutput(Output o) {
+        return setOutputEnabled(true, o);
     }
 
-    private SensorFlow setOutputEnabled(boolean enabled, String name) {
-        synchronized (_userOutputs) {
-            if (_userOutputs.containsKey(name)) {
-                (_userOutputs.get(name)).setEnabled(enabled);
-            }
+    public SensorFlow disableOutput(Output o) {
+        return setOutputEnabled(false, o);
+    }
+
+    private SensorFlow setOutputEnabled(boolean enabled, Output o) {
+        synchronized (userOutputs) {
+            if (userOutputs.containsKey(o)) {
+                (userOutputs.get(o)).setEnabled(enabled);
+            } else
+                throw new IllegalArgumentException("Output not added.");
         }
         return this;
     }
 
     //      Gets
 
-    public boolean isOutputEnabled(String name) {
-        synchronized (_userOutputs) {
-            return _userOutputs.containsKey(name) && (_userOutputs.get(name)).isEnabled();
+    public boolean isOutputEnabled(Output o) {
+        boolean b;
+        synchronized (userOutputs) {
+            b = userOutputs.containsKey(o) && (userOutputs.get(o)).isEnabled();
         }
+        return b;
     }
 
-    public InputGroup getInput(String name) {
-        InputManager r;
-        synchronized (_userInputs) {
-            r = _userInputs.get(name);
-        }
-        return r == null ? null : r.getInputGroup();
-    }
+//    public InputGroup getInput(String name) {
+//        InputManager r;
+//        synchronized (userInputs) {
+//            r = userInputs.get(name);
+//        }
+//        return r == null ? null : r.getInputGroup();
+//    }
+//
+//    public Output getOutput(String name) {
+//        Object r;
+//        synchronized (userInputs) {
+//            r = userOutputs.get(name);
+//        }
+//        return r == null ? null : ((OutputManager)r).getOutput();
+//    }
 
-    public Output getOutput(String name) {
-        Object r;
-        synchronized (_userInputs) {
-            r = _userOutputs.get(name);
-        }
-        return r == null ? null : ((OutputManager)r).getOutput();
-    }
-
-    public Iterable<InputGroup> getInputs() {
+    public Collection<InputGroup> getInputs() {
         ArrayList<InputGroup> x;
-        synchronized (_userInputs) {
-            x = new ArrayList<>(_userInputs.size());
-            _userInputs.values().forEach((o) -> x.add(o.getInputGroup()));
+        synchronized (userInputs) {
+            x = new ArrayList<>(userInputs.size());
+            userInputs.values().forEach((o) -> x.add(o.getInputGroup()));
         }
         return Collections.unmodifiableCollection(x);
     }
 
-    public Iterable<Output> getOutputs() {
+    public Collection<Output> getOutputs() {
         ArrayList<Output> x;
-        synchronized (_userOutputs) {
-            x = new ArrayList<>(_userOutputs.size());
-            _userOutputs.values().forEach((o) -> x.add(o.getOutput()));
+        synchronized (userOutputs) {
+            x = new ArrayList<>(userOutputs.size());
+            userOutputs.values().forEach((o) -> x.add(o.getOutput()));
         }
         return Collections.unmodifiableCollection(x);
     }
@@ -251,9 +272,9 @@ public class SensorFlow {
     // Does not create duplicates
     public SensorFlow routeClear() {
         // REMOVE ALL
-        for (InputManager d : _userInputs.values())
+        for (InputManager d : userInputs.values())
             for (Input s : d.getInputs())      // FOREACH SENSOR
-                for (OutputManager o : _userOutputs.values())    // Remove LINK TO EACH OUTPUT
+                for (OutputManager o : userOutputs.values())    // Remove LINK TO EACH OUTPUT
                     removeRoute(s, o);
         return this;
     }
@@ -261,76 +282,62 @@ public class SensorFlow {
     // Does not create duplicates
     public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
-        _userInputs.values().forEach(this::routeAll);
+        userInputs.values().forEach(this::routeAll);
         return this;
     }
 
     private SensorFlow routeAll(InputManager d) {
         for (Input s : d.getInputs())      // FOREACH SENSOR
-            for (OutputManager o : _userOutputs.values())    // LINK TO EACH OUTPUT
+            for (OutputManager o : userOutputs.values())    // LINK TO EACH OUTPUT
                 addRoute(s, o);
         return this;
     }
 
     private SensorFlow routeAll(OutputManager o) {
         // SENSORS x OUTPUTS
-        for (InputManager d : _userInputs.values())
+        for (InputManager d : userInputs.values())
             for (Input s : d.getInputs())      // FOREACH SENSOR
                 addRoute(s, o);
         return this;
     }
 
-    // Does not create duplicates
-    public SensorFlow routeNthToNth() {
-        // max SENSORS, OUTPUTS
-        int maxi = Math.max(_userInputs.size(), _userOutputs.size());
-        for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
-            for (Input s : new ArrayList<>(_userInputs.values()).get(i % _userInputs.size()).getInputs())      // LINK MODULE LOOPING ON THE SHORTEST
-                addRoute(s, new ArrayList<>(_userOutputs.values()).get(i % _userOutputs.size()));
-        return this;
-    }
+//    // Does not create duplicates
+//    public SensorFlow routeNthToNth() {
+//        // max SENSORS, OUTPUTS
+//        int maxi = Math.max(userInputs.size(), userOutputs.size());
+//        for (int i = 0; i < maxi; i++)                                                                      // FOREACH OF THE LONGEST
+//            for (Input s : new ArrayList<>(userInputs.values()).get(i % userInputs.size()).getInputs())      // LINK MODULE LOOPING ON THE SHORTEST
+//                addRoute(s, new ArrayList<>(userOutputs.values()).get(i % userOutputs.size()));
+//        return this;
+//    }
 
-    private void changeStatus(Status status) {
-        this.status = status;
-    }
+//    private void changeStatus(Status status) {
+//        this.closed = status;
+//    }
 
-    public Status getStatus() {
-        return status;
-    }
+//    public Status getStatus() {
+//        return closed;
+//    }
 
-    public void close() {
-        switch (getStatus()) {
-            case READY:
-                changeStatus(Status.CLOSING);
-                for (InputManager d : _userInputs.values()) {
-                    for (Input s : d.getInputGroup().getChildren()) {
-                        s.onRemoved();
-                        s.onClose();
-                    }
-                    d.getInputGroup().onRemoved();
-                    d.getInputGroup().onClose();
-                }
-                routeClear();
-                _userOutputs.values().forEach(OutputManager::onStopAndClose);
-                changeStatus(Status.CLOSED);
-                break;
-            case CLOSED:
-                break;
-            default:
-                throw new UnsupportedOperationException(
-                        "Another operation is trying to change the state: " +
-                                getStatus().toString());
+    public synchronized void close() {
+        if (!closed) {
+            for (InputManager d : userInputs.values()) {
+//                    for (Input s : d.getInputGroup().getChildren()) {
+//                        s.onRemoved();
+//                        s.onClose();
+//                    }
+                d.getInputGroup().onRemoved();
+                d.getInputGroup().onClose();
+            }
+            routeClear();
+            userOutputs.values().forEach(OutputManager::onStopAndClose);
+            closed = true;
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
         close();
-        // After, Object.onStopAndClose()
         super.finalize();
-    }
-
-    public enum Status {
-        READY, CLOSING, CLOSED
     }
 }

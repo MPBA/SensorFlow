@@ -23,7 +23,7 @@ public class SensorFlowTest {
 
         Thread.sleep(1500);
 
-        mi.forEach(InputGroup::onRemoved);
+        sf.close();
 
         long sent = 0;
         for (InputGroup i : mi)

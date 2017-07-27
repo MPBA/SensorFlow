@@ -82,9 +82,11 @@ class OutputBuffer implements Output {
     }
 
     OutputBuffer(Output drain, int capacity, boolean fair) {
-        this.output = drain;
-        if (capacity < 0)
+        if (drain == null)
+            throw new NullPointerException();
+        if (capacity <= 0)
             throw new IllegalArgumentException();
+        this.output = drain;
         this.flows = new Input[capacity];
         this.longs = new long[capacity];
         this.doubles = new double[capacity][];

@@ -72,10 +72,8 @@ abstract class Module implements SFPlugin {
         moduleLog.putKeyValue(key, value);
     }
 
-    public static final int TYPE_METADATA = 0;
-
-    public static final String TAG_DEV_ID = "DEV_ID";
-    public static final String TAG_DEV_INFO = "DEV_INFO";
-    public static final String TAG_HW_VER = "DEV_HW";
-    public static final String TAG_SW_VER = "DEV_SW";
+    public static final String KEY_DEV_ID = "DEV_ID";
+    public static final String KEY_DEV_INFO = "DEV_INFO";
+    public static final String KEY_HW_VER = "DEV_HW";
+    public static final String KEY_SW_VER = "DEV_SW";
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -33,7 +34,7 @@ public abstract class Input implements InputGroup {
     private String name;
 
     private InputGroup parent;
-    private Collection<String> header;
+    private List<String> header;
     private Set<OutputManager> outputs = new HashSet<>();
     private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
     private TreeMap<String, String> dictionary = new TreeMap<>();
@@ -118,6 +119,10 @@ public abstract class Input implements InputGroup {
         }
     }
 
+    public void pushValue(long time, double value) {
+        pushValue(time, new double[] { value });
+    }
+
     public void pushValue(long time, double[] value) {
         // Shouldn't be called before onCreateAndAdded
         if (listened) {
@@ -164,14 +169,14 @@ public abstract class Input implements InputGroup {
         return parent;
     }
 
-    public final Collection<String> getHeader(){
+    public final List<String> getHeader(){
         return header;
     }
 
     //      Gets - SFPlugin non-final Overrides
 
     @Override
-    public String getName() {
+    public final String getName() {
         InputGroup parent = getParent();
         return parent != null ? parent.getName() + "/" + getSimpleName() : getSimpleName();
     }

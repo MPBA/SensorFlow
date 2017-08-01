@@ -3,14 +3,16 @@ package eu.fbk.mpba.sensorflow.sense;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import eu.fbk.mpba.sensorflow.Input;
 import eu.fbk.mpba.sensorflow.InputGroup;
 
 public class Stream extends Input {
 
-    public static final Collection<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
-    public static final Collection<String> HEADER_VALUE = Collections.singletonList("value");
+    public static final List<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
+    public static final List<String> HEADER_VALUE = Collections.singletonList("value");
+    public static final List<String> HEADER_EMPTY = Collections.emptyList();
 
     public Stream(String header, String name) {
         this(null, header, name);

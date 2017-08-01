@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class Input implements InputGroup {
@@ -34,6 +36,8 @@ public abstract class Input implements InputGroup {
     private Collection<String> header;
     private Set<OutputManager> outputs = new HashSet<>();
     private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
+    private TreeMap<String, String> dictionary = new TreeMap<>();
+    private ReentrantReadWriteLock dictionaryAccess = new ReentrantReadWriteLock(false);
 
     //      Constructors
 
@@ -57,7 +61,9 @@ public abstract class Input implements InputGroup {
         outputsAccess.writeLock().lock();
         outputs.add(output);
         outputsAccess.writeLock().unlock();
-        onOutputsAdded();
+        if (output.getStatus() == PluginStatus.ADDED) {
+            pushDictionary(output);
+        }
     }
 
     void removeOutput(OutputManager output) {
@@ -66,11 +72,19 @@ public abstract class Input implements InputGroup {
         outputsAccess.writeLock().unlock();
     }
 
+    void pushDictionary(OutputManager output) {
+        dictionaryAccess.readLock().lock();
+        for (Map.Entry<String, String> entry : dictionary.entrySet()) {
+            output.pushLog(this, getTimeSource().getMonoUTCNanos(), formatKeyValue(entry.getKey(), entry.getValue()));
+        }
+        dictionaryAccess.readLock().unlock();
+    }
+
 //    void addOutput(Collection<OutputManager> output) {
 //        outputsAccess.writeLock().lock();
 //        outputs.addAll(output);
 //        outputsAccess.writeLock().unlock();
-//        onOutputsAdded();
+//        onOutputAdded();
 //    }
 //
 //    void removeOutput(Collection<OutputManager> output) {
@@ -88,8 +102,24 @@ public abstract class Input implements InputGroup {
 
     //      Outputs access - Notify
 
+    private String formatKeyValue(String key, String value) {
+        String separator = ",";
+        final String key2 = key.replace("\\", "\\\\").replace(separator, "\\s");
+        final String value2 = value.replace("\\", "\\\\").replace(separator, "\\s");
+        return key2 + separator + value2;
+    }
+
+    public void putKeyValue(String key, String value) {
+        dictionaryAccess.writeLock().lock();
+        String old = dictionary.put(key, value);
+        dictionaryAccess.writeLock().unlock();
+        if (listened && !value.equals(old)) {
+            pushLog(getTimeSource().getMonoUTCNanos(), formatKeyValue(key, value));
+        }
+    }
+
     public void pushValue(long time, double[] value) {
-        // Shouldn't be called before onCreateAndStart
+        // Shouldn't be called before onCreateAndAdded
         if (listened) {
             outputsAccess.readLock().lock();
             outputs.stream()
@@ -100,13 +130,13 @@ public abstract class Input implements InputGroup {
     }
 
     public void pushLog(long time, String message) {
-        // Shouldn't be called before onCreateAndStart
+        // Shouldn't be called before onCreateAndAdded
         if (listened) {
-        outputsAccess.readLock().lock();
-        outputs.stream()
-                .filter(OutputManager::isEnabled)
-                .forEach(o -> o.pushLog(this, time, message));
-        outputsAccess.readLock().unlock();
+            outputsAccess.readLock().lock();
+            outputs.stream()
+                    .filter(OutputManager::isEnabled)
+                    .forEach(o -> o.pushLog(this, time, message));
+            outputsAccess.readLock().unlock();
         }
     }
 
@@ -157,10 +187,6 @@ public abstract class Input implements InputGroup {
     public final Iterable<Input> getChildren() {
         return Collections.singletonList(this);
     }
-
-    //      Extra events
-
-    public void onOutputsAdded() { }
 
     //      Finalization
 

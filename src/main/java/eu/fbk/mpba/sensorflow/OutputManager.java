@@ -68,14 +68,15 @@ class OutputManager {
 
     // Implemented
 
-    void onCreateAndStart(String sessionTag) {
+    void onCreateAndAdded(String sessionTag) {
         if (status == PluginStatus.INSTANTIATED) {
             this.sessionTag = sessionTag;
             beforeDispatch();
             if (threaded)
                 sbufferingThread.start();
+            linkedInputs.forEach(i -> i.pushDictionary(this));
         } else
-            throw new UnsupportedOperationException("onCreateAndStart out of place, current status: " + status.toString());
+            throw new UnsupportedOperationException("onCreateAndAdded out of place, current status: " + status.toString());
     }
 
     void onStopAndClose() {
@@ -91,7 +92,7 @@ class OutputManager {
                 }
             afterDispatch();
         } else
-            throw new UnsupportedOperationException("onCreateAndStart out of place, current status: " + status.toString()
+            throw new UnsupportedOperationException("onCreateAndAdded out of place, current status: " + status.toString()
                     + ", stopPending: " + stopPending);
     }
 

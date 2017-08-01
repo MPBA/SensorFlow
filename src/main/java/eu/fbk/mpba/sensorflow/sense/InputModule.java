@@ -11,6 +11,7 @@ import eu.fbk.mpba.sensorflow.InputGroup;
  */
 public abstract class InputModule extends Module implements InputGroup {
     private final ArrayList<Input> children = new ArrayList<>();
+    private boolean added = false;
 
     /**
      * Constructor of abstract class
@@ -30,7 +31,11 @@ public abstract class InputModule extends Module implements InputGroup {
      * @param input The flow to add to the InputModule.
      */
     protected void addStream(Stream input) {
-        children.add(input);
+        if (!added) {
+            children.add(input);
+        } else {
+            throw new UnsupportedOperationException("Online streams changes not supported. Add streams before onAdded or after onRemoved.");
+        }
     }
 
     @Override
@@ -40,9 +45,13 @@ public abstract class InputModule extends Module implements InputGroup {
 
     public abstract void onCreate();
 
-    public abstract void onAdded();
+    public void onAdded() {
+        added = true;
+    }
 
-    public abstract void onRemoved();
+    public void onRemoved() {
+        added = false;
+    }
 
     public abstract void onClose();
 }

@@ -97,7 +97,7 @@ public class SensorFlow {
         if (added != null) {
             if (routeEverywhere)
                 routeAll(added);
-            added.onCreateAndStart(sessionTag);
+            added.onCreateAndAdded(sessionTag);
         }
     }
 

@@ -33,7 +33,7 @@ class InputManager {
         switch (status) {
             case CREATED:
                 inputGroup.onAdded();
-                changeStatus(PluginStatus.STARTED);
+                changeStatus(PluginStatus.ADDED);
                 break;
             default:
                 throw new UnsupportedOperationException("onAdded out of place, current status: " + status.toString());
@@ -42,11 +42,11 @@ class InputManager {
 
     void onRemovedAndClose() {
         switch (status) {
-            case STARTED:
+            case ADDED:
                 inputGroup.onRemoved();
-                changeStatus(PluginStatus.STOPPED);
+                changeStatus(PluginStatus.REMOVED);
             case CREATED:
-            case STOPPED:
+            case REMOVED:
                 inputGroup.onClose();
                 changeStatus(PluginStatus.CLOSED);
                 break;

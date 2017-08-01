@@ -8,7 +8,7 @@ import eu.fbk.mpba.sensorflow.SFPlugin;
 /**
  * Base class for every sense plugin. It implements a common interface
  */
-public abstract class Module implements SFPlugin {
+abstract class Module implements SFPlugin {
     private final LogInput moduleLog;
     private final String configuration;
     private final String simpleName;
@@ -66,6 +66,10 @@ public abstract class Module implements SFPlugin {
      */
     protected void pushLog(int type, String tag, String message) {
         moduleLog.pushLog(type, tag, message);
+    }
+
+    protected void putKeyValue(String key, String value) {
+        moduleLog.putKeyValue(key, value);
     }
 
     public static final int TYPE_METADATA = 0;

@@ -18,14 +18,14 @@ public class MockInput extends Input {
 
     @Override
     public void onCreate() {
-//        System.out.println("MockInput onCreateAndStart");
+//        System.out.println("MockInput onCreateAndAdded");
         Assert.assertTrue(testStatus == PluginStatus.INSTANTIATED || testStatus == PluginStatus.CLOSED);
         producer = new Thread(() -> {
             try {
                 int i = 0;
                 Random random = new Random(0);
                 while (testStatus != PluginStatus.CLOSED) {
-                    while (testStatus == PluginStatus.STARTED) {
+                    while (testStatus == PluginStatus.ADDED) {
                         MockInput.this.pushValue(getTimeSource().getMonoUTCNanos(), new double[]{i++});
                         sentLines++;
                         if (random.nextInt(15) == 0) {
@@ -46,19 +46,19 @@ public class MockInput extends Input {
 
     @Override
     public void onAdded() {
-        Assert.assertTrue(testStatus == PluginStatus.CREATED || testStatus == PluginStatus.STOPPED);
-        testStatus = PluginStatus.STARTED;
+        Assert.assertTrue(testStatus == PluginStatus.CREATED || testStatus == PluginStatus.REMOVED);
+        testStatus = PluginStatus.ADDED;
     }
 
     @Override
     public void onRemoved() {
-        Assert.assertEquals(PluginStatus.STARTED, testStatus);
-        testStatus = PluginStatus.STOPPED;
+        Assert.assertEquals(PluginStatus.ADDED, testStatus);
+        testStatus = PluginStatus.REMOVED;
     }
 
     @Override
     public void onClose() {
-        Assert.assertEquals(PluginStatus.STOPPED, testStatus);
+        Assert.assertEquals(PluginStatus.REMOVED, testStatus);
         testStatus = PluginStatus.CLOSED;
         try {
             producer.interrupt();

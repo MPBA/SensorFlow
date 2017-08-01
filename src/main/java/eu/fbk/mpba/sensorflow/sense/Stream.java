@@ -101,7 +101,5 @@ public class Stream extends Input {
     public void onRemoved() { }
 
     @Override
-    public void onClose() {
-
-    }
+    public void onClose() { }
 }

@@ -21,35 +21,21 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
     }
 
     @Override
-    public void onCreate(String sessionId) {
+    public final void onCreate(String sessionId) {
         onCreate();
     }
 
     @Override
-    public void onCreate() {
+    public final void onCreate() {
         if (!created.getAndSet(true))
             onProcessingCreate();
     }
 
     @Override
-    public void onClose() {
+    public final void onClose() {
         if (!closed.getAndSet(true))
             onProcessingClose();
     }
-
-    public abstract void onProcessingCreate();
-
-    @Override
-    public abstract void onAdded();
-
-    @Override
-    public abstract void onRemoved();
-
-    @Override
-    public abstract void onInputAdded(Input input);
-
-    @Override
-    public abstract void onInputRemoved(Input input);
 
     /**
      * This method is called when a new value vector is available to be used, transmitted or
@@ -85,6 +71,20 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
      */
     @Override
     public abstract void onLog(Input input, long timestamp, int type, String tag, String message);
+
+    public abstract void onProcessingCreate();
+
+    @Override
+    public abstract void onAdded();
+
+    @Override
+    public abstract void onRemoved();
+
+    @Override
+    public abstract void onInputAdded(Input input);
+
+    @Override
+    public abstract void onInputRemoved(Input input);
 
     public abstract void onProcessingClose();
 }

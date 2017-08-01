@@ -16,8 +16,8 @@ public class ManagersUnitTest {
         OutputManager o = new OutputManager(new MockOutput("Out"),
                 (sender, status) -> { }, true);
 
-        o.onCreateAndStart("HiPedro");
-        o.onCreateAndStart("HiPedro");
+        o.onCreateAndAdded("HiPedro");
+        o.onCreateAndAdded("HiPedro");
     }
 
     @Test(expected = UnsupportedOperationException.class)

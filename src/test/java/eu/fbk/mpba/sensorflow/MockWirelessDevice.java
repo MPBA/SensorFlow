@@ -25,7 +25,7 @@ public class MockWirelessDevice extends WirelessDevice {
                     int i1 = 0;
                     Random random = new Random(0);
                     while (testStatus != PluginStatus.CLOSED) {
-                        while (testStatus == PluginStatus.STARTED) {
+                        while (testStatus == PluginStatus.ADDED) {
                             s.pushValue(Input.getTimeSource().getMonoUTCNanos(), new double[]{i1++});
                             sentLines.incrementAndGet();
                             int rnd = random.nextInt(100);
@@ -60,19 +60,19 @@ public class MockWirelessDevice extends WirelessDevice {
 
     @Override
     public void onAdded() {
-        Assert.assertTrue(testStatus == PluginStatus.CREATED || testStatus == PluginStatus.STOPPED);
-        testStatus = PluginStatus.STARTED;
+        Assert.assertTrue(testStatus == PluginStatus.CREATED || testStatus == PluginStatus.REMOVED);
+        testStatus = PluginStatus.ADDED;
     }
 
     @Override
     public void onRemoved() {
-        Assert.assertEquals(PluginStatus.STARTED, testStatus);
-        testStatus = PluginStatus.STOPPED;
+        Assert.assertEquals(PluginStatus.ADDED, testStatus);
+        testStatus = PluginStatus.REMOVED;
     }
 
     @Override
     public void onClose() {
-        Assert.assertEquals(PluginStatus.STOPPED, testStatus);
+        Assert.assertEquals(PluginStatus.REMOVED, testStatus);
         testStatus = PluginStatus.CLOSED;
     }
 

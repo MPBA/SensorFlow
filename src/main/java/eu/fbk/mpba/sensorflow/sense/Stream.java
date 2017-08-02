@@ -10,6 +10,7 @@ import eu.fbk.mpba.sensorflow.InputGroup;
 
 public class Stream extends Input {
 
+    public static final List<String> HEADER_WXYZ = Arrays.asList("w", "x", "y", "z");
     public static final List<String> HEADER_XYZ = Arrays.asList("x", "y", "z");
     public static final List<String> HEADER_VALUE = Collections.singletonList("value");
     public static final List<String> HEADER_EMPTY = Collections.emptyList();

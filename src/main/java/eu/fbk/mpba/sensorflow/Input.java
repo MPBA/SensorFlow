@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public abstract class Input implements InputGroup {
@@ -28,8 +29,11 @@ public abstract class Input implements InputGroup {
         }
     };
 
+    private static AtomicLong sequential = new AtomicLong(1L);
+
     //      Fields
 
+    private final int intUid;
     private volatile boolean listened = true;
     private String name;
 
@@ -51,6 +55,8 @@ public abstract class Input implements InputGroup {
     }
 
     protected Input(InputGroup parent, String name, Collection<String> header) {
+        long longUid = sequential.getAndIncrement();
+        this.intUid = (int) longUid / 2 * ((int) longUid % 2 * 2 - 1);
         this.parent = parent;
         this.name = name != null ? name : getClass().getSimpleName() + "-" + hashCode();
         this.header = new ArrayList<>(header);
@@ -171,6 +177,10 @@ public abstract class Input implements InputGroup {
 
     public final List<String> getHeader(){
         return header;
+    }
+
+    public final int intUid() {
+        return intUid;
     }
 
     //      Gets - SFPlugin non-final Overrides

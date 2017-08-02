@@ -1,6 +1,7 @@
 package eu.fbk.mpba.sensorflow.sense;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 
 import eu.fbk.mpba.sensorflow.Input;
@@ -10,7 +11,7 @@ import eu.fbk.mpba.sensorflow.InputGroup;
  * Base class for an InputModule
  */
 public abstract class InputModule extends Module implements InputGroup {
-    private final ArrayList<Input> children = new ArrayList<>();
+    private final ArrayList<Stream> children = new ArrayList<>();
     private boolean added = false;
 
     /**
@@ -36,6 +37,10 @@ public abstract class InputModule extends Module implements InputGroup {
         } else {
             throw new UnsupportedOperationException("Online streams changes not supported. Add streams before onAdded or after onRemoved.");
         }
+    }
+
+    protected Collection<Stream> getStreams() {
+        return children;
     }
 
     @Override

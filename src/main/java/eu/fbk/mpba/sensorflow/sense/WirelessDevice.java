@@ -23,7 +23,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param seconds   Estimated remaining time before power off due to low battery. This time,
      *                  despite being in seconds, has neither to change every second nor to be monotonic.
      */
-    protected void pushBatteryETA(double seconds) {
+    public void pushBatteryETA(double seconds) {
         batteryETA.pushValue(seconds);
     }
 
@@ -33,7 +33,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param percentage Value from 0 (Empty) to 100 Fully charged. Neither granularity, nor
      *                   monotonicity requirements.
      */
-    protected void pushBatterySOC(double percentage) {
+    public void pushBatterySOC(double percentage) {
         batterySOC.pushValue(percentage);
     }
 
@@ -41,7 +41,7 @@ public abstract class WirelessDevice extends InputModule {
      * Notifies a change in the status of the datalink connection. (Standard not yet defined).
      * @param status
      */
-    protected void pushConnectionStatus(String status) {
+    public void pushConnectionStatus(String status) {
         connection.pushLog(0, "", status);
     }
 
@@ -52,7 +52,7 @@ public abstract class WirelessDevice extends InputModule {
      *                      where 0% is the complete loss of connection and 100% is the maximal
      *                      power receivable.
      */
-    protected void pushConnectionStrength(double percentage) {
+    public void pushConnectionStrength(double percentage) {
         connection.pushValue(percentage);
     }
 
@@ -61,7 +61,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param bytes Indicative quantity of information lost. If the data is retransmitted due to
      *              some Transmission Control mechanism it has not to be considered lost.
      */
-    protected void pushDataLoss(double bytes) {
+    public void pushDataLoss(double bytes) {
         dataLoss.pushValue(bytes);
     }
 

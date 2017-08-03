@@ -13,7 +13,7 @@ class OutputManager {
     private boolean stopPending = false;
     private PluginStatus status = PluginStatus.INSTANTIATED;
     private String sessionTag;
-    private Output outputPlugIn;
+    private Output output;
     private boolean threaded;
     private Set<Input> linkedInputs = new HashSet<>();
     private Set<Input> linkedInputsSnapshot = new HashSet<>();
@@ -22,13 +22,13 @@ class OutputManager {
     private volatile boolean enabled = true;
 
     OutputManager(Output output, OutputObserver manager, boolean buffered) {
+        this.output = output;
         this.manager = manager;
-        outputPlugIn = output;
         this.threaded = buffered;
-        if (buffered)
-            queue = new OutputBuffer(outputPlugIn, 800, false);
+        if (buffered || output.getClass().isAnnotationPresent(SingleThreadRequired.class))
+            queue = new OutputBuffer(this.output, 800, false);
         else
-            queue = outputPlugIn;
+            queue = this.output;
         setEnabled(false);
         changeStatus(PluginStatus.INSTANTIATED);
     }
@@ -44,7 +44,7 @@ class OutputManager {
 
     private void beforeDispatch() {
         // Create plugin
-        outputPlugIn.onCreate(sessionTag);
+        output.onCreate(sessionTag);
         changeStatus(PluginStatus.CREATED);
         // Here input add/removal differentially buffered
         // Enable plugin
@@ -56,8 +56,8 @@ class OutputManager {
 
     private void afterDispatch() {
         // Here input add/removal differentially buffered, but no more useful
-        linkedInputsSnapshot.forEach(outputPlugIn::onInputRemoved);
-        outputPlugIn.onClose();
+        linkedInputsSnapshot.forEach(output::onInputRemoved);
+        output.onClose();
         changeStatus(PluginStatus.CLOSED);
     }
 
@@ -175,15 +175,15 @@ class OutputManager {
     }
 
     Output getOutput() {
-        return outputPlugIn;
+        return output;
     }
 
     // Finalization
 
     public synchronized void close() {
-        if (outputPlugIn != null) {
-            outputPlugIn.onClose();
-            outputPlugIn = null;
+        if (output != null) {
+            output.onClose();
+            output = null;
         }
         linkedInputs.clear();
         linkedInputs = null;

@@ -33,7 +33,7 @@ public abstract class Input implements InputGroup {
 
     //      Fields
 
-    private final int intUid;
+    public final int intUid;
     private volatile boolean listened = true;
     private String name;
 
@@ -177,10 +177,6 @@ public abstract class Input implements InputGroup {
 
     public final List<String> getHeader(){
         return header;
-    }
-
-    public final int intUid() {
-        return intUid;
     }
 
     //      Gets - SFPlugin non-final Overrides

@@ -37,6 +37,10 @@ public abstract class WirelessDevice extends InputModule {
         batterySOC.pushValue(percentage);
     }
 
+    public void pushBatterySOC(double volts, double fullVoltage, double emptyVoltage) {
+        pushBatterySOC((volts - emptyVoltage) / (fullVoltage - emptyVoltage) * 100);
+    }
+
     /**
      * Notifies a change in the status of the datalink connection. (Standard not yet defined).
      * @param status
@@ -73,10 +77,10 @@ public abstract class WirelessDevice extends InputModule {
 
     // OOP stuff
 
-    private Stream batteryETA = new Stream(this, "time", "BatteryETA");
-    private Stream batterySOC = new Stream(this, "percentage", "BatterySOC");
-    private Stream connection = new Stream(this, "percentage", "Connection");
-    private Stream dataLoss = new Stream(this, "bytes", "DataLoss");
+    private Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta");
+    private Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc");
+    private Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection-strength");
+    private Stream dataLoss = new Stream(this, Stream.HEADER_VALUE, "data-loss");
     {
         addStream(batteryETA);
         addStream(batterySOC);

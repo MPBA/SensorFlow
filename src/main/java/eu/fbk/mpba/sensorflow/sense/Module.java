@@ -37,7 +37,7 @@ abstract class Module implements SFPlugin {
      * Returns the path of the module considering InputGroups.
      */
     @Override
-    public String getName() {
+    public final String getName() {
         return getSimpleName();
     }
 
@@ -45,7 +45,7 @@ abstract class Module implements SFPlugin {
      * Returns the name of the module as an acquisition-unique identification. It should be standard
      * and well-known as it identifies the module.
      */
-    public String getSimpleName() {
+    public final String getSimpleName() {
         return simpleName;
     }
 
@@ -70,6 +70,12 @@ abstract class Module implements SFPlugin {
 
     protected void putKeyValue(String key, String value) {
         moduleLog.putKeyValue(key, value);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        onClose();
+        super.finalize();
     }
 
     public static final String KEY_DEV_ID = "DEV_ID";

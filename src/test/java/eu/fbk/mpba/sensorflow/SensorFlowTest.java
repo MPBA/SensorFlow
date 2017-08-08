@@ -8,6 +8,12 @@ import java.util.ArrayList;
 public class SensorFlowTest {
 
     @Test
+    public void test_Log() {
+        Log.l();
+        Log.s();
+    }
+
+    @Test
     public void test_sf_oneOutputThreaded() throws InterruptedException {
         Log.enabled = true;
         Log.l(Thread.currentThread().getName());

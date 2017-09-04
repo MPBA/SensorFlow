@@ -11,7 +11,7 @@ class LogInput extends Input {
      * @param name    The name, preferably of the parent of this Input.
      */
     LogInput(String name) {
-        super(null, name, Collections.emptyList());
+        super(null, name, Collections.<String>emptyList());
     }
 
     public void pushLog(int type, String tag, String message) {

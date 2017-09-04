@@ -56,7 +56,9 @@ public class SensorFlowTest {
 
         Thread.sleep(1500);
 
-        mi.forEach(InputGroup::onRemoved);
+        for (InputGroup inputGroup : mi) {
+            inputGroup.onRemoved();
+        }
 
         long sent = 0;
         for (InputGroup i : mi)
@@ -79,27 +81,40 @@ public class SensorFlowTest {
             mo.add(i, new MockOutput("MockOutput" + i));
 
         SensorFlow sf = new SensorFlow();
-        mo.forEach(sf::addNotRouted);
+        for (Output p : mo) {
+            sf.addNotRouted(p);
+        }
+
         sf.addNotRouted(mi);
 
-        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0));
+        for (Output o : mo) {
+            Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0);
+        }
 
         sf.routeClear();
-        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0));
+        for (Output o : mo) {
+            Assert.assertTrue(((MockOutput)o).receivedLines.get() == 0);
+        }
 
         sf.routeAll();
         Thread.sleep(100);
-        mo.forEach((o) -> Assert.assertTrue(((MockOutput)o).receivedLines.get() > 0));
+        for (Output o : mo) {
+            Assert.assertTrue(((MockOutput)o).receivedLines.get() > 0);
+        }
 
         sf.routeClear();
         Thread.sleep(100);
         final long[] sum = new long[]{0};
-        mo.forEach((o) -> sum[0] += ((MockOutput)o).receivedLines.get());
+        for (Output o : mo) {
+            sum[0] += ((MockOutput)o).receivedLines.get();
+        }
 
         Assert.assertTrue("One for each assumption failed", sum[0] > NUM);
 
         Thread.sleep(100);
-        mo.forEach((o) -> sum[0] -= ((MockOutput)o).receivedLines.get());
+        for (Output o : mo) {
+            sum[0] -= ((MockOutput)o).receivedLines.get();
+        }
 
         Assert.assertTrue("Things after routeClear", sum[0] == 0);
     }

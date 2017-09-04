@@ -28,7 +28,9 @@ public class MockOutput implements Output {
 
     @Override
     public void onClose() {
-        testLinkedInputs.forEach((i) -> Log.l(i.getName()));
+        for (Input i : testLinkedInputs)
+            Log.l(i.getName());
+
         Assert.assertTrue(testLinkedInputs.isEmpty());
     }
 

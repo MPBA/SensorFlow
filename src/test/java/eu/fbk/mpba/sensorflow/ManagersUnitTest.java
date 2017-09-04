@@ -6,7 +6,12 @@ public class ManagersUnitTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_OutOfPlaceEvents_output_onStopAndClose() {
         OutputManager o = new OutputManager(new MockOutput("Out"),
-                (sender, status) -> { }, true);
+                new OutputObserver() {
+                    @Override
+                    public void outputStatusChanged(OutputManager sender, PluginStatus status) {
+
+                    }
+                }, true);
 
         o.onStopAndClose();
     }
@@ -14,7 +19,12 @@ public class ManagersUnitTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_OutOfPlaceEvents_output_onCreateAndStart() {
         OutputManager o = new OutputManager(new MockOutput("Out"),
-                (sender, status) -> { }, true);
+                new OutputObserver() {
+                    @Override
+                    public void outputStatusChanged(OutputManager sender, PluginStatus status) {
+
+                    }
+                }, true);
 
         o.onCreateAndAdded("HiPedro");
         o.onCreateAndAdded("HiPedro");
@@ -23,7 +33,12 @@ public class ManagersUnitTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_OutOfPlaceEvents_input_onCreate() {
         InputManager o = new InputManager(new MockInput(null, "In"),
-                (sender, status) -> { });
+                new InputObserver() {
+                    @Override
+                    public void inputStatusChanged(InputManager input, PluginStatus state) {
+
+                    }
+                });
 
         o.onCreate();
         o.onCreate();
@@ -32,7 +47,12 @@ public class ManagersUnitTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_OutOfPlaceEvents_input_onAdded() {
         InputManager o = new InputManager(new MockInput(null, "In"),
-                (sender, status) -> { });
+                new InputObserver() {
+                    @Override
+                    public void inputStatusChanged(InputManager input, PluginStatus state) {
+
+                    }
+                });
 
         o.onAdded();
     }
@@ -40,7 +60,12 @@ public class ManagersUnitTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_OutOfPlaceEvents_input_onRemovedAndClose() {
         InputManager o = new InputManager(new MockInput(null, "In"),
-                (sender, status) -> { });
+                new InputObserver() {
+                    @Override
+                    public void inputStatusChanged(InputManager input, PluginStatus state) {
+
+                    }
+                });
 
         o.onRemovedAndClose();
     }

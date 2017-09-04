@@ -33,12 +33,16 @@ class OutputManager {
         changeStatus(PluginStatus.INSTANTIATED);
     }
 
-    private Thread sbufferingThread = new Thread(() -> {
-        OutputBuffer queue = (OutputBuffer) OutputManager.this.queue;
-        while (!stopPending || queue.size() > 0) {
-            try {
-                queue.pollToHandler(200, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ignored) { }
+    private Thread sbufferingThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            OutputBuffer queue = (OutputBuffer) OutputManager.this.queue;
+            while (!stopPending || queue.size() > 0) {
+                try {
+                    queue.pollToHandler(200, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException ignored) {
+                }
+            }
         }
     });
 
@@ -56,7 +60,9 @@ class OutputManager {
 
     private void afterDispatch() {
         // Here input add/removal differentially buffered, but no more useful
-        linkedInputsSnapshot.forEach(output::onInputRemoved);
+        for (Input input : linkedInputsSnapshot) {
+            output.onInputRemoved(input);
+        }
         output.onClose();
         changeStatus(PluginStatus.CLOSED);
     }
@@ -74,7 +80,8 @@ class OutputManager {
             beforeDispatch();
             if (threaded)
                 sbufferingThread.start();
-            linkedInputs.forEach(i -> i.pushDictionary(this));
+            for (Input i : linkedInputs)
+                i.pushDictionary(this);
         } else
             throw new UnsupportedOperationException("onCreateAndAdded out of place, current status: " + status.toString());
     }
@@ -154,8 +161,10 @@ class OutputManager {
             linkedInputs.clear();
             linkedInputs.addAll(linkedInputsSnapshot);
 
-            toRemove.forEach(this::removeInput);
-            toAdd.forEach(this::addInput);
+            for (Input s : toRemove)
+                removeInput(s);
+            for (Input s : toAdd)
+                addInput(s);
         }
     }
 

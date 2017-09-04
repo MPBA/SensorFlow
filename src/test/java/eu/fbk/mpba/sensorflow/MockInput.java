@@ -20,24 +20,27 @@ public class MockInput extends Input {
     public void onCreate() {
 //        System.out.println("MockInput onCreateAndAdded");
         Assert.assertTrue(testStatus == PluginStatus.INSTANTIATED || testStatus == PluginStatus.CLOSED);
-        producer = new Thread(() -> {
-            try {
-                int i = 0;
-                Random random = new Random(0);
-                while (testStatus != PluginStatus.CLOSED) {
-                    while (testStatus == PluginStatus.ADDED) {
-                        MockInput.this.pushValue(getTimeSource().getMonoUTCNanos(), new double[]{i++});
-                        sentLines++;
-                        if (random.nextInt(15) == 0) {
-                            MockInput.this.pushLog(getTimeSource().getMonoUTCNanos(), "Random gave 0/15");
+        producer = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int i = 0;
+                    Random random = new Random(0);
+                    while (testStatus != PluginStatus.CLOSED) {
+                        while (testStatus == PluginStatus.ADDED) {
+                            MockInput.this.pushValue(getTimeSource().getMonoUTCNanos(), new double[]{i++});
                             sentLines++;
+                            if (random.nextInt(15) == 0) {
+                                MockInput.this.pushLog(getTimeSource().getMonoUTCNanos(), "Random gave 0/15");
+                                sentLines++;
+                            }
+                            Thread.sleep(8);
                         }
-                        Thread.sleep(8);
+                        Thread.sleep(200);
                     }
-                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    // exit
                 }
-            } catch (InterruptedException e) {
-                // exit
             }
         });
         producer.start();

@@ -45,7 +45,7 @@ public abstract class InputModule extends Module implements InputGroup {
 
     @Override
     public final Iterable<Input> getChildren() {
-        return Collections.unmodifiableList(children);
+        return Collections.<Input>unmodifiableList(children);
     }
 
     public abstract void onCreate();

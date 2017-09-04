@@ -133,9 +133,9 @@ public abstract class Input implements InputGroup {
         // Shouldn't be called before onCreateAndAdded
         if (listened) {
             outputsAccess.readLock().lock();
-            outputs.stream()
-                    .filter(OutputManager::isEnabled)
-                    .forEach(o -> o.pushValue(this, time, value));
+            for (OutputManager output : outputs)
+                if (output.isEnabled())
+                    output.pushValue(this, time, value);
             outputsAccess.readLock().unlock();
         }
     }
@@ -144,9 +144,9 @@ public abstract class Input implements InputGroup {
         // Shouldn't be called before onCreateAndAdded
         if (listened) {
             outputsAccess.readLock().lock();
-            outputs.stream()
-                    .filter(OutputManager::isEnabled)
-                    .forEach(o -> o.pushLog(this, time, message));
+            for (OutputManager output : outputs)
+                if (output.isEnabled())
+                    output.pushLog(this, time, message);
             outputsAccess.readLock().unlock();
         }
     }

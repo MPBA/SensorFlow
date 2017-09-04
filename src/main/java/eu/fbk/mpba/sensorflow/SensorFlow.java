@@ -22,12 +22,18 @@ public class SensorFlow {
 
     //      Status Interfaces
 
-    private final InputObserver input = (sender, state) -> {
-        // onStatusChanged
+    private final InputObserver input = new InputObserver() {
+        @Override
+        public void inputStatusChanged(InputManager sender, PluginStatus state) {
+            // onStatusChanged
+        }
     };
 
-    private final OutputObserver output = (sender, state) -> {
-        // onStatusChanged
+    private final OutputObserver output = new OutputObserver() {
+        @Override
+        public void outputStatusChanged(OutputManager sender, PluginStatus state) {
+            // onStatusChanged
+        }
     };
 
     // Data and Events Interface, will be re-added for profiling
@@ -73,7 +79,8 @@ public class SensorFlow {
     }
 
     public SensorFlow add(Collection<InputGroup> p) {
-        p.forEach(this::add);
+        for (InputGroup inputGroup : p)
+            add(inputGroup);
         return this;
     }
 
@@ -82,7 +89,8 @@ public class SensorFlow {
     }
 
     public SensorFlow addNotRouted(Collection<InputGroup> p) {
-        p.forEach(this::addNotRouted);
+        for (InputGroup p1 : p)
+            addNotRouted(p1);
         return this;
     }
 
@@ -133,7 +141,8 @@ public class SensorFlow {
             // InputGroups are not recursive, just one level
             for (Input s : p.getChildren()) {
                 ArrayList<OutputManager> outputs = new ArrayList<>(s.getOutputs());
-                outputs.forEach((o) -> removeRoute(s, o));
+                for (OutputManager o : outputs)
+                    removeRoute(s, o);
             }
             removed.onRemovedAndClose();
 //            p.setManager(null);
@@ -151,7 +160,8 @@ public class SensorFlow {
         if (removed != null) {
             final OutputManager o = removed;
             ArrayList<Input> inputs = new ArrayList<>(o.getInputs());
-            inputs.forEach((i) -> removeRoute(i, o));
+            for (Input i : inputs)
+                removeRoute(i, o);
             o.onStopAndClose();
         }
         return this;
@@ -253,7 +263,8 @@ public class SensorFlow {
         ArrayList<InputGroup> x;
         synchronized (userInputs) {
             x = new ArrayList<>(userInputs.size());
-            userInputs.values().forEach((o) -> x.add(o.getInputGroup()));
+            for (InputManager o : userInputs.values())
+                x.add(o.getInputGroup());
         }
         return Collections.unmodifiableCollection(x);
     }
@@ -262,7 +273,8 @@ public class SensorFlow {
         ArrayList<Output> x;
         synchronized (userOutputs) {
             x = new ArrayList<>(userOutputs.size());
-            userOutputs.values().forEach((o) -> x.add(o.getOutput()));
+            for (OutputManager o : userOutputs.values())
+                x.add(o.getOutput());
         }
         return Collections.unmodifiableCollection(x);
     }
@@ -282,7 +294,8 @@ public class SensorFlow {
     // Does not create duplicates
     public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
-        userInputs.values().forEach(this::routeAll);
+        for (InputManager d : userInputs.values())
+            routeAll(d);
         return this;
     }
 
@@ -330,7 +343,8 @@ public class SensorFlow {
                 d.getInputGroup().onClose();
             }
             routeClear();
-            userOutputs.values().forEach(OutputManager::onStopAndClose);
+            for (OutputManager o : userOutputs.values())
+                o.onStopAndClose();
             closed = true;
         }
     }

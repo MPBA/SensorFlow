@@ -1,7 +1,6 @@
 package eu.fbk.mpba.sensorflow;
 
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;

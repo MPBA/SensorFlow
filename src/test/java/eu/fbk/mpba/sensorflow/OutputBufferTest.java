@@ -22,7 +22,7 @@ public class OutputBufferTest {
 
     @Test
     public void test_getName_events() {
-        boolean[] cond = new boolean[2];
+        final boolean[] cond = new boolean[2];
         final String name = "CustomMockOutput20957";
 
         MockOutput o = new MockOutput(name) {
@@ -184,13 +184,16 @@ public class OutputBufferTest {
         }
 
         final OutputBuffer q = new OutputBuffer(o, 1000, false);
-        new Thread(() -> {
-            try {
-                //noinspection InfiniteLoopStatement
-                while (true)
-                    q.pollToHandler(100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    //noinspection InfiniteLoopStatement
+                    while (true)
+                        q.pollToHandler(100, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }).start();
 

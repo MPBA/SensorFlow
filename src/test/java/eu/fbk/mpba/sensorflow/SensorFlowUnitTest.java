@@ -50,7 +50,10 @@ public class SensorFlowUnitTest {
         sf.addNotRouted(outputs.get(7));
         assertEquals(3, sf.getOutputs().size());
 
-        outputs.forEach(sf::add);
+        for (Output p : outputs) {
+            sf.add(p);
+        }
+
         assertEquals(outputs.size(), sf.getOutputs().size());
 
         sf.close();
@@ -79,7 +82,10 @@ public class SensorFlowUnitTest {
     public void test_remove_output() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
 
-        outputs.forEach(sf::addNotRouted);
+        for (Output p : outputs) {
+            sf.addNotRouted(p);
+        }
+
 
         sf.remove(outputs.get(3));
         assertEquals(outputs.size() - 1, sf.getOutputs().size());
@@ -97,7 +103,10 @@ public class SensorFlowUnitTest {
     public void test_remove_input() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
 
-        inputs.forEach(sf::addNotRouted);
+        for (InputGroup p : inputs) {
+            sf.addNotRouted(p);
+        }
+
 
         sf.remove(inputs.get(3));
         assertEquals(inputs.size() - 1, sf.getInputs().size());
@@ -113,8 +122,14 @@ public class SensorFlowUnitTest {
     public void test_routes() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
 
-        inputs.forEach(sf::addNotRouted);
-        outputs.forEach(sf::addNotRouted);
+        for (InputGroup p : inputs) {
+            sf.addNotRouted(p);
+        }
+
+        for (Output p : outputs) {
+            sf.addNotRouted(p);
+        }
+
 
         // Add all routes
         sf.routeAll();
@@ -166,9 +181,14 @@ public class SensorFlowUnitTest {
     public void test_isOutputEnabled() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
 
-        outputs.forEach(sf::addNotRouted);
+        for (Output p : outputs) {
+            sf.addNotRouted(p);
+        }
 
-        outputs.forEach((o) -> assertTrue(o.getName(), sf.isOutputEnabled(o)));
+        for (Output o : outputs) {
+            assertTrue(o.getName(), sf.isOutputEnabled(o));
+        }
+
 
         sf.close();
     }
@@ -177,8 +197,14 @@ public class SensorFlowUnitTest {
     public void test_disableOutput_enableOutput() throws InterruptedException {
         SensorFlow sf = new SensorFlow(SESSION_ID);
 
-        outputs.forEach(sf::addInThreadNotRouted);
-        inputs.forEach(sf::addNotRouted);
+        for (Output p : outputs) {
+            sf.addInThreadNotRouted(p);
+        }
+
+        for (InputGroup p : inputs) {
+            sf.addNotRouted(p);
+        }
+
         sf.routeAll();
 
         long dataReceivedToggle = 0;
@@ -259,11 +285,14 @@ public class SensorFlowUnitTest {
     @Test
     public void test_InThread() throws InterruptedException {
         SensorFlow sf = new SensorFlow(SESSION_ID);
-        inputs.forEach(sf::add);
+        for (InputGroup p : inputs) {
+            sf.add(p);
+        }
+
 
         final long id = Thread.currentThread().getId();
 
-        boolean[] cond = new boolean[4];
+        final boolean[] cond = new boolean[4];
 
         sf.addInThread(new MockOutput("CustomMockOutput") {
             @Override
@@ -304,7 +333,10 @@ public class SensorFlowUnitTest {
     @Test
     public void test_InThreadNotRouted() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
-        inputs.forEach(sf::add);
+        for (InputGroup p : inputs) {
+            sf.add(p);
+        }
+
 
         final long id = Thread.currentThread().getId();
 
@@ -338,7 +370,10 @@ public class SensorFlowUnitTest {
     @Test
     public void test_NonInThread() {
         SensorFlow sf = new SensorFlow(SESSION_ID);
-        inputs.forEach(sf::add);
+        for (InputGroup p : inputs) {
+            sf.add(p);
+        }
+
         final AtomicLong id = new AtomicLong(-1);
 
         sf.add(new MockOutput("CustomMockOutput") {

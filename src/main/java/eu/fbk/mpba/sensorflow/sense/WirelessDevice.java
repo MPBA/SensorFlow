@@ -11,8 +11,15 @@ package eu.fbk.mpba.sensorflow.sense;
  */
 public abstract class WirelessDevice extends InputModule {
 
-    public WirelessDevice(String name, String settings) {
+    private final ConnectionType connectionType;
+
+    public WirelessDevice(String name, String settings, ConnectionType connectionType) {
         super(name, settings);
+        this.connectionType = connectionType;
+    }
+
+    public ConnectionType getConnectionType() {
+        return connectionType;
     }
 
     // Control of built-in flows
@@ -86,5 +93,12 @@ public abstract class WirelessDevice extends InputModule {
         addStream(batterySOC);
         addStream(connection);
         addStream(dataLoss);
+    }
+
+    public enum ConnectionType {
+        BLUETOOTH_2,
+        BLUETOOTH_3,
+        BLUETOOTH_4,
+        WIFI,
     }
 }

@@ -7,7 +7,9 @@ package eu.fbk.mpba.sensorflow.sense;
  * 
  * To notify such data, methods of the form protected boolean pushX() are provided. These control
  * internal Flows that send the data in a standard form.
- * 
+ *
+ * Remember to implement the following static method:
+ * public static DeviceDetector getDeviceDetector()
  */
 public abstract class WirelessDevice extends InputModule {
 
@@ -50,7 +52,6 @@ public abstract class WirelessDevice extends InputModule {
 
     /**
      * Notifies a change in the status of the datalink connection. (Standard not yet defined).
-     * @param status
      */
     public void pushConnectionStatus(String status) {
         connection.pushLog(0, "", status);
@@ -100,5 +101,6 @@ public abstract class WirelessDevice extends InputModule {
         BLUETOOTH_3,
         BLUETOOTH_4,
         WIFI,
+        OTHER
     }
 }

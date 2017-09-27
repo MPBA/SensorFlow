@@ -1,5 +1,8 @@
 package eu.fbk.mpba.sensorflow.sense;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+
 /**
  * This interface define methods to recognize bluetooth device properties and type without
  * connecting to it.
@@ -58,6 +61,32 @@ public abstract class DeviceDetector {
         public boolean greaterThan(Confidence o) {
             return this.p > o.p;
         }
+    }
+
+    /**
+     * Given a list of WirelessDevice classes implementing the static method "getDeviceDetector",
+     * finds the last SHOULD_BE or CAN_BE or the first IS
+     * @param filter Collection of Class types referring to the Wireless Devices to scan.
+     * @param i The object to classify.
+     * @return Returns the chosen DeviceDetector.Result.
+     */
+    public static DeviceDetector.Result find(Collection<Class<? extends WirelessDevice>> filter, Object i) {
+        DeviceDetector.Result found = null;
+        for (Class<? extends WirelessDevice> f : filter) {
+            DeviceDetector invoke;
+            try {
+                invoke = (DeviceDetector) f.getDeclaredMethod("getDeviceDetector").invoke(null);
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                e.printStackTrace();
+                continue;
+            }
+            DeviceDetector.Result evaluate = invoke.evaluate(i);
+            if (found == null || !evaluate.getConfidence().greaterThan(found.getConfidence()))
+                found = evaluate;
+            if (found.getConfidence() == DeviceDetector.Confidence.IS)
+                break;
+        }
+        return found;
     }
 
     public Result isNot() {

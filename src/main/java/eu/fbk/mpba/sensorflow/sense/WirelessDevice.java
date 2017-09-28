@@ -13,11 +13,10 @@ package eu.fbk.mpba.sensorflow.sense;
  */
 public abstract class WirelessDevice extends InputModule {
 
-    private final ConnectionType connectionType;
+    private static  ConnectionType connectionType = ConnectionType.OTHER;
 
-    public WirelessDevice(String name, String settings, ConnectionType connectionType) {
+    public WirelessDevice(String name, String settings) {
         super(name, settings);
-        this.connectionType = connectionType;
     }
 
     public ConnectionType getConnectionType() {
@@ -51,10 +50,10 @@ public abstract class WirelessDevice extends InputModule {
     }
 
     /**
-     * Notifies a change in the status of the datalink connection. (Standard not yet defined).
+     * Notifies a change in the status of the datalink connection.
      */
-    public void pushConnectionStatus(String status) {
-        connection.pushLog(0, "", status);
+    public void setConnectionStatus(ConnectionStatus status) {
+        connection.pushLog(0, status.name(), "");
     }
 
     /**
@@ -81,7 +80,7 @@ public abstract class WirelessDevice extends InputModule {
      * Called by the developer who uses this module to connect the device. The output flows from
      * onConnectionStatus, and is available through the getter getConnectionStatus.
      */
-    public abstract void connect(Runnable done);
+    public abstract void connect();
 
     // OOP stuff
 
@@ -102,5 +101,16 @@ public abstract class WirelessDevice extends InputModule {
         BLUETOOTH_4,
         WIFI,
         OTHER
+    }
+
+    public enum ConnectionStatus {
+        CONNECTING,
+        CONNECTION_FAILED,
+        CONNECTED,
+        CONNECTION_DROPPED_RECONNECTING,
+        CONNECTION_DROPPED_NO_ACTION,
+        DISCONNECTED,
+        SUPPORT_UNAVAILABLE_ACTION_REQUIRED,
+        DESTINATION_NOT_AVAILABLE,
     }
 }

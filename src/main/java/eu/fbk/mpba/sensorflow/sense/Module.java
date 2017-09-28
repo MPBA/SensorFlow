@@ -25,6 +25,13 @@ public abstract class Module implements SFPlugin {
         addSFChild(moduleLog);
     }
 
+    /**
+     * Default constructor for Builder use.
+     */
+    Module() {
+        this("",  "");
+    }
+
     void addSFChild(SFPlugin child) {
         sfChildren.add(child);
     }

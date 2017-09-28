@@ -81,7 +81,7 @@ public abstract class DeviceDetector {
                 continue;
             }
             DeviceDetector.Result evaluate = invoke.evaluate(i);
-            if (found == null || !evaluate.getConfidence().greaterThan(found.getConfidence()))
+            if (found == null || evaluate.getConfidence().greaterThan(found.getConfidence()))
                 found = evaluate;
             if (found.getConfidence() == DeviceDetector.Confidence.IS)
                 break;

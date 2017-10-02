@@ -15,6 +15,13 @@ public class Stream extends Input {
     public static final List<String> HEADER_VALUE = Collections.singletonList("value");
     public static final List<String> HEADER_EMPTY = Collections.emptyList();
 
+    public static final String NAME_ACCELERATION = "Acceleration";
+    public static final String NAME_TEMPERATURE = "Temperature";
+    public static final String NAME_LOCATION = "Loacation";
+    public static final String NAME_BVP = "BloodVolumePulse";
+    public static final String NAME_EDA = "ElectroDermalActivity";
+    public static final String NAME_ECG = "ElectroCardioGram";
+
     public Stream(String header, String name) {
         this(null, header, name);
     }

@@ -15,10 +15,6 @@ public abstract class WirelessDevice extends InputModule {
 
     private static  ConnectionType connectionType = ConnectionType.OTHER;
 
-    public WirelessDevice(String name, String settings) {
-        super(name, settings);
-    }
-
     public ConnectionType getConnectionType() {
         return connectionType;
     }
@@ -52,7 +48,7 @@ public abstract class WirelessDevice extends InputModule {
     /**
      * Notifies a change in the status of the datalink connection.
      */
-    public void setConnectionStatus(ConnectionStatus status) {
+    public void pushConnectionStatus(ConnectionStatus status) {
         connection.pushLog(0, status.name(), "");
     }
 
@@ -80,7 +76,7 @@ public abstract class WirelessDevice extends InputModule {
      * Called by the developer who uses this module to connect the device. The output flows from
      * onConnectionStatus, and is available through the getter getConnectionStatus.
      */
-    public abstract void connect();
+    public abstract void connect(Object device);
 
     // OOP stuff
 
@@ -104,13 +100,14 @@ public abstract class WirelessDevice extends InputModule {
     }
 
     public enum ConnectionStatus {
-        CONNECTING,
-        CONNECTION_FAILED,
+        ACTION_NOT_SUPPORTED,
         CONNECTED,
-        CONNECTION_DROPPED_RECONNECTING,
+        CONNECTING,
         CONNECTION_DROPPED_NO_ACTION,
-        DISCONNECTED,
-        SUPPORT_UNAVAILABLE_ACTION_REQUIRED,
+        CONNECTION_DROPPED_RECONNECTING,
+        CONNECTION_FAILED,
         DESTINATION_NOT_AVAILABLE,
+        DISCONNECTED,
+        WRONG_DESTINATION_TYPE,
     }
 }

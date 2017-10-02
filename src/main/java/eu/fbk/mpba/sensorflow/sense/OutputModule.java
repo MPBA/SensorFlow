@@ -12,7 +12,8 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      * @param settings Configuration string (e.g. json) to be passed to the Module.
      */
     public OutputModule(String name, String settings) {
-        super(name, settings);
+        setName(name);
+        setConfiguration(settings);
         addSFChild(this);
     }
 

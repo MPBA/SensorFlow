@@ -10,26 +10,17 @@ import eu.fbk.mpba.sensorflow.SFPlugin;
  */
 public abstract class Module implements SFPlugin {
     private final LogInput moduleLog;
-    private final String configuration;
-    private final String simpleName;
     private final ArrayList<SFPlugin> sfChildren = new ArrayList<>(4);
+    private String simpleName;
+    private String configuration;
 
     /**
      * Constructor of abstract class
-     * @param configuration Configuration string (e.g. json) to be passed to the Module.
-     */
-    Module(String name, String configuration) {
-        this.configuration = configuration;
-        this.moduleLog = new LogInput(name);
-        simpleName = name == null ? getClass().getSimpleName() : name;
-        addSFChild(moduleLog);
-    }
-
-    /**
-     * Default constructor for Builder use.
      */
     Module() {
-        this("",  "");
+        simpleName = getClass().getSimpleName();
+        this.moduleLog = new LogInput(getName());
+        addSFChild(moduleLog);
     }
 
     void addSFChild(SFPlugin child) {
@@ -54,6 +45,15 @@ public abstract class Module implements SFPlugin {
      */
     public final String getSimpleName() {
         return simpleName;
+    }
+
+    public final void setName(String simpleName) {
+        this.simpleName = simpleName == null ? getClass().getSimpleName() : simpleName;
+        moduleLog.setName(getName());
+    }
+
+    public final void setConfiguration(String configuration) {
+        this.configuration = configuration;
     }
 
     /**

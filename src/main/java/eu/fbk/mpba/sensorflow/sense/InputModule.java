@@ -16,11 +16,8 @@ public abstract class InputModule extends Module implements InputGroup {
 
     /**
      * Constructor of abstract class
-     * @param name Name of the Module.
-     * @param settings Configuration string (e.g. json) to be passed to the Module.
      */
-    public InputModule(String name, String settings) {
-        super(name, settings);
+    public InputModule() {
         addSFChild(this);
     }
 

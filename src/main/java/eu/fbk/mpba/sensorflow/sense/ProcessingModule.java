@@ -10,16 +10,6 @@ public abstract class ProcessingModule extends InputModule implements Output, IO
     private final AtomicBoolean created = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    /**
-     * Constructor of abstract class
-     *
-     * @param name     Name of the Module.
-     * @param settings Configuration string (e.g. json) to be passed to the Module.
-     */
-    public ProcessingModule(String name, String settings) {
-        super(name, settings);
-    }
-
     @Override
     public final void onCreate(String sessionId) {
         onCreate();

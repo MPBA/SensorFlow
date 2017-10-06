@@ -9,7 +9,7 @@ public interface InputGroup extends SFPlugin {
     void onCreate();
 
     /**
-     * Called after routing ("wiring") the plugin to the outputs.
+     * Called after routing ("wiring") the plugin to all the outputs.
      */
     void onAdded();
 

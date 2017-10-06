@@ -14,6 +14,7 @@ package eu.fbk.mpba.sensorflow.sense;
 public abstract class WirelessDevice extends InputModule {
 
     private static  ConnectionType connectionType = ConnectionType.OTHER;
+    private String deviceName;
 
     public ConnectionType getConnectionType() {
         return connectionType;
@@ -49,7 +50,7 @@ public abstract class WirelessDevice extends InputModule {
      * Notifies a change in the status of the datalink connection.
      */
     public void pushConnectionStatus(ConnectionStatus status) {
-        connection.pushLog(0, status.name(), "");
+        connection.pushLog(status.name());
     }
 
     /**
@@ -80,15 +81,23 @@ public abstract class WirelessDevice extends InputModule {
 
     // OOP stuff
 
-    private Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta");
-    private Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc");
-    private Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection-strength");
+    private Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta", true);
+    private Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc", true);
+    private Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection", true);
     private Stream dataLoss = new Stream(this, Stream.HEADER_VALUE, "data-loss");
     {
         addStream(batteryETA);
         addStream(batterySOC);
         addStream(connection);
         addStream(dataLoss);
+    }
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    protected void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
     }
 
     public enum ConnectionType {

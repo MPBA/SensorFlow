@@ -22,28 +22,20 @@ public class Stream extends Input {
     public static final String NAME_EDA = "ElectroDermalActivity";
     public static final String NAME_ECG = "ElectroCardioGram";
 
-    public Stream(String header, String name) {
-        this(null, header, name);
-    }
-
-    public Stream(InputGroup parent, String header, String name) {
-        this(parent, new String[] { header }, name);
-    }
-
-    public Stream(String[] header, String name) {
-        this(null, header, name);
-    }
-
-    public Stream(InputGroup parent, String[] header, String name) {
-        this(parent, Arrays.asList(header), name);
-    }
-
     public Stream(Collection<String> header, String name) {
-        this(null, header, name);
+        this(null, header, name, false);
+    }
+
+    public Stream(Collection<String> header, String name, boolean reactive) {
+        this(null, header, name, reactive);
     }
 
     public Stream(InputGroup parent, Collection<String> header, String name) {
-        super(parent, name, header);
+        this(parent, header, name, false);
+    }
+
+    public Stream(InputGroup parent, Collection<String> header, String name, boolean reactive) {
+        super(parent, name, header, reactive);
     }
 
     public void pushValue(double value) {

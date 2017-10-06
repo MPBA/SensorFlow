@@ -3,11 +3,11 @@ package eu.fbk.mpba.sensorflow;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -34,6 +34,7 @@ public abstract class Input implements InputGroup {
     //      Fields
 
     public final int intUid;
+    private final boolean reactive;
     private volatile boolean listened = true;
     private String name;
 
@@ -41,25 +42,36 @@ public abstract class Input implements InputGroup {
     private List<String> header;
     private Set<OutputManager> outputs = new HashSet<>();
     private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
-    private TreeMap<String, String> dictionary = new TreeMap<>();
+    private Map<String, String> dictionary = new HashMap<>();
     private ReentrantReadWriteLock dictionaryAccess = new ReentrantReadWriteLock(false);
+    private long holdTimestamp;
+    private double[] holdValue;
 
     //      Constructors
 
     protected Input(Collection<String> header) {
-        this(null, Input.class.getSimpleName(), header);
+        this(null, Input.class.getSimpleName(), header, false);
     }
 
     protected Input(InputGroup parent, Collection<String> header) {
-        this(parent, Input.class.getSimpleName(), header);
+        this(parent, Input.class.getSimpleName(), header,false);
     }
 
     protected Input(InputGroup parent, String name, Collection<String> header) {
+        this(parent, name, header, false);
+    }
+
+    protected Input(InputGroup parent, String name, Collection<String> header, boolean reactive) {
+        this.reactive = reactive;
         long longUid = sequential.getAndIncrement();
         this.intUid = (int) longUid / 2 * ((int) longUid % 2 * 2 - 1);
         this.parent = parent;
         this.name = name != null ? name : getClass().getSimpleName() + "-" + hashCode();
         this.header = new ArrayList<>(header);
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     //      Outputs access
@@ -68,9 +80,9 @@ public abstract class Input implements InputGroup {
         outputsAccess.writeLock().lock();
         outputs.add(output);
         outputsAccess.writeLock().unlock();
-        if (output.getStatus() == PluginStatus.ADDED) {
-            pushDictionary(output);
-        }
+        if (listened && holdValue != null) // "&& reactive" is implicit
+            pushValueInner(holdTimestamp, holdValue);
+        pushDictionary(output);
     }
 
     void removeOutput(OutputManager output) {
@@ -86,19 +98,6 @@ public abstract class Input implements InputGroup {
         }
         dictionaryAccess.readLock().unlock();
     }
-
-//    void addOutput(Collection<OutputManager> output) {
-//        outputsAccess.writeLock().lock();
-//        outputs.addAll(output);
-//        outputsAccess.writeLock().unlock();
-//        onOutputAdded();
-//    }
-//
-//    void removeOutput(Collection<OutputManager> output) {
-//        outputsAccess.writeLock().lock();
-//        outputs.removeAll(output);
-//        outputsAccess.writeLock().unlock();
-//    }
 
     Collection<OutputManager> getOutputs() {
         outputsAccess.readLock().lock();
@@ -132,12 +131,20 @@ public abstract class Input implements InputGroup {
     public void pushValue(long time, double[] value) {
         // Shouldn't be called before onCreateAndAdded
         if (listened) {
-            outputsAccess.readLock().lock();
-            for (OutputManager output : outputs)
-                if (output.isEnabled())
-                    output.pushValue(this, time, value);
-            outputsAccess.readLock().unlock();
+            pushValueInner(time, value);
         }
+        if (reactive) {
+            holdTimestamp = time;
+            holdValue = value;
+        }
+    }
+
+    private void pushValueInner(long time, double[] value) {
+        outputsAccess.readLock().lock();
+        for (OutputManager output : outputs)
+            if (output.isEnabled())
+                output.pushValue(this, time, value);
+        outputsAccess.readLock().unlock();
     }
 
     public void pushLog(long time, String message) {
@@ -163,9 +170,16 @@ public abstract class Input implements InputGroup {
 
     public void unmute() {
         this.listened = true;
+        if (reactive) {
+            pushValueInner(holdTimestamp, holdValue);
+        }
     }
 
     //      Gets
+
+    public boolean isReactive() {
+        return reactive;
+    }
 
     public static TimeSource getTimeSource() {
         return time;

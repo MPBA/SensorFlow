@@ -46,6 +46,8 @@ public abstract class Input implements InputGroup {
     private ReentrantReadWriteLock dictionaryAccess = new ReentrantReadWriteLock(false);
     private long holdTimestamp;
     private double[] holdValue;
+    private long holdTimestampLog;
+    private String holdValueLog;
 
     //      Constructors
 
@@ -80,9 +82,13 @@ public abstract class Input implements InputGroup {
         outputsAccess.writeLock().lock();
         outputs.add(output);
         outputsAccess.writeLock().unlock();
-        if (listened && holdValue != null) // "&& reactive" is implicit
-            pushValueInner(holdTimestamp, holdValue);
         pushDictionary(output);
+        if (listened && reactive) {
+            if (holdValue != null) // "&& reactive" is implicit
+                pushValueInner(holdTimestamp, holdValue);
+            if (holdValueLog != null) // "&& reactive" is implicit
+                pushLogInner(holdTimestampLog, holdValueLog);
+        }
     }
 
     void removeOutput(OutputManager output) {
@@ -139,6 +145,17 @@ public abstract class Input implements InputGroup {
         }
     }
 
+    public void pushLog(long time, String message) {
+        // Shouldn't be called before onCreateAndAdded
+        if (listened) {
+            pushLogInner(time, message);
+        }
+        if (reactive) {
+            holdTimestampLog = time;
+            holdValueLog = message;
+        }
+    }
+
     private void pushValueInner(long time, double[] value) {
         outputsAccess.readLock().lock();
         for (OutputManager output : outputs)
@@ -147,15 +164,12 @@ public abstract class Input implements InputGroup {
         outputsAccess.readLock().unlock();
     }
 
-    public void pushLog(long time, String message) {
-        // Shouldn't be called before onCreateAndAdded
-        if (listened) {
-            outputsAccess.readLock().lock();
-            for (OutputManager output : outputs)
-                if (output.isEnabled())
-                    output.pushLog(this, time, message);
-            outputsAccess.readLock().unlock();
-        }
+    private void pushLogInner(long time, String message) {
+        outputsAccess.readLock().lock();
+        for (OutputManager output : outputs)
+            if (output.isEnabled())
+                output.pushLog(this, time, message);
+        outputsAccess.readLock().unlock();
     }
 
     //      Muting
@@ -209,7 +223,7 @@ public abstract class Input implements InputGroup {
     }
 
     @Override
-    public final Iterable<Input> getChildren() {
+    public final Collection<Input> getChildren() {
         return Collections.singletonList(this);
     }
 

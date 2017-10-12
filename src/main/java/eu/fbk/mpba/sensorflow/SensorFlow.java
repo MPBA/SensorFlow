@@ -103,9 +103,13 @@ public class SensorFlow {
             }
         }
         if (added != null) {
+            // Reversed the following two statements:
+            //      Before: onCreate call precedes all data
+            //      Now:    some data after onCreate call may be lost.
+            //  It is ok as the important rule is that onAdded call precedes all data.
+            added.onCreateAndAdded(sessionTag);
             if (routeEverywhere)
                 routeAll(added);
-            added.onCreateAndAdded(sessionTag);
         }
     }
 

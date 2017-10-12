@@ -14,7 +14,6 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     public OutputModule(String name, String settings) {
         setName(name);
         setConfiguration(settings);
-        addSFChild(this);
     }
 
     /**

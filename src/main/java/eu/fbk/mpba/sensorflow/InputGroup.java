@@ -1,5 +1,7 @@
 package eu.fbk.mpba.sensorflow;
 
+import java.util.Collection;
+
 public interface InputGroup extends SFPlugin {
 
     /**
@@ -18,7 +20,7 @@ public interface InputGroup extends SFPlugin {
      */
     void onRemoved();
 
-    Iterable<Input> getChildren();
+    Collection<Input> getChildren();
 
     String getSimpleName();
 

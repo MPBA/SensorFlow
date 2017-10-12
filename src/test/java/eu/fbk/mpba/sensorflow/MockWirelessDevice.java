@@ -12,7 +12,8 @@ public class MockWirelessDevice extends WirelessDevice {
     private PluginStatus testStatus = PluginStatus.INSTANTIATED;
 
     MockWirelessDevice(String name, String configuration) {
-        super(name, configuration);
+        setName(name);
+        setConfiguration(configuration);
     }
 
     @Override
@@ -80,7 +81,7 @@ public class MockWirelessDevice extends WirelessDevice {
     }
 
     @Override
-    public void connect(Runnable done) {
+    public void connect(Object done) {
 
     }
 

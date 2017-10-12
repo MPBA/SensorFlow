@@ -6,20 +6,19 @@ import java.util.Collections;
 
 import eu.fbk.mpba.sensorflow.Input;
 import eu.fbk.mpba.sensorflow.InputGroup;
+import eu.fbk.mpba.sensorflow.SFPlugin;
 
 /**
  * Base class for an InputModule
  */
-public abstract class InputModule extends Module implements InputGroup {
+public abstract class InputModule extends Module {
     private final ArrayList<Stream> children = new ArrayList<>();
     private boolean added = false;
 
     /**
      * Constructor of abstract class
      */
-    public InputModule() {
-        addSFChild(this);
-    }
+    public InputModule() { }
 
     /**
      * Adds a Stream to the InputModule. The Input must have an unique name within the device inputs.
@@ -41,8 +40,10 @@ public abstract class InputModule extends Module implements InputGroup {
     }
 
     @Override
-    public final Iterable<Input> getChildren() {
-        return Collections.<Input>unmodifiableList(children);
+    public final Collection<Input> getChildren() {
+        ArrayList<Input> sfPlugins = new ArrayList<>(super.getChildren());
+        sfPlugins.addAll(children);
+        return Collections.unmodifiableCollection(sfPlugins);
     }
 
     public abstract void onCreate();

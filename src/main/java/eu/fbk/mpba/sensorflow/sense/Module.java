@@ -3,14 +3,16 @@ package eu.fbk.mpba.sensorflow.sense;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.InputGroup;
 import eu.fbk.mpba.sensorflow.SFPlugin;
 
 /**
  * Base class for every sense plugin. It implements a common interface
  */
-public abstract class Module implements SFPlugin {
+public abstract class Module implements SFPlugin, InputGroup {
     private final LogInput moduleLog;
-    private final ArrayList<SFPlugin> sfChildren = new ArrayList<>(4);
+    private final ArrayList<Input> sfChildren = new ArrayList<>(4);
     private String simpleName;
     private String configuration;
 
@@ -19,16 +21,12 @@ public abstract class Module implements SFPlugin {
      */
     Module() {
         simpleName = getClass().getSimpleName();
-        this.moduleLog = new LogInput(getName());
+        this.moduleLog = new LogInput(this, getName());
         addSFChild(moduleLog);
     }
 
-    void addSFChild(SFPlugin child) {
+    void addSFChild(Input child) {
         sfChildren.add(child);
-    }
-
-    Collection<SFPlugin> getSFChildren() {
-        return sfChildren;
     }
 
     /**
@@ -89,4 +87,19 @@ public abstract class Module implements SFPlugin {
     public static final String KEY_DEV_INFO = "DEV_INFO";
     public static final String KEY_HW_VER = "DEV_HW";
     public static final String KEY_SW_VER = "DEV_SW";
+
+
+    @Override
+    public void onCreate() { }
+
+    @Override
+    public void onAdded() { }
+
+    @Override
+    public void onRemoved() { }
+
+    @Override
+    public Collection<Input> getChildren() {
+        return sfChildren;
+    }
 }

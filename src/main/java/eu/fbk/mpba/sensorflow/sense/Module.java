@@ -65,13 +65,22 @@ public abstract class Module implements SFPlugin, InputGroup {
     /**
      * Custom logs from the device software/hardware. Should contain information about the hardware
      * and firmware versions for reproducibility
-     * @param type Identification code of the log type, 0 for metadata (TYPE_METADATA)
+     * @param type Identification code of the log type, 0 for metadata (LOG_*)
      * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
      * @param message String containing the log message
      */
     protected void pushLog(int type, String tag, String message) {
         moduleLog.pushLog(type, tag, message);
     }
+
+    public static final int LOG_METADATA = 201;
+    public static final int LOG_UI = 202;
+    public static final int LOG_FAILURE = 106;
+    public static final int LOG_E = 105;
+    public static final int LOG_W = 104;
+    public static final int LOG_D = 103;
+    public static final int LOG_I = 102;
+    public static final int LOG_V = 101;
 
     protected void putKeyValue(String key, String value) {
         moduleLog.putKeyValue(key, value);

@@ -75,9 +75,15 @@ public abstract class WirelessDevice extends InputModule {
 
     /**
      * Called by the developer who uses this module to connect the device. The output flows from
-     * onConnectionStatus, and is available through the getter getConnectionStatus.
+     * onConnectionStatus.
      */
     public abstract void connect(Object device);
+
+    /**
+     * Called by the developer who uses this module to disconnect the device. The output flows from
+     * onConnectionStatus.
+     */
+    public void disconnect() { /* FIXME: abstract me */ }
 
     // OOP stuff
 

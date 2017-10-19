@@ -1,6 +1,10 @@
 package eu.fbk.mpba.sensorflow.sense;
 
+import java.util.Comparator;
+import java.util.TreeSet;
+
 import eu.fbk.mpba.sensorflow.Input;
+import eu.fbk.mpba.sensorflow.InputGroup;
 import eu.fbk.mpba.sensorflow.Output;
 
 public abstract class OutputModule extends Module implements Output, IOutputModule {
@@ -54,11 +58,37 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     @Override
     public abstract void onCreate(String sessionId);
 
-    @Override
-    public abstract void onInputAdded(Input input);
+    private TreeSet<InputGroup> distinct = new TreeSet<>(new Comparator<InputGroup>() {
+        @Override
+        public int compare(InputGroup o1, InputGroup o2) {
+            return o1.hashCode() - o2.hashCode();
+        }
+    });
 
     @Override
-    public abstract void onInputRemoved(Input input);
+    public void onInputAdded(Input input) {
+        InputGroup parent = input.getParent();
+        if (parent != null
+                && parent instanceof InputModule
+                && distinct.add(parent)) {
+            onInputParentAdded(parent);
+        }
+    }
+
+    @Override
+    public void onInputRemoved(Input input) {
+        InputGroup parent = input.getParent();
+        if (parent != null
+                && parent instanceof InputModule
+                && distinct.remove(parent)
+                && !distinct.contains(parent)) {
+            onInputParentRemoved(parent);
+        }
+    }
+
+    public void onInputParentAdded(InputGroup inputParent) { }
+
+    public void onInputParentRemoved(InputGroup inputParent) { }
 
     @Override
     public abstract void onClose();

@@ -12,6 +12,7 @@ import eu.fbk.mpba.sensorflow.SFPlugin;
  */
 public abstract class Module implements SFPlugin, InputGroup {
     private final LogInput moduleLog;
+    private final StatusInput moduleStatus;
     private final ArrayList<Input> sfChildren = new ArrayList<>(4);
     private String simpleName;
     private String configuration;
@@ -21,8 +22,10 @@ public abstract class Module implements SFPlugin, InputGroup {
      */
     Module() {
         simpleName = getClass().getSimpleName();
-        this.moduleLog = new LogInput(this, getName());
+        moduleLog = new LogInput(this, getName());
+        moduleStatus = new StatusInput(this, getName());
         addSFChild(moduleLog);
+        addSFChild(moduleStatus);
     }
 
     void addSFChild(Input child) {
@@ -63,14 +66,27 @@ public abstract class Module implements SFPlugin, InputGroup {
     }
 
     /**
-     * Custom logs from the device software/hardware. Should contain information about the hardware
-     * and firmware versions for reproducibility
+     * Custom logs from the device software/hardware.
      * @param type Identification code of the log type, 0 for metadata (LOG_*)
      * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
      * @param message String containing the log message
      */
     protected void pushLog(int type, String tag, String message) {
         moduleLog.pushLog(type, tag, message);
+    }
+
+    public enum Status {
+        OFF, ERROR, WAIT, OK
+    }
+
+    /**
+     * Updates the status of the Module. Produces also a log with code LOG_STATUS_UPATE and the
+     * status as tag, the message is empty.
+     * @param status New status to propagate.
+     */
+    protected void pushStatus(Status status) {
+        pushLog(LOG_STATUS_UPDATE, status.name(), "");
+        moduleStatus.pushStatus(status);
     }
 
     public static final int LOG_METADATA = 201;
@@ -81,6 +97,7 @@ public abstract class Module implements SFPlugin, InputGroup {
     public static final int LOG_D = 103;
     public static final int LOG_I = 102;
     public static final int LOG_V = 101;
+    public static final int LOG_STATUS_UPDATE = 64;
 
     protected void putKeyValue(String key, String value) {
         moduleLog.putKeyValue(key, value);

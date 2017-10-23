@@ -28,11 +28,13 @@ class LogMessage {
         String[] tokens = text.split("\t");
         type = -1;
         tag = "";
-        if (tokens.length == 3) {
-            type = Integer.getInteger(tokens[0]);
+        if (tokens.length > 1) {
+            type = Integer.decode(tokens[0]);
             tag = tokens[1];
-            text = text.substring(tokens[0].length(), tag.length());
+            if (tokens.length == 3)
+                text = tokens[2];
         }
+
         return this;
     }
 

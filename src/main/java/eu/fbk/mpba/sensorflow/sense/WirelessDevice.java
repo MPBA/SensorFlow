@@ -90,7 +90,7 @@ public abstract class WirelessDevice extends InputModule {
     private Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta", true);
     private Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc", true);
     private Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection", true);
-    private Stream dataLoss = new Stream(this, Stream.HEADER_VALUE, "data-loss");
+    private Stream dataLoss   = new Stream(this, Stream.HEADER_VALUE, "data-loss");
     {
         addStream(batteryETA);
         addStream(batterySOC);
@@ -124,5 +124,6 @@ public abstract class WirelessDevice extends InputModule {
         DESTINATION_NOT_AVAILABLE,
         DISCONNECTED,
         WRONG_DESTINATION_TYPE,
+        NOT_SPECIFIED,
     }
 }

@@ -17,7 +17,7 @@ public class Stream extends Input {
 
     public static final String NAME_ACCELERATION = "Acceleration";
     public static final String NAME_TEMPERATURE = "Temperature";
-    public static final String NAME_LOCATION = "Loacation";
+    public static final String NAME_LOCATION = "Locaation";
     public static final String NAME_BVP = "BloodVolumePulse";
     public static final String NAME_EDA = "ElectroDermalActivity";
     public static final String NAME_ECG = "ElectroCardioGram";

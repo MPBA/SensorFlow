@@ -81,7 +81,8 @@ public class MockWirelessDevice extends WirelessDevice {
     }
 
     @Override
-    public void connect(Object done) {
+    public void connect() {
+        final Object device = getRemoteDevice();
 
     }
 

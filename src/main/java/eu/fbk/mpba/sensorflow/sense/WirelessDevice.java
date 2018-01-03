@@ -15,6 +15,7 @@ public abstract class WirelessDevice extends InputModule {
 
     private static  ConnectionType connectionType = ConnectionType.OTHER;
     private String deviceName;
+    private volatile Object remoteDevice = null;
 
     public ConnectionType getConnectionType() {
         return connectionType;
@@ -73,11 +74,21 @@ public abstract class WirelessDevice extends InputModule {
         dataLoss.pushValue(bytes);
     }
 
+
+    public void setRemoteDevice(Object device) {
+        remoteDevice = device;
+    }
+
+    public Object getRemoteDevice() {
+        return remoteDevice;
+    }
+
     /**
      * Called by the developer who uses this module to connect the device. The output flows from
      * onConnectionStatus.
+     * The parameter is the object that is set as the remote device to connect to.
      */
-    public abstract void connect(Object device);
+    public abstract void connect();
 
     /**
      * Called by the developer who uses this module to disconnect the device. The output flows from

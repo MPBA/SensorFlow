@@ -247,14 +247,14 @@ public class SensorFlow {
         return b;
     }
 
-//    public InputGroup getInput(String name) {
-//        InputManager r;
-//        synchronized (userInputs) {
-//            r = userInputs.get(name);
-//        }
-//        return r == null ? null : r.getInputGroup();
-//    }
-//
+    public InputGroup getInput(String name) {
+        InputManager r;
+        synchronized (userInputs) {
+            r = userInputs.get(name);
+        }
+        return r == null ? null : r.getInputGroup();
+    }
+
 //    public Output getOutput(String name) {
 //        Object r;
 //        synchronized (userInputs) {

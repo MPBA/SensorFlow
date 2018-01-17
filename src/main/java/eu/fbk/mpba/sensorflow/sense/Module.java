@@ -99,7 +99,7 @@ public abstract class Module implements SFPlugin, InputGroup {
     public static final int LOG_V = 101;
     public static final int LOG_STATUS_UPDATE = 64;
 
-    protected void putKeyValue(String key, String value) {
+    public void putKeyValue(String key, String value) {
         moduleLog.putKeyValue(key, value);
     }
 

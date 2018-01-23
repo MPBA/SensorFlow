@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 class OutputManager {
     private OutputObserver manager = null;
 
-    private boolean stopPending = false;
+    private volatile boolean stopPending = false;
     private PluginStatus status = PluginStatus.INSTANTIATED;
     private String sessionTag;
     private Output output;
@@ -37,7 +37,8 @@ class OutputManager {
         @Override
         public void run() {
             OutputBuffer queue = (OutputBuffer) OutputManager.this.queue;
-            while (!stopPending || queue.size() > 0) {
+            // On stopPending == true, wait the buffer to empty
+            while (queue.size() > 0 || !stopPending) {
                 try {
                     queue.pollToHandler(200, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException ignored) {
@@ -92,8 +93,10 @@ class OutputManager {
             stopPending = true;
             if (threaded)
                 try {
-                    sbufferingThread.interrupt(); // stopPending == true
-                    sbufferingThread.join();      // Max time specified in queue pollToHandler call
+                    // Trying to not use interrupt, but a more graceful way
+//                    sbufferingThread.interrupt(); // stopPending == true
+                    // Max time depends on the content of the buffer
+                    sbufferingThread.join();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -191,16 +194,9 @@ class OutputManager {
 
     public synchronized void close() {
         if (output != null) {
-            output.onClose();
             output = null;
         }
         linkedInputs.clear();
         linkedInputs = null;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
     }
 }

@@ -22,8 +22,8 @@ public abstract class Module implements SFPlugin, InputGroup {
      */
     Module() {
         simpleName = getClass().getSimpleName();
-        moduleLog = new LogInput(this, getName());
-        moduleStatus = new StatusInput(this, getName());
+        moduleLog = new LogInput(this, "ModuleLog");
+        moduleStatus = new StatusInput(this, "ModuleStatus");
         addSFChild(moduleLog);
         addSFChild(moduleStatus);
     }
@@ -50,7 +50,7 @@ public abstract class Module implements SFPlugin, InputGroup {
 
     public final void setName(String simpleName) {
         this.simpleName = simpleName == null ? getClass().getSimpleName() : simpleName;
-        moduleLog.setName(getName());
+//        moduleLog.setName(getName());
     }
 
     public final void setConfiguration(String configuration) {

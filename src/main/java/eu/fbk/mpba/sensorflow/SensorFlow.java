@@ -166,6 +166,8 @@ public class SensorFlow {
             ArrayList<Input> inputs = new ArrayList<>(o.getInputs());
             for (Input i : inputs)
                 removeRoute(i, o);
+            // Firstly remove all routes to stop the buffer to be fed
+            // then stop and close to empty the buffer
             o.onStopAndClose();
         }
         return this;

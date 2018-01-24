@@ -14,7 +14,7 @@ public class SensorFlow {
 
     //      Fields
 
-    private final String sessionTag;
+    private String sessionTag;
     private volatile boolean closed = false;
 
     private final Map<String, InputManager> userInputs = new TreeMap<>();
@@ -50,6 +50,10 @@ public class SensorFlow {
 
     public String getSessionTag() {
         return sessionTag;
+    }
+
+    public void setSessionTag(String sessionTag) {
+        this.sessionTag = sessionTag;
     }
 
     //      Plugins

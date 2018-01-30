@@ -122,10 +122,19 @@ public abstract class Input implements InputGroup {
     }
 
     public void putKeyValue(String key, String value) {
+        if (value == null)
+            value = "";
         dictionaryAccess.writeLock().lock();
-        String old = dictionary.put(key, value);
+        String old;
+        if (value.length() > 0)
+            old = dictionary.put(key, value);
+        else
+            old = dictionary.remove(key);
         dictionaryAccess.writeLock().unlock();
+        if (old == null)
+            old = "";
         if (listened && !value.equals(old)) {
+            // Saves empty once if value == ""
             pushLog(getTimeSource().getMonoUTCNanos(), formatKeyValue(key, value));
         }
     }

@@ -15,7 +15,7 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
      * @param name Name of the Module.
      * @param settings Configuration string (e.g. json) to be passed to the Module.
      */
-    public OutputModule(String name, String settings) {
+    protected OutputModule(String name, String settings) {
         setName(name);
         setConfiguration(settings);
     }
@@ -58,7 +58,7 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
     @Override
     public abstract void onCreate(String sessionId);
 
-    private TreeSet<InputGroup> distinct = new TreeSet<>(new Comparator<InputGroup>() {
+    private final TreeSet<InputGroup> distinct = new TreeSet<>(new Comparator<InputGroup>() {
         @Override
         public int compare(InputGroup o1, InputGroup o2) {
             return o1.hashCode() - o2.hashCode();
@@ -86,9 +86,9 @@ public abstract class OutputModule extends Module implements Output, IOutputModu
         }
     }
 
-    public void onInputParentAdded(InputGroup inputParent) { }
+    protected void onInputParentAdded(InputGroup inputParent) { }
 
-    public void onInputParentRemoved(InputGroup inputParent) { }
+    protected void onInputParentRemoved(InputGroup inputParent) { }
 
     @Override
     public abstract void onClose();

@@ -4,13 +4,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 class AutoFlushParams {
-    private ChunkedOutput chunkedOutput;
+    private final ChunkedOutput chunkedOutput;
     private final long maxTime;
     private final int flushSize;
     private long lastFlush;
     private int size = 0;
 
-    private Timer t = new Timer(ChunkedOutput.class.getSimpleName() + " " + AutoFlushParams.class.getSimpleName(), true);
+    private final Timer t = new Timer(ChunkedOutput.class.getSimpleName() + " " + AutoFlushParams.class.getSimpleName(), true);
 
     public AutoFlushParams(ChunkedOutput chunkedOutput, double maxTime, int maxSize) {
         this.chunkedOutput = chunkedOutput;

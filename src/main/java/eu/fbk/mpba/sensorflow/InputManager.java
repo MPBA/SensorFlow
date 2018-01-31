@@ -3,7 +3,7 @@ package eu.fbk.mpba.sensorflow;
 class InputManager {
     private InputObserver manager = null;
     private PluginStatus status = PluginStatus.INSTANTIATED;
-    private InputGroup inputGroup;
+    private final InputGroup inputGroup;
 
     InputManager(InputGroup inputGroup, InputObserver manager) {
         this.inputGroup = inputGroup;

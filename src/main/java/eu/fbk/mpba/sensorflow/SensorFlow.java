@@ -52,7 +52,7 @@ public class SensorFlow {
         return sessionTag;
     }
 
-    public void setSessionTag(String sessionTag) {
+    protected void setSessionTag(String sessionTag) {
         this.sessionTag = sessionTag;
     }
 
@@ -166,13 +166,12 @@ public class SensorFlow {
                 removed = userOutputs.remove(p);
         }
         if (removed != null) {
-            final OutputManager o = removed;
-            ArrayList<Input> inputs = new ArrayList<>(o.getInputs());
+            ArrayList<Input> inputs = new ArrayList<>(removed.getInputs());
             for (Input i : inputs)
-                removeRoute(i, o);
+                removeRoute(i, removed);
             // Firstly remove all routes to stop the buffer to be fed
             // then stop and close to empty the buffer
-            o.onStopAndClose();
+            removed.onStopAndClose();
         }
         return this;
     }

@@ -66,7 +66,7 @@ public class Stream extends Input {
      * @param tag Tag for the log, can be seen as a sub-type or can be ignored.
      * @param message String containing the log message
      */
-    public void pushLog(long timestamp, int type, String tag, String message) {
+    private void pushLog(long timestamp, int type, String tag, String message) {
         // URL escape just the ':' char
         super.pushLog(timestamp,
                 LogMessage.format(type, tag, message)

@@ -13,7 +13,7 @@ package eu.fbk.mpba.sensorflow.sense;
  */
 public abstract class WirelessDevice extends InputModule {
 
-    private static  ConnectionType connectionType = ConnectionType.OTHER;
+    private static final ConnectionType connectionType = ConnectionType.OTHER;
     private String deviceName;
     private volatile Object remoteDevice = null;
 
@@ -43,14 +43,14 @@ public abstract class WirelessDevice extends InputModule {
         batterySOC.pushValue(percentage);
     }
 
-    public void pushBatterySOC(double volts, double fullVoltage, double emptyVoltage) {
+    protected void pushBatterySOC(double volts, double fullVoltage, double emptyVoltage) {
         pushBatterySOC((volts - emptyVoltage) / (fullVoltage - emptyVoltage) * 100);
     }
 
     /**
      * Notifies a change in the status of the datalink connection.
      */
-    public void pushConnectionStatus(ConnectionStatus status) {
+    protected void pushConnectionStatus(ConnectionStatus status) {
         connection.pushLog(status.name());
     }
 
@@ -70,7 +70,7 @@ public abstract class WirelessDevice extends InputModule {
      * @param bytes Indicative quantity of information lost. If the data is retransmitted due to
      *              some Transmission Control mechanism it has not to be considered lost.
      */
-    public void pushDataLoss(double bytes) {
+    protected void pushDataLoss(double bytes) {
         dataLoss.pushValue(bytes);
     }
 
@@ -98,10 +98,10 @@ public abstract class WirelessDevice extends InputModule {
 
     // OOP stuff
 
-    private Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta", true);
-    private Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc", true);
-    private Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection", true);
-    private Stream dataLoss   = new Stream(this, Stream.HEADER_VALUE, "data-loss");
+    private final Stream batteryETA = new Stream(this, Stream.HEADER_VALUE, "battery-eta", true);
+    private final Stream batterySOC = new Stream(this, Stream.HEADER_VALUE, "battery-soc", true);
+    private final Stream connection = new Stream(this, Stream.HEADER_VALUE, "connection", true);
+    private final Stream dataLoss   = new Stream(this, Stream.HEADER_VALUE, "data-loss");
     {
         addStream(batteryETA);
         addStream(batterySOC);

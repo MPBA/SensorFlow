@@ -14,11 +14,11 @@ class OutputManager {
     private PluginStatus status = PluginStatus.INSTANTIATED;
     private String sessionTag;
     private Output output;
-    private boolean threaded;
+    private final boolean threaded;
     private Set<Input> linkedInputs = new HashSet<>();
-    private Set<Input> linkedInputsSnapshot = new HashSet<>();
+    private final Set<Input> linkedInputsSnapshot = new HashSet<>();
 
-    private Output queue;
+    private final Output queue;
     private volatile boolean enabled = true;
 
     OutputManager(Output output, OutputObserver manager, boolean buffered) {
@@ -33,7 +33,7 @@ class OutputManager {
         changeStatus(PluginStatus.INSTANTIATED);
     }
 
-    private Thread sbufferingThread = new Thread(new Runnable() {
+    private final Thread sbufferingThread = new Thread(new Runnable() {
         @Override
         public void run() {
             OutputBuffer queue = (OutputBuffer) OutputManager.this.queue;

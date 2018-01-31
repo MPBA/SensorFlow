@@ -13,6 +13,7 @@ public class ModuleFactory {
                 o[i] = provider.get(parameterTypes[i]);
             }
             try {
+                //noinspection unchecked as it is previously checked
                 return (T) constructors[0].newInstance(o);
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 e.printStackTrace();

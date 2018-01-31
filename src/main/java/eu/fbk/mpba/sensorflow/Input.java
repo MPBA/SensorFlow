@@ -15,8 +15,8 @@ public abstract class Input implements InputGroup {
 
     //      Static time - things
 
-    private static long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
-    private static TimeSource time = new TimeSource() {
+    private static final long bootTime = System.currentTimeMillis() * 1_000_000L - System.nanoTime();
+    private static final TimeSource time = new TimeSource() {
 
         @Override
         public long getMonoUTCNanos() {
@@ -29,7 +29,7 @@ public abstract class Input implements InputGroup {
         }
     };
 
-    private static AtomicLong sequential = new AtomicLong(1L);
+    private static final AtomicLong sequential = new AtomicLong(1L);
 
     //      Fields
 
@@ -38,12 +38,12 @@ public abstract class Input implements InputGroup {
     private volatile boolean listened = true;
     private String name;
 
-    private InputGroup parent;
-    private List<String> header;
-    private Set<OutputManager> outputs = new HashSet<>();
-    private ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
-    private Map<String, String> dictionary = new HashMap<>();
-    private ReentrantReadWriteLock dictionaryAccess = new ReentrantReadWriteLock(false);
+    private final InputGroup parent;
+    private final List<String> header;
+    private final Set<OutputManager> outputs = new HashSet<>();
+    private final ReentrantReadWriteLock outputsAccess = new ReentrantReadWriteLock(false);
+    private final Map<String, String> dictionary = new HashMap<>();
+    private final ReentrantReadWriteLock dictionaryAccess = new ReentrantReadWriteLock(false);
     private long holdTimestamp;
     private double[] holdValue;
     private long holdTimestampLog;

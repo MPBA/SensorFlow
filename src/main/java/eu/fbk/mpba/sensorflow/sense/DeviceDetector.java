@@ -16,7 +16,7 @@ import java.util.Collection;
 public abstract class DeviceDetector {
     private final Class<? extends WirelessDevice> type;
 
-    public DeviceDetector(Class<? extends WirelessDevice> type) {
+    protected DeviceDetector(Class<? extends WirelessDevice> type) {
         this.type = type;
     }
 
@@ -48,7 +48,7 @@ public abstract class DeviceDetector {
          */
         IS_NOT(0);
 
-        int p;
+        final int p;
         Confidence(int p) {
             this.p = p;
         }
@@ -89,7 +89,7 @@ public abstract class DeviceDetector {
         return found;
     }
 
-    public Result isNot() {
+    protected Result isNot() {
         return new Result(Confidence.IS_NOT, "", type);
     }
 
@@ -101,7 +101,7 @@ public abstract class DeviceDetector {
         return new Result(Confidence.SHOULD_BE, name, type);
     }
 
-    public Result is(String name) {
+    protected Result is(String name) {
         return new Result(Confidence.IS,name, type);
     }
 
@@ -149,5 +149,5 @@ public abstract class DeviceDetector {
      * @param deviceObject An object representing the device. E.g. a BluetoothDevice
      * @return The result of the evaluation.
      */
-    public abstract Result evaluate(Object deviceObject);
+    protected abstract Result evaluate(Object deviceObject);
 }

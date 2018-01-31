@@ -28,7 +28,7 @@ public abstract class Module implements SFPlugin, InputGroup {
         addSFChild(moduleStatus);
     }
 
-    void addSFChild(Input child) {
+    private void addSFChild(Input child) {
         sfChildren.add(child);
     }
 
@@ -61,7 +61,7 @@ public abstract class Module implements SFPlugin, InputGroup {
      * Returns the configuration string set by the constructor.
      * @return String, as-is.
      */
-    public String getConfiguration() {
+    protected String getConfiguration() {
         return configuration;
     }
 
@@ -89,15 +89,15 @@ public abstract class Module implements SFPlugin, InputGroup {
         moduleStatus.pushStatus(status);
     }
 
-    public static final int LOG_METADATA = 201;
-    public static final int LOG_UI = 202;
+    protected static final int LOG_METADATA = 201;
+    protected static final int LOG_UI = 202;
     public static final int LOG_FAILURE = 106;
-    public static final int LOG_E = 105;
-    public static final int LOG_W = 104;
-    public static final int LOG_D = 103;
+    protected static final int LOG_E = 105;
+    protected static final int LOG_W = 104;
+    protected static final int LOG_D = 103;
     public static final int LOG_I = 102;
     public static final int LOG_V = 101;
-    public static final int LOG_STATUS_UPDATE = 64;
+    private static final int LOG_STATUS_UPDATE = 64;
 
     public void putKeyValue(String key, String value) {
         moduleLog.putKeyValue(key, value);
@@ -109,9 +109,9 @@ public abstract class Module implements SFPlugin, InputGroup {
         super.finalize();
     }
 
-    public static final String KEY_DEV_ID = "DEV_ID";
-    public static final String KEY_DEV_INFO = "DEV_INFO";
-    public static final String KEY_HW_VER = "DEV_HW";
+    protected static final String KEY_DEV_ID = "DEV_ID";
+    protected static final String KEY_DEV_INFO = "DEV_INFO";
+    protected static final String KEY_HW_VER = "DEV_HW";
     public static final String KEY_SW_VER = "DEV_SW";
 
 

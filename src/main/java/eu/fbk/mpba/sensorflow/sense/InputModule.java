@@ -5,8 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import eu.fbk.mpba.sensorflow.Input;
-import eu.fbk.mpba.sensorflow.InputGroup;
-import eu.fbk.mpba.sensorflow.SFPlugin;
 
 /**
  * Base class for an InputModule
@@ -18,7 +16,7 @@ public abstract class InputModule extends Module {
     /**
      * Constructor of abstract class
      */
-    public InputModule() { }
+    protected InputModule() { }
 
     /**
      * Adds a Stream to the InputModule. The Input must have an unique name within the device inputs.

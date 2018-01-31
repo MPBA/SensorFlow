@@ -14,8 +14,8 @@ class OutputBuffer implements Output {
         null events  --> values
     */
 
-    private final long INPUT_ADDED = 0L;
-    private final long INPUT_REMOVED = -1L;
+    private static final long INPUT_ADDED = 0L;
+    private static final long INPUT_REMOVED = -1L;
 
     private final Input[] flows;
     private final long[] longs;

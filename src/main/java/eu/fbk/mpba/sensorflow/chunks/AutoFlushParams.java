@@ -29,8 +29,9 @@ class AutoFlushParams {
     void added(int newSize) {
         size += newSize;
         if (size >= flushSize || System.nanoTime() - lastFlush > maxTime) {
-            chunkedOutput.flush(size >= flushSize ? FlushReason.SIZE : FlushReason.TIME);
-            lastFlush = System.nanoTime();
+            long now = System.nanoTime();
+            chunkedOutput.flush(size >= flushSize ? FlushReason.SIZE : FlushReason.TIME, lastFlush, now - lastFlush);
+            lastFlush = now;
             size = 0;
             repost();
         }

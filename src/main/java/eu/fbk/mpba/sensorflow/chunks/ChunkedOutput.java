@@ -69,9 +69,11 @@ public class ChunkedOutput extends OutputModule {
     }
 
     // Access OutputThread or synced UIThread only
-    synchronized void flush(FlushReason r) {
+    synchronized void flush(FlushReason r, long begin, long duration) {
         chunk.setId(nextSplitID());
         chunk.setFlushReason(r);
+        chunk.setBegin((int)(begin / 1000));
+        chunk.setDuration((int)(duration / 1000));
         consumer.next(chunk);
         chunk = factory.newInstance();
         chunk.setTrackName(trackName);

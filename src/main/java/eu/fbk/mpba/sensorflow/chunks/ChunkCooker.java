@@ -19,6 +19,14 @@ public interface ChunkCooker {
 
     int addLog(Input flow, long time, String message);
 
+    int getBegin();
+
+    int getDuration();
+
+    void setBegin(int begin);
+
+    void setDuration(int duration);
+
     interface Factory {
         ChunkCooker newInstance();
     }

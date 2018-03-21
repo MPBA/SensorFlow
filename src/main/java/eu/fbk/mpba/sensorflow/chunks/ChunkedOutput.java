@@ -72,8 +72,8 @@ public class ChunkedOutput extends OutputModule {
     synchronized void flush(FlushReason r, long begin, long duration) {
         chunk.setId(nextSplitID());
         chunk.setFlushReason(r);
-        chunk.setBegin((int)(begin / 1000));
-        chunk.setDuration((int)(duration / 1000));
+        chunk.setBegin((int)(begin / 1000_000));
+        chunk.setDuration((int)(duration / 1000_000));
         consumer.next(chunk);
         chunk = factory.newInstance();
         chunk.setTrackName(trackName);

@@ -9,7 +9,7 @@ import eu.fbk.mpba.sensorflow.sense.OutputModule;
 @SingleThreadRequired
 public class ChunkedOutput extends OutputModule {
 
-    private final AutoFlushParams mSplitter;
+    private final AutoFlushParams autoFlushParams;
     private final TreeMap<Integer, Input> inputInfo = new TreeMap<>();
     private final ChunkCooker.Factory factory;
     private volatile ChunkCooker chunk;
@@ -32,7 +32,7 @@ public class ChunkedOutput extends OutputModule {
     public ChunkedOutput(String name, double maxChunkDuration, int maxChunkBytes, ChunkCooker.Factory factory) {
         super(name, "");
         this.factory = factory;
-        mSplitter = new AutoFlushParams(this, maxChunkDuration, maxChunkBytes);
+        autoFlushParams = new AutoFlushParams(this, maxChunkDuration, maxChunkBytes);
     }
 
     // Access UserFGThread only
@@ -52,16 +52,14 @@ public class ChunkedOutput extends OutputModule {
             for (Input i : inputInfo.values())
                 firstChunk.addInput(i);
             chunk = firstChunk;
-            mSplitter.started();
+            autoFlushParams.started();
         }
     }
 
     // Access UserFGThread only
     public synchronized void stopRecording() {
         if (consumer != null) {
-            chunk.setId(nextSplitID());
-            chunk.setFlushReason(FlushReason.END);
-            consumer.next(chunk);
+            autoFlushParams.lastFlush();
             consumer.stop();
             chunk = null;
             consumer = null;            // Started condition false
@@ -73,7 +71,7 @@ public class ChunkedOutput extends OutputModule {
         chunk.setId(nextSplitID());
         chunk.setFlushReason(r);
         chunk.setBegin((int)(Input.getTimeSource().getMonoUTCNanos(begin) / 1000_000));
-        chunk.setDuration((int)(Input.getTimeSource().getMonoUTCNanos(duration) / 1000_000));
+        chunk.setDuration((int)(duration / 1000_000));
         consumer.next(chunk);
         chunk = factory.newInstance();
         chunk.setTrackName(trackName);
@@ -105,7 +103,7 @@ public class ChunkedOutput extends OutputModule {
             return;
 
         // Approx message length
-        mSplitter.added(chunk.addLog(flow, time, message));
+        autoFlushParams.added(chunk.addLog(flow, time, message));
     }
 
     // Access OutputThread only
@@ -113,7 +111,7 @@ public class ChunkedOutput extends OutputModule {
         if (chunk == null)
             return;
 
-        mSplitter.added(chunk.addValue(flow, time, value));
+        autoFlushParams.added(chunk.addValue(flow, time, value));
     }
 
     // Access AnyThread

@@ -17,7 +17,7 @@ class AutoFlushParams {
         this.chunkedOutput = chunkedOutput;
         this.flushSize = maxSize;
         this.maxTime = (long) (maxTime * 1_000) * 1_000_000L;
-        this.lastFlush = System.nanoTime();
+        this.lastFlush = 0;
     }
 
     // MultiThread
@@ -35,20 +35,31 @@ class AutoFlushParams {
         while (shouldFlush(mySize = size.get())) {
             // If this thread manages to reset size,
             // it mutexes flush by size and by lastFlush in flush
-            if (size.compareAndSet(mySize, 0)) {
-                // +++CS
-                long now = System.nanoTime();
-                lastFlush = now;
-                // ---CS
-                chunkedOutput.flush(
-                        mySize >= flushSize ?
-                                FlushReason.SIZE :
-                                FlushReason.TIME,
-                        lastFlush,
-                        now - lastFlush);
-                repost();
-            }
+            innerFlush(
+                    mySize >= flushSize ?
+                            FlushReason.SIZE :
+                            FlushReason.TIME);
         }
+    }
+
+    // No multi thread
+    void lastFlush() {
+        // It is time to flush
+        size.set(0);
+        innerFlush(FlushReason.END);
+    }
+
+    private void innerFlush(FlushReason f) {
+        // +++CS
+        long begin = lastFlush;
+        long now = System.nanoTime();
+        lastFlush = now;
+        // ---CS
+        chunkedOutput.flush(
+                f,
+                begin,
+                now - begin);
+        repost();
     }
 
     private boolean shouldFlush(int mySize) {

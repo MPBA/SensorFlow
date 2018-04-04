@@ -34,7 +34,8 @@ class AutoFlushParams {
         int mySize;
         while (shouldFlush(mySize = size.get())) {
             // If this thread manages to reset size,
-            // it mutexes flush by size and by lastFlush in flush
+            // it mutexes flush by size and by lastFlush in flush and has to flush
+            if (size.compareAndSet(mySize, 0))
             innerFlush(
                     mySize >= flushSize ?
                             FlushReason.SIZE :

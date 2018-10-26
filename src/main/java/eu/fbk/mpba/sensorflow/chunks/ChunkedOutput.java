@@ -1,5 +1,6 @@
 package eu.fbk.mpba.sensorflow.chunks;
 
+import java.util.Date;
 import java.util.TreeMap;
 
 import eu.fbk.mpba.sensorflow.Input;
@@ -19,7 +20,7 @@ public class ChunkedOutput extends OutputModule {
     private int splits;
 
     public interface Consumer {
-        void start(String sessionId, String trackName);
+        void start(String sessionId, String trackName, Date beginTime);
         void next(ChunkCooker chunk);
         void stop();
     }
@@ -45,21 +46,24 @@ public class ChunkedOutput extends OutputModule {
         this.consumer = consumer;   // Started condition true
         this.trackName = trackName;
 
-        consumer.start(sessionId, trackName);
+        long begin = System.nanoTime();
+        Date beginTime = new Date(Input.getTimeSource().getMonoUTCNanos(begin) / 1000_000);
+
+        consumer.start(sessionId, trackName, beginTime);
         ChunkCooker firstChunk = factory.newInstance();
         firstChunk.setTrackName(trackName);
         synchronized (this) {
             for (Input i : inputInfo.values())
                 firstChunk.addInput(i);
             chunk = firstChunk;
-            autoFlushParams.started();
+            autoFlushParams.started(begin);
         }
     }
 
     // Access UserFGThread only
     public synchronized void stopRecording() {
         if (consumer != null) {
-            autoFlushParams.lastFlush();
+            autoFlushParams.added(0, true);
             consumer.stop();
             chunk = null;
             consumer = null;            // Started condition false
@@ -67,11 +71,11 @@ public class ChunkedOutput extends OutputModule {
     }
 
     // Access OutputThread or synced UIThread only
-    synchronized void flush(FlushReason r, long begin, long duration) {
+    synchronized void flush(FlushReason r, int begin, int end) {
         chunk.setId(nextSplitID());
         chunk.setFlushReason(r);
-        chunk.setBegin((int)(Input.getTimeSource().getMonoUTCNanos(begin) / 1000_000));
-        chunk.setDuration((int)(duration / 1000_000));
+        chunk.setBegin(begin);
+        chunk.setDuration(end - begin);
         consumer.next(chunk);
         chunk = factory.newInstance();
         chunk.setTrackName(trackName);
@@ -103,7 +107,7 @@ public class ChunkedOutput extends OutputModule {
             return;
 
         // Approx message length
-        autoFlushParams.added(chunk.addLog(flow, time, message));
+        autoFlushParams.added(chunk.addLog(flow, time, message), false);
     }
 
     // Access OutputThread only
@@ -111,7 +115,7 @@ public class ChunkedOutput extends OutputModule {
         if (chunk == null)
             return;
 
-        autoFlushParams.added(chunk.addValue(flow, time, value));
+        autoFlushParams.added(chunk.addValue(flow, time, value), false);
     }
 
     // Access AnyThread

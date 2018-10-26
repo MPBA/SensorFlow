@@ -3,5 +3,5 @@ apply plugin: 'java'
 dependencies {
     targetCompatibility = '1.7'
     sourceCompatibility = '1.7'
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 }

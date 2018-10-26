@@ -4,14 +4,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import eu.fbk.mpba.sensorflow.Input;
+
 class AutoFlushParams {
     private final ChunkedOutput chunkedOutput;
     private final long maxTime;
     private final int flushSize;
     private long lastFlush;
-    private AtomicInteger size = new AtomicInteger(0);
+    private long start;
+    private int size = 0;
 
-    private final Timer t = new Timer(ChunkedOutput.class.getSimpleName() + " " + AutoFlushParams.class.getSimpleName(), true);
+    private final Timer timer = new Timer(ChunkedOutput.class.getSimpleName() + " " + AutoFlushParams.class.getSimpleName(), true);
 
     public AutoFlushParams(ChunkedOutput chunkedOutput, double maxTime, int maxSize) {
         this.chunkedOutput = chunkedOutput;
@@ -20,60 +23,68 @@ class AutoFlushParams {
         this.lastFlush = 0;
     }
 
+    // AnyThread
+    void started(long begin) {
+        start = begin;
+        lastFlush = start;
+        setNextFlushAlarm();
+    }
+
     // MultiThread
-    void started() {
-        lastFlush = System.nanoTime();
-        repost();
-    }
-
-    // OutputThread
-    void added(int newSize) {
+    synchronized void added(int newSize, boolean last) {
         // Firstly add the amount
-        size.addAndGet(newSize);
+        size += newSize;
         // If it is time to flush
-        int mySize;
-        while (shouldFlush(mySize = size.get())) {
-            // If this thread manages to reset size,
-            // it mutexes flush by size and by lastFlush in flush and has to flush
-            if (size.compareAndSet(mySize, 0))
-            innerFlush(
-                    mySize >= flushSize ?
-                            FlushReason.SIZE :
-                            FlushReason.TIME);
+        if (last) {
+            innerFlush(FlushReason.END);
+            size = 0;
+        } else
+        if (shouldFlush()) {
+            innerFlush(size >= flushSize ?
+                    FlushReason.SIZE :
+                    FlushReason.TIME);
+            size = 0;
         }
-    }
-
-    // No multi thread
-    void lastFlush() {
-        // It is time to flush
-        size.set(0);
-        innerFlush(FlushReason.END);
     }
 
     private void innerFlush(FlushReason f) {
         // +++CS
-        long begin = lastFlush;
         long now = System.nanoTime();
-        lastFlush = now;
-        // ---CS
         chunkedOutput.flush(
                 f,
-                begin,
-                now - begin);
-        repost();
+                (int)((lastFlush - start) / 1000_000),
+                (int)((now - start) / 1000_000));
+        lastFlush = now;
+        // ---CS
+        setNextFlushAlarm();
     }
 
-    private boolean shouldFlush(int mySize) {
-        return mySize >= flushSize || System.nanoTime() - lastFlush > maxTime;
+    private boolean shouldFlush() {
+        return size >= flushSize || (size > 0 && shouldFlushByTime());
     }
 
-    private void repost() {
-        // Not cancelling generates spurious wake-ups, but with newSize=0 no side effects
-        t.schedule(new TimerTask() {
+    private boolean shouldFlushByTime() {
+        return System.nanoTime() - lastFlush > maxTime;
+    }
+
+    /**
+     * When time is up, it simply add 0 to the size to wake the situation up
+     */
+    private void setNextFlushAlarm() {
+        // Get time in milliseconds
+        Long delay = maxTime / 1_000_000L;
+        // Yes, must create one every time
+        TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                added(0);
+                // check flush by time without reading size
+                if (shouldFlushByTime()) {
+                    setNextFlushAlarm();
+                    added(0, false);
+                }
             }
-        }, maxTime);
+        };
+        // Not cancelling generates spurious wake-ups, but with newSize=0 no side effects
+        timer.schedule(task, delay);
     }
 }

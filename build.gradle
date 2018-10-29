@@ -1,10 +1,7 @@
 apply plugin: 'java'
-//apply plugin: 'maven'
-//
-//group = 'com.github.MPBA'
-//
-//
-//dependencies {
-//    targetCompatibility = '1.7'
-//    sourceCompatibility = '1.7'
-//}
+
+dependencies {
+    targetCompatibility = '1.7'
+    sourceCompatibility = '1.7'
+    testImplementation 'junit:junit:4.12'
+}

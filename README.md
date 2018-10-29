@@ -1,6 +1,4 @@
 # SensorFlow
-A pure Java library for the unified sensor-data streams management.
-# SensorFlow
 A framework for the unified sensor-data streams management.
 The framework is composed of two blocks:
 1. Real-life sensing

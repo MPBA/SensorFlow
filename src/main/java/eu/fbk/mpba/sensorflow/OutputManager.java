@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 class OutputManager {
-    private OutputObserver manager = null;
+    private OutputObserver manager;
 
     private volatile boolean stopPending = false;
     private PluginStatus status = PluginStatus.INSTANTIATED;
@@ -26,7 +26,7 @@ class OutputManager {
         this.manager = manager;
         this.threaded = buffered;
         if (buffered || output.getClass().isAnnotationPresent(SingleThreadRequired.class))
-            queue = new OutputBuffer(this.output, 800, false);
+            queue = new OutputBuffer(this.output, 500, false);
         else
             queue = this.output;
         setEnabled(false);

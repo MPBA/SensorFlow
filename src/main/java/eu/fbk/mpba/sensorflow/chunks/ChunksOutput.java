@@ -8,7 +8,7 @@ import eu.fbk.mpba.sensorflow.SingleThreadRequired;
 import eu.fbk.mpba.sensorflow.sense.OutputModule;
 
 @SingleThreadRequired
-public class ChunkedOutput extends OutputModule {
+public class ChunksOutput extends OutputModule {
 
     private final AutoFlushParams autoFlushParams;
     private final TreeMap<Integer, Input> inputInfo = new TreeMap<>();
@@ -25,19 +25,18 @@ public class ChunkedOutput extends OutputModule {
         void stop();
     }
 
-    private int nextSplitID() {
-        return splits++;
-    }
-
     // Access AnyThread (atomic ctor)
-    public ChunkedOutput(String name, double maxChunkDuration, int maxChunkBytes, ChunkCooker.Factory factory) {
+    public ChunksOutput(String name, double maxChunkDuration, int maxChunkBytes, ChunkCooker.Factory factory) {
         super(name, "");
         this.factory = factory;
         autoFlushParams = new AutoFlushParams(this, maxChunkDuration, maxChunkBytes);
     }
 
-    // Access UserFGThread only
-    public void startRecording(Consumer consumer, String trackName) {
+    private synchronized int nextSplitID() {
+        return splits++;
+    }
+
+    public synchronized void startRecording(Consumer consumer, String trackName) {
         if (consumer == null)
             throw new NullPointerException("Consumer is null.");
         if (this.consumer != null)
@@ -52,15 +51,17 @@ public class ChunkedOutput extends OutputModule {
         consumer.start(sessionId, trackName, beginTime);
         ChunkCooker firstChunk = factory.newInstance();
         firstChunk.setTrackName(trackName);
-        synchronized (this) {
-            for (Input i : inputInfo.values())
-                firstChunk.addInput(i);
-            chunk = firstChunk;
-            autoFlushParams.started(begin);
-        }
+
+        for (Input i : inputInfo.values())
+            firstChunk.addInput(i);
+        chunk = firstChunk;
+        autoFlushParams.started(begin);
     }
 
-    // Access UserFGThread only
+    public synchronized void checkFlush() {
+        autoFlushParams.added(0, false);
+    }
+
     public synchronized void stopRecording() {
         if (consumer != null) {
             autoFlushParams.added(0, true);
@@ -70,7 +71,6 @@ public class ChunkedOutput extends OutputModule {
         }
     }
 
-    // Access OutputThread or synced UIThread only
     synchronized void flush(FlushReason r, int begin, int end) {
         chunk.setId(nextSplitID());
         chunk.setFlushReason(r);
@@ -83,25 +83,21 @@ public class ChunkedOutput extends OutputModule {
 
     // OutputPlugIn implementation
 
-    // Access UserFGThread only
-    public void onCreate(String id) {
+    public synchronized void onCreate(String id) {
         sessionId = id;
         splits = 0;
     }
 
-    // Access OutputThread only
     public synchronized void onInputAdded(Input input) {
         inputInfo.put(input.intUid, input);
         if (chunk != null)
             chunk.addInput(input);
     }
 
-    // Access OutputThread only
     public synchronized void onInputRemoved(Input input) {
         inputInfo.remove(input.intUid);
     }
 
-    // Access OutputThread only
     public synchronized void onLog(Input flow, long time, String message) {
         if (chunk == null)
             return;
@@ -110,7 +106,6 @@ public class ChunkedOutput extends OutputModule {
         autoFlushParams.added(chunk.addLog(flow, time, message), false);
     }
 
-    // Access OutputThread only
     public synchronized void onValue(Input flow, long time, double[] value) {
         if (chunk == null)
             return;
@@ -118,8 +113,7 @@ public class ChunkedOutput extends OutputModule {
         autoFlushParams.added(chunk.addValue(flow, time, value), false);
     }
 
-    // Access AnyThread
-    public synchronized void onClose() {
+    public void onClose() {
         stopRecording();
     }
 

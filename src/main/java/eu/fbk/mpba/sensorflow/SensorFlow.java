@@ -40,18 +40,38 @@ public class SensorFlow {
 
     // Engine implementation
 
+    /**
+     * Creates an instance of the class and uses a human timestamp to identify the SensorFLow
+     * session.
+     */
     public SensorFlow() {
         this(new SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(new Date()));
     }
 
+    /**
+     * Creates an instance of the class and allows the customization of the SensorFlow session name.
+     *
+     * @param sessionTag The custom name of the SensorFlow session.
+     */
     public SensorFlow(String sessionTag) {
         this.sessionTag = sessionTag;
     }
 
+    /**
+     * Gets the SensorFlow session name.
+     *
+     * @return A string containing the session name.
+     */
     public String getSessionTag() {
         return sessionTag;
     }
 
+    /**
+     * How swaps the session name. The session name should not change across a SensorFlow session
+     * because the outputs are notified once of its name.
+     *
+     * @param sessionTag The new name to set.
+     */
     protected void setSessionTag(String sessionTag) {
         this.sessionTag = sessionTag;
     }
@@ -78,20 +98,46 @@ public class SensorFlow {
         return this;
     }
 
+    /**
+     * Adds an input plugin and routes it to every output available at this time.
+     *
+     * @param p The plugin to add, the only requirement is that it be an InputGroup.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow add(InputGroup p) {
         return add(p, true);
     }
 
+    /**
+     * Adds a collection of input plugins and routes them to every output available at this time.
+     *
+     * @param p The collection of plugins to add, the only requirement is that it be an InputGroup.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow add(Collection<InputGroup> p) {
         for (InputGroup inputGroup : p)
             add(inputGroup);
         return this;
     }
 
+    /**
+     * Adds an input plugin and routes it to nothing. The data of this input plugin will not be
+     * visible until the plugin is routed to an output.
+     *
+     * @param p The plugin to add, the only requirement is that it be an InputGroup.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addNotRouted(InputGroup p) {
         return add(p, false);
     }
 
+    /**
+     * Adds a collection of input plugins and routes them to nothing. The data of each input
+     * plugin will not be visible until each plugin is routed to an output.
+     *
+     * @param p The plugin to add, the only requirement is that it be an InputGroup.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addNotRouted(Collection<InputGroup> p) {
         for (InputGroup p1 : p)
             addNotRouted(p1);
@@ -117,26 +163,60 @@ public class SensorFlow {
         }
     }
 
+    /**
+     * Adds an output plugin and routes to it to every input available at this time.
+     *
+     * @param p The plugin to add, the only requirement is that it be an Output.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow add(Output p) {
         add(p, true, true);
         return this;
     }
 
+    /**
+     * Adds an output plugin and routes nothing to it. This plugin will not receive any data until
+     * an input is routed to it.
+     *
+     * @param p The plugin to add, the only requirement is that it be an Output.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addNotRouted(Output p) {
         add(p, true, false);
         return this;
     }
 
+    /**
+     * Adds an output plugin and routes to it to every input available at this time. Moreover, the
+     * plugin is set to NOT use a buffer, thus the data may come from different threads.
+     *
+     * @param p The plugin to add, the only requirement is that it be an Output.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addInThread(Output p) {
         add(p, false, true);
         return this;
     }
 
+    /**
+     * Adds an output plugin and routes nothing to it. This plugin will not receive any data until
+     * an input is routed to it.  Moreover, each plugin is set to NOT use a buffer, thus the data
+     * may come from different threads.
+     *
+     * @param p The plugin to add, the only requirement is that it be an Output.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addInThreadNotRouted(Output p) {
         add(p, false, false);
         return this;
     }
 
+    /**
+     * Removes an input plugin, searching it by its name.
+     *
+     * @param p The plugin to be removed (comparison only by name).
+     * @return Returns for a builder usage.
+     */
     public SensorFlow remove(InputGroup p) {
         InputManager removed = null;
         // Check if only the name is already contained
@@ -158,6 +238,12 @@ public class SensorFlow {
         return this;
     }
 
+    /**
+     * Removes an output plugin, searching it by its name.
+     *
+     * @param p The plugin to be removed (comparison only by name).
+     * @return Returns for a builder usage.
+     */
     public SensorFlow remove(Output p) {
         OutputManager removed = null;
         // Check if only the name is already contained
@@ -176,6 +262,14 @@ public class SensorFlow {
         return this;
     }
 
+    /**
+     * Routes the specified plugins data in a from->to manner. From this call on, the output plugin
+     * 'to' will receive the data from the input plugin 'from'.
+     *
+     * @param from Data source for the link.
+     * @param to   Data drain of the link.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow addRoute(Input from, Output to) {
         if (from != null && to != null) {
             OutputManager outMan;
@@ -187,6 +281,14 @@ public class SensorFlow {
         return this;
     }
 
+    /**
+     * Removes the route 'from->to'. From this call on, the output plugin 'to' will not receive any
+     * more the data from the input plugin 'from'.
+     *
+     * @param from Data source for the link.
+     * @param to   Data drain of the link.
+     * @return Returns for a builder usage.
+     */
     public SensorFlow removeRoute(Input from, Output to) {
         if (from != null && to != null) {
             OutputManager outMan;
@@ -198,6 +300,13 @@ public class SensorFlow {
         return this;
     }
 
+    /**
+     * Returns whether the specified route 'from->to' exists.
+     *
+     * @param from Data source for the link.
+     * @param to   Data drain of the link.
+     * @return A boolean value indicating the route existence.
+     */
     public boolean isRouted(Input from, Output to) {
         if (from != null && to != null) {
             OutputManager outMan;
@@ -224,10 +333,24 @@ public class SensorFlow {
         return fromSensor.getOutputs().contains(outMan) && outMan.getInputs().contains(fromSensor);
     }
 
+    /**
+     * Enables an output to receive data from its routed inputs. NOTE that an output is always
+     * initially disabled.
+     *
+     * @param o The output to be enabled
+     * @return Returns for a builder usage.
+     */
     public SensorFlow enableOutput(Output o) {
         return setOutputEnabled(true, o);
     }
 
+    /**
+     * Disables an output to receive data from its routed inputs. NOTE that an output is always
+     * initially disabled.
+     *
+     * @param o The output to be disabled
+     * @return Returns for a builder usage.
+     */
     public SensorFlow disableOutput(Output o) {
         return setOutputEnabled(false, o);
     }
@@ -244,6 +367,12 @@ public class SensorFlow {
 
     //      Gets
 
+    /**
+     * Returns whether the specified output is enabled.
+     *
+     * @param o The output to be checked.
+     * @return A boolean value indicating if the output is enabled.
+     */
     public boolean isOutputEnabled(Output o) {
         boolean b;
         synchronized (userOutputs) {
@@ -252,6 +381,12 @@ public class SensorFlow {
         return b;
     }
 
+    /**
+     * Gets an input plugin by name. Remember to cast it.
+     *
+     * @param name The name of the plugin to retrieve.
+     * @return The plugin instance as an InputGroup
+     */
     public InputGroup getInput(String name) {
         InputManager r;
         synchronized (userInputs) {
@@ -268,6 +403,11 @@ public class SensorFlow {
 //        return r == null ? null : ((OutputManager)r).getOutput();
 //    }
 
+    /**
+     * Gets a collection of all the input plugins.
+     *
+     * @return A collection containing all the input (and processing) plugins.
+     */
     public Collection<InputGroup> getInputs() {
         ArrayList<InputGroup> x;
         synchronized (userInputs) {
@@ -278,6 +418,11 @@ public class SensorFlow {
         return Collections.unmodifiableCollection(x);
     }
 
+    /**
+     * Gets a collection of all the output plugins.
+     *
+     * @return A collection containing all the output (and processing) plugins.
+     */
     public Collection<Output> getOutputs() {
         ArrayList<Output> x;
         synchronized (userOutputs) {
@@ -290,7 +435,12 @@ public class SensorFlow {
 
     //      Engine operation
 
-    // Does not create duplicates
+    /**
+     * Removes all the routes. After this call the data will stop flowing. In no case the inputs
+     * are blocked.
+     *
+     * @return Returns for a builder usage.
+     */
     public SensorFlow routeClear() {
         // REMOVE ALL
         for (InputManager d : userInputs.values())
@@ -300,7 +450,16 @@ public class SensorFlow {
         return this;
     }
 
-    // Does not create duplicates
+    /**
+     * Routes every input to every output. Plugins that are both (Processing) will not be linked to
+     * other Processing plugins. This avoids loops and creates a three layer structure where
+     * Inputs send data to every output and to every processing, and where Outputs receive
+     * data from every Input and every Processing, but where no Processing receives data from any
+     * Processing.
+     * If needed, it should be done manually.
+     *
+     * @return Returns for a builder usage.
+     */
     public SensorFlow routeAll() {
         // SENSORS x OUTPUTS
         for (InputManager d : userInputs.values())
@@ -310,8 +469,11 @@ public class SensorFlow {
 
     private SensorFlow routeAll(InputManager d) {
         for (Input s : d.getInputs())      // FOREACH SENSOR
-            for (OutputManager o : userOutputs.values())    // LINK TO EACH OUTPUT
-                addRoute(s, o);
+            // LINK TO EACH OUTPUT
+            for (OutputManager o : userOutputs.values())
+                if (!(s instanceof Output) || !(o.getOutput() instanceof InputGroup)) {
+                    addRoute(s, o);
+                } // else is a Processing to Processing: skip
         return this;
     }
 
@@ -341,6 +503,9 @@ public class SensorFlow {
 //        return closed;
 //    }
 
+    /**
+     * Stops everything and frees the resources.
+     */
     public synchronized void close() {
         if (!closed) {
             for (InputManager d : userInputs.values()) {

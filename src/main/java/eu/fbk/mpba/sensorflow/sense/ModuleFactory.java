@@ -15,7 +15,13 @@ public class ModuleFactory {
             try {
                 //noinspection unchecked as it is previously checked
                 return (T) constructors[0].newInstance(o);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+                return null;
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            } catch (InvocationTargetException e) {
                 e.printStackTrace();
                 return null;
             }

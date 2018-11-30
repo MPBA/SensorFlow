@@ -2,36 +2,38 @@ package eu.fbk.mpba.sensorflow.chunks;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import eu.fbk.mpba.sensorflow.Input;
-
+/**
+ * Manages the size of the chunks based on a max size and a max time. The time constraint does not
+ * work if the size is 0.
+ *
+ * IMPORTANT: this class is coupled with ChunksOutput. Access it synchronously only from that
+ * class.
+ */
 class AutoFlushParams {
-    private final ChunkedOutput chunkedOutput;
+    private final ChunksOutput chunksOutput;
     private final long maxTime;
     private final int flushSize;
     private long lastFlush;
     private long start;
     private int size = 0;
 
-    private final Timer timer = new Timer(ChunkedOutput.class.getSimpleName() + " " + AutoFlushParams.class.getSimpleName(), true);
+    private final Timer timer = new Timer(AutoFlushParams.class.getSimpleName(), true);
 
-    public AutoFlushParams(ChunkedOutput chunkedOutput, double maxTime, int maxSize) {
-        this.chunkedOutput = chunkedOutput;
+    public AutoFlushParams(ChunksOutput chunksOutput, double maxTime, int maxSize) {
+        this.chunksOutput = chunksOutput;
         this.flushSize = maxSize;
         this.maxTime = (long) (maxTime * 1_000) * 1_000_000L;
         this.lastFlush = 0;
     }
 
-    // AnyThread
     void started(long begin) {
         start = begin;
         lastFlush = start;
         setNextFlushAlarm();
     }
 
-    // MultiThread
-    synchronized void added(int newSize, boolean last) {
+    void added(int newSize, boolean last) {
         // Firstly add the amount
         size += newSize;
         // If it is time to flush
@@ -50,7 +52,7 @@ class AutoFlushParams {
     private void innerFlush(FlushReason f) {
         // +++CS
         long now = System.nanoTime();
-        chunkedOutput.flush(
+        chunksOutput.flush(
                 f,
                 (int)((lastFlush - start) / 1000_000),
                 (int)((now - start) / 1000_000));
@@ -80,7 +82,7 @@ class AutoFlushParams {
                 // check flush by time without reading size
                 if (shouldFlushByTime()) {
                     setNextFlushAlarm();
-                    added(0, false);
+                    chunksOutput.checkFlush();
                 }
             }
         };

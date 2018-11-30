@@ -76,7 +76,13 @@ public abstract class DeviceDetector {
             DeviceDetector invoke;
             try {
                 invoke = (DeviceDetector) f.getDeclaredMethod("getDeviceDetector").invoke(null);
-            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                continue;
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+                continue;
+            } catch (NoSuchMethodException e) {
                 e.printStackTrace();
                 continue;
             }
@@ -116,7 +122,6 @@ public abstract class DeviceDetector {
         private Result(Confidence c, String identifier, Class<? extends WirelessDevice> type) {
             this.c = c;
             this.identifier = identifier;
-            this.type = type;
             this.type = type;
         }
 

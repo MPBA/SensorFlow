@@ -7,29 +7,27 @@ import java.util.Collections;
 import eu.fbk.mpba.sensorflow.Input;
 
 /**
- * Base class for an InputModule
+ * This is the base class for an input plugin.
  */
 public abstract class InputModule extends Module {
     private final ArrayList<Stream> children = new ArrayList<>();
     private boolean added = false;
 
     /**
-     * Constructor of abstract class
+     * Constructor of abstract class LOL
      */
     protected InputModule() { }
 
     /**
-     * Adds a Stream to the InputModule. The Input must have an unique name within the device inputs.
-     * An Input can be added to the WirelessDevice scheme in any moment.
-     * Special Inputs may be already present.
+     * Adds a Stream to this input plugin.
      *
-     * @param input The flow to add to the InputModule.
+     * @param input The stream to add to this input plugin.
      */
     protected void addStream(Stream input) {
         if (!added) {
             children.add(input);
         } else {
-            throw new UnsupportedOperationException("Online streams changes not supported. Add streams before onAdded or after onRemoved.");
+            throw new UnsupportedOperationException("Online schema changes are not supported. Add streams before onAdded or after onRemoved.");
         }
     }
 
@@ -37,6 +35,12 @@ public abstract class InputModule extends Module {
         return children;
     }
 
+    /**
+     * Returns a list containing the Streams (and Inputs) of this input plugin. The instances are
+     * returned as Inputs because ModuleLog and ModuleStatus are not Streams, just Inputs.
+     *
+     * @return A list with the streams and the Inputs of the plugin.
+     */
     @Override
     public final Collection<Input> getChildren() {
         ArrayList<Input> sfPlugins = new ArrayList<>(super.getChildren());
@@ -44,15 +48,27 @@ public abstract class InputModule extends Module {
         return Collections.unmodifiableCollection(sfPlugins);
     }
 
+    /**
+     * If overridden enables an initialization code to be executed before being added to SensorFlow.
+     */
     public abstract void onCreate();
 
-    public void onAdded() {
+    /**
+     * If overridden enables code to be executed after being added to SensorFlow.
+     */
+    public void onAdded() { // TODO: Bug, this method must be called by overriders
         added = true;
     }
 
-    public void onRemoved() {
+    /**
+     * If overridden enables code to be executed after being removed from SensorFlow.
+     */
+    public void onRemoved() { // TODO: Bug, this method must be called by overriders
         added = false;
     }
 
+    /**
+     * If overridden enables an initialization code to be executed before being added to SensorFlow.
+     */
     public abstract void onClose();
 }

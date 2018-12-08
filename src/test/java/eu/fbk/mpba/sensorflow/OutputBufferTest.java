@@ -127,7 +127,7 @@ public class OutputBufferTest {
     }
 
     @Test
-    public void test_full_complex() throws InterruptedException {
+    public void test_full_complex() {
         Output o = new Output() {
             @Override
             public void onCreate(String sessionId) { }
